@@ -1,3 +1,4 @@
+from builtins import range
 import os
 import FWCore.ParameterSet.Config as cms
 
@@ -10,7 +11,7 @@ def checked_out_MPS():
     git_initialized = False
     try:
         with open(checked_out_packages, "r") as f:
-            packages = ("/Alignment/", "/Alignment/MillePedeAlignmentAlgorithm/")
+            packages = ("/Alignment/", "/Alignment/MillePedeAlignmentAlgorithm/","/*/")
             for line in f:
                 if line.strip() in packages:
                     checked_out = True
@@ -22,24 +23,26 @@ def checked_out_MPS():
     return checked_out, git_initialized
 
 
-def set_pede_option(process, option):
+def set_pede_option(process, option, drop = False):
     """Utility function to set or override pede `option` defined in `process`.
 
     Arguments:
     - `process`: cms.Process object
     - `option`: option string
+    - `drop`: if set to 'True' the `option` is dropped completely
     """
 
     existing_options = process.AlignmentProducer.algoConfig.pedeSteerer.options
 
     exists = False
-    for i in xrange(len(existing_options)):
+    for i in range(len(existing_options)):
         if existing_options[i].split()[0] == option.split()[0]:
            existing_options[i] = option.strip()
            exists = True
+           if drop: existing_options.pop(i)
            break
 
-    if not exists: existing_options.append(option.strip())
+    if not exists and not drop: existing_options.append(option.strip())
 
 
 def add_filter(process, ed_filter):

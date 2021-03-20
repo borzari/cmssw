@@ -14,16 +14,18 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
+#include "CondFormats/DataRecord/interface/SiStripSummaryRcd.h"
+class SiStripSummary;
 
 class SiStripSummaryReader : public edm::EDAnalyzer {
-
- public:
-  explicit SiStripSummaryReader( const edm::ParameterSet& );
+public:
+  explicit SiStripSummaryReader(const edm::ParameterSet&);
   ~SiStripSummaryReader() override;
-  
-  void analyze( const edm::Event&, const edm::EventSetup& ) override;
-    
- private:
+
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
+
+private:
   uint32_t printdebug_;
+  edm::ESGetToken<SiStripSummary, SiStripSummaryRcd> summaryToken_;
 };
 #endif

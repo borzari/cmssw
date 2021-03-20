@@ -1,8 +1,9 @@
 <use name="FWCore/Framework"/>
 <use name="DataFormats/MuonReco"/>
+<use name="DataFormats/EgammaReco"/>
+<use name="DataFormats/EgammaCandidates"/>
 <use name="DataFormats/HLTReco"/>
-<use name="TrackingTools/IPTools"/>
-<use name="boost"/>
+<use name="CommonTools/Egamma"/>
 <use name="rootcore"/>
 <export>
   <lib name="1"/>

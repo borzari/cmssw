@@ -12,15 +12,10 @@
 
 class DTObjectMapESProducer : public edm::ESProducer {
 public:
-  DTObjectMapESProducer(const edm::ParameterSet&) {
-    setWhatProduced(this);
-  }
+  DTObjectMapESProducer(const edm::ParameterSet&) : rpcGeomToken_(setWhatProduced(this).consumes<RPCGeometry>()) {}
 
-  ~DTObjectMapESProducer() override {
-  }
-
-  std::shared_ptr<DTObjectMap> produce(MuonGeometryRecord const& record) {
-    return std::make_shared<DTObjectMap>(record);
+  std::unique_ptr<DTObjectMap> produce(MuonGeometryRecord const& record) {
+    return std::make_unique<DTObjectMap>(record.get(rpcGeomToken_));
   }
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -28,6 +23,8 @@ public:
     descriptions.add("dtObjectMapESProducer", desc);
   }
 
+private:
+  const edm::ESGetToken<RPCGeometry, MuonGeometryRecord> rpcGeomToken_;
 };
 
 //define this as a plug-in

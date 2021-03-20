@@ -13,11 +13,10 @@
 // Base Class Headers --
 //----------------------
 
-
 //------------------------------------
 // Collaborating Class Declarations --
 //------------------------------------
-class BPHRecoBuilder;
+#include "HeavyFlavorAnalysis/RecoDecay/interface/BPHRecoBuilder.h"
 
 namespace reco {
   class Candidate;
@@ -27,47 +26,46 @@ namespace reco {
 // C++ Headers --
 //---------------
 #include <string>
+#include <map>
 
 //              ---------------------
 //              -- Class Interface --
 //              ---------------------
 
 class BPHRecoSelect {
-
- public:
-
+public:
   /** Constructor
    */
-  BPHRecoSelect();
+  BPHRecoSelect() {}
+
+  // deleted copy constructor and assignment operator
+  BPHRecoSelect(const BPHRecoSelect& x) = delete;
+  BPHRecoSelect& operator=(const BPHRecoSelect& x) = delete;
 
   /** Destructor
    */
-  virtual ~BPHRecoSelect();
+  virtual ~BPHRecoSelect() {}
+
+  using AcceptArg = reco::Candidate;
 
   /** Operations
    */
   /// accept function
-  /// pointers to other particles in the decays can be obtained 
-  /// by the function "get" giving the particle name (passing the pointer 
+  /// pointers to other particles in the decays can be obtained
+  /// by the function "get" giving the particle name (passing the pointer
   /// to the builder)
-  virtual bool accept( const reco::Candidate& cand ) const;
-  virtual bool accept( const reco::Candidate& cand,
-                       const BPHRecoBuilder* build ) const;
+  virtual bool accept(const reco::Candidate& cand) const = 0;
+  virtual bool accept(const reco::Candidate& cand, const BPHRecoBuilder* build) const { return accept(cand); }
 
- protected:
-
+protected:
   // function to get other particles pointers
-  const reco::Candidate* get( const std::string& name,
-                              const BPHRecoBuilder* build ) const;
-
- private:
-
-  // private copy and assigment constructors
-  BPHRecoSelect           ( const BPHRecoSelect& x ) = delete;
-  BPHRecoSelect& operator=( const BPHRecoSelect& x ) = delete;
-
+  const reco::Candidate* get(const std::string& name, const BPHRecoBuilder* build) const {
+    if (build == nullptr)
+      return nullptr;
+    std::map<std::string, const reco::Candidate*>& cMap = build->daugMap;
+    std::map<std::string, const reco::Candidate*>::iterator iter = cMap.find(name);
+    return (iter != cMap.end() ? iter->second : nullptr);
+  }
 };
 
-
 #endif
-

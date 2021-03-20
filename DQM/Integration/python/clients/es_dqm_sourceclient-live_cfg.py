@@ -1,16 +1,28 @@
+from __future__ import print_function
 import FWCore.ParameterSet.Config as cms
+import sys
 
 process = cms.Process("ESDQM")
+
+unitTest = False
+if 'unitTest=True' in sys.argv:
+    unitTest=True
 
 process.load('Configuration/StandardSequences/Services_cff')
 process.load('FWCore/MessageService/MessageLogger_cfi')
 process.load("FWCore.Modules.preScaler_cfi")
 
-# for live online DQM in P5
-process.load("DQM.Integration.config.inputsource_cfi")
+if unitTest:
+    process.load("DQM.Integration.config.unittestinputsource_cfi")
+    from DQM.Integration.config.unittestinputsource_cfi import options
+else:
+    # for live online DQM in P5
+    process.load("DQM.Integration.config.inputsource_cfi")
+    from DQM.Integration.config.inputsource_cfi import options
 
 # for testing in lxplus
 #process.load("DQM.Integration.config.fileinputsource_cfi")
+#from DQM.Integration.config.fileinputsource_cfi import options
 
 # Condition for P5 cluster
 process.load("DQM.Integration.config.FrontierCondition_GT_cfi")
@@ -32,7 +44,8 @@ process.ecalPreshowerRecHit.ESRecoAlgo = cms.int32(0)
 
 process.preScaler.prescaleFactor = 1
 
-#process.dqmInfoES = cms.EDAnalyzer("DQMEventInfo",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+#process.dqmInfoES = DQMEDAnalyzer('DQMEventInfo',
 #                                   subSystemFolder = cms.untracked.string('EcalPreshower')
 #                                   )
 
@@ -41,9 +54,12 @@ process.preScaler.prescaleFactor = 1
 process.load("DQM.Integration.config.environment_cfi")
 process.dqmEnv.subSystemFolder = 'EcalPreshower'
 process.dqmSaver.tag = 'EcalPreshower'
-process.DQMStore.referenceFileName = '/dqmdata/dqm/reference/es_reference.root'
+process.dqmSaver.runNumber = options.runNumber
+process.dqmSaverPB.tag = 'EcalPreshower'
+process.dqmSaverPB.runNumber = options.runNumber
 # for local test
 #process.dqmSaver.path = '.'
+#process.dqmSaverPB.path = './pb'
 
 process.load("DQM/EcalPreshowerMonitorModule/EcalPreshowerMonitorTasks_cfi")
 process.ecalPreshowerIntegrityTask.ESDCCCollections = cms.InputTag("esRawToDigi")
@@ -64,7 +80,8 @@ process.p = cms.Path(process.preScaler*
                process.ecalPreshowerDefaultTasksSequence*
                process.dqmEnv*
                process.ecalPreshowerMonitorClient*
-               process.dqmSaver)
+               process.dqmSaver*
+               process.dqmSaverPB)
 
 
 process.esRawToDigi.sourceTag = cms.InputTag("rawDataCollector")
@@ -73,7 +90,7 @@ process.ecalPreshowerRawDataTask.FEDRawDataCollection = cms.InputTag("rawDataCol
 # Heavy Ion Specific Fed Raw Data Collection Label
 #--------------------------------------------------
 
-print "Running with run type = ", process.runType.getRunType()
+print("Running with run type = ", process.runType.getRunType())
 
 if (process.runType.getRunType() == process.runType.hi_run):
     process.esRawToDigi.sourceTag = cms.InputTag("rawDataRepacker")

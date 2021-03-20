@@ -10,7 +10,6 @@ gtDigis.DaqGtInputTag = 'rawDataRepacker'
 gtEvmDigis.EvmGtInputTag = 'rawDataRepacker'
 siPixelDigis.InputLabel = 'rawDataRepacker'
 siStripDigis.ProductLabel = 'rawDataRepacker'
-#False by default ecalDigis.DoRegional = False
 ecalDigis.InputLabel = 'rawDataRepacker'
 ecalPreshowerDigis.sourceTag = 'rawDataRepacker'
 hcalDigis.InputLabel = 'rawDataRepacker'
@@ -19,10 +18,12 @@ muonDTDigis.inputLabel = 'rawDataRepacker'
 muonRPCDigis.InputLabel = 'rawDataRepacker'
 castorDigis.InputLabel = 'rawDataRepacker'
 
-RawToDigi = cms.Sequence(csctfDigis+dttfDigis+gctDigis+gtDigis+gtEvmDigis+siPixelDigis+siStripDigis+ecalDigis+ecalPreshowerDigis+hcalDigis+muonCSCDigis+muonDTDigis+muonRPCDigis+castorDigis+scalersRawToDigi)
+RawToDigiTask = cms.Task(csctfDigis,dttfDigis,gctDigis,gtDigis,gtEvmDigis,siPixelDigis,siStripDigis,ecalDigis,ecalPreshowerDigis,hcalDigis,muonCSCDigis,muonDTDigis,muonRPCDigis,castorDigis,scalersRawToDigi)
+RawToDigi = cms.Sequence(RawToDigiTask)
 
-RawToDigi_woGCT = cms.Sequence(csctfDigis+dttfDigis+gtDigis+gtEvmDigis+siPixelDigis+siStripDigis+ecalDigis+ecalPreshowerDigis+hcalDigis+muonCSCDigis+muonDTDigis+muonRPCDigis+castorDigis+scalersRawToDigi)
-
+RawToDigiTask_woGCT = RawToDigiTask.copyAndExclude([gctDigis])
+RawToDigi_woGCT = cms.Sequence(RawToDigiTask_woGCT)
 
 siStripVRDigis = siStripDigis.clone(ProductLabel = 'virginRawDataRepacker')
-RawToDigi_withVR = cms.Sequence(RawToDigi + siStripVRDigis)
+RawToDigiTask_withVR = cms.Task(RawToDigiTask, siStripVRDigis)
+RawToDigi_withVR = cms.Sequence(RawToDigiTask_withVR)

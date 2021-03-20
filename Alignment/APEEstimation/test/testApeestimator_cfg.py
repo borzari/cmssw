@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 
 import FWCore.ParameterSet.Config as cms
@@ -23,8 +24,8 @@ if( hasattr(sys, "argv") ):
             if(len(val)==2):
                 setattr(options,val[0], val[1])
 
-print "Input sample: ", options.sample
-print "Test run: ", options.isTest
+print("Input sample: ", options.sample)
+print("Test run: ", options.isTest)
 
 
 
@@ -39,13 +40,13 @@ process = cms.Process("ApeEstimator")
 ## Message Logger
 ##
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.MessageLogger.categories.append('SectorBuilder')
-process.MessageLogger.categories.append('ResidualErrorBinning')
-process.MessageLogger.categories.append('HitSelector')
-process.MessageLogger.categories.append('CalculateAPE')
-process.MessageLogger.categories.append('ApeEstimator')
-#process.MessageLogger.categories.append('TrackRefitter')
-process.MessageLogger.categories.append('AlignmentTrackSelector')
+process.MessageLogger.SectorBuilder=dict()
+process.MessageLogger.ResidualErrorBinning=dict()
+process.MessageLogger.HitSelector=dict()
+process.MessageLogger.CalculateAPE=dict()
+process.MessageLogger.ApeEstimator=dict()
+#process.MessageLogger.TrackRefitter=dict()
+process.MessageLogger.AlignmentTrackSelector=dict()
 process.MessageLogger.cerr.INFO.limit = 0
 process.MessageLogger.cerr.default.limit = -1  # Do not use =0, else all error messages (except those listed below) are supressed
 process.MessageLogger.cerr.SectorBuilder = cms.untracked.PSet(limit = cms.untracked.int32(-1))
@@ -98,7 +99,7 @@ elif options.sample == 'zmumu20':
     isZmumu20 = True
     isMc = True
 else:
-    print 'ERROR --- incorrect data sammple: ', options.sample
+    print('ERROR --- incorrect data sammple: ', options.sample)
     exit(8888)
 
 
@@ -143,8 +144,8 @@ process.source.duplicateCheckMode = cms.untracked.string("checkEachRealDataFile"
 ##
 process.load("Alignment.APEEstimation.TrackRefitter_38T_cff")
 
-process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
-from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
+process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_design', '')
 
 
@@ -156,7 +157,7 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_design', '')
 #        connect = cms.untracked.string("frontier://FrontierProd/CMS_CONDITIONS"),
 #    )
 #) 
-print "Using global tag "+process.GlobalTag.globaltag._value
+print("Using global tag "+process.GlobalTag.globaltag._value)
 
 
 

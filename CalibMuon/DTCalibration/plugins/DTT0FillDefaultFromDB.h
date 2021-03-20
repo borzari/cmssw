@@ -5,6 +5,7 @@
  *  Concrete implementation of a DTT0BaseCorrection.
  *  Computes correction for t0
  *
+ *  $Revision: 1.2 $
  *  \author A. Vilela Pereira
  */
 
@@ -20,23 +21,23 @@ class DTT0;
 
 namespace dtCalibration {
 
-class DTT0FillDefaultFromDB: public DTT0BaseCorrection {
-public:
-  // Constructor
-  DTT0FillDefaultFromDB(const edm::ParameterSet&);
+  class DTT0FillDefaultFromDB : public DTT0BaseCorrection {
+  public:
+    // Constructor
+    DTT0FillDefaultFromDB(const edm::ParameterSet &);
 
-  // Destructor
-  virtual ~DTT0FillDefaultFromDB();
+    // Destructor
+    ~DTT0FillDefaultFromDB() override;
 
-  virtual void setES(const edm::EventSetup& setup);
-  virtual DTT0Data correction(const DTWireId&);
+    void setES(const edm::EventSetup &setup) override;
+    DTT0Data correction(const DTWireId &) override;
 
-private:
-  std::string dbLabelRef_;
+  private:
+    std::string dbLabelRef_;
 
-  const DTT0 *t0MapRef_;
-  const DTT0 *t0Map_;
-};
+    const DTT0 *t0MapRef_;
+    const DTT0 *t0Map_;
+  };
 
-} // namespace
+}  // namespace dtCalibration
 #endif

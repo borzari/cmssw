@@ -2,9 +2,8 @@
 #define LhcTrackAnalyzer_h
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -39,8 +38,6 @@
 #include "DataFormats/GeometryVector/interface/LocalPoint.h"
 #include "Geometry/CommonDetUnit/interface/GeomDet.h"
 
-
-
 // system include files
 #include <iostream>
 #include <memory>
@@ -53,41 +50,40 @@
 // class decleration
 //
 
-class LhcTrackAnalyzer : public edm::EDAnalyzer {
-
- public:
+class LhcTrackAnalyzer : public edm::one::EDAnalyzer<> {
+public:
   explicit LhcTrackAnalyzer(const edm::ParameterSet&);
   ~LhcTrackAnalyzer() override;
 
- private:
-  void beginJob() override ;
+private:
+  void beginJob() override;
   void analyze(const edm::Event&, const edm::EventSetup&) override;
-  void endJob() override ;
+  void endJob() override;
 
   // ----------member data ---------------------------
-  edm::InputTag  TrackCollectionTag_;
-  edm::InputTag  PVtxCollectionTag_;
+  edm::InputTag TrackCollectionTag_;
+  edm::InputTag PVtxCollectionTag_;
   bool debug_;
-  
+
   // Output
-  std::string filename_;     
+  std::string filename_;
   TFile* rootFile_;
   TTree* rootTree_;
-  
+
   // Root-Tuple variables :
   //=======================
-  void SetVarToZero();  
+  void SetVarToZero();
 
   static const int nMaxtracks_ = 3000;
   int nTracks_;
   int run_;
   int event_;
-  double pt_[nMaxtracks_];           
+  double pt_[nMaxtracks_];
   double eta_[nMaxtracks_];
   double phi_[nMaxtracks_];
   double chi2_[nMaxtracks_];
   double chi2ndof_[nMaxtracks_];
-  int    charge_[nMaxtracks_];
+  int charge_[nMaxtracks_];
   double qoverp_[nMaxtracks_];
   double dz_[nMaxtracks_];
   double dxy_[nMaxtracks_];
@@ -100,7 +96,6 @@ class LhcTrackAnalyzer : public edm::EDAnalyzer {
   int validhits_[nMaxtracks_][7];
   bool goodbx_;
   bool goodvtx_;
-
 };
 
 #endif

@@ -1,8 +1,8 @@
+from __future__ import print_function
 
 #-toDo: move this to common?
 
 import logging
-import cStringIO
 import json
 import os
 import sys
@@ -163,8 +163,7 @@ class Tier0Handler( object ):
         Raises if connection error, bad response, timeout after retries occur, or if no Global Tags are available.
         """
         data = self._queryTier0DataSvc( os.path.join( self._uri, config ) )
-        gtnames = unique( [ str( di[ 'global_tag' ] ) for di in data['result'] if di[ 'global_tag' ] is not None ] )
-        gtnames.sort()
+        gtnames = sorted(unique( [ str( di[ 'global_tag' ] ) for di in data['result'] if di[ 'global_tag' ] is not None ] ))
         try:
             recentGT = gtnames[-1]
             return recentGT
@@ -178,10 +177,10 @@ class Tier0Handler( object ):
 def test( url ):
     t0 = Tier0Handler( url, 1, 1, 1, None, debug=False)
 
-    print '   fcsr = %s (%s)' % (t0.getFirstSafeRun(), type(t0.getFirstSafeRun()) )
-    print '   reco_config = %s' % t0.getGlobalTag('reco_config')
-    print '   express_config = %s' % t0.getGlobalTag('express_config')
-    print '\n'
+    print('   fcsr = %s (%s)' % (t0.getFirstSafeRun(), type(t0.getFirstSafeRun()) ))
+    print('   reco_config = %s' % t0.getGlobalTag('reco_config'))
+    print('   express_config = %s' % t0.getGlobalTag('express_config'))
+    print('\n')
 
 
 if __name__ == '__main__':

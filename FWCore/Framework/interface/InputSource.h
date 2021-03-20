@@ -47,9 +47,11 @@ Some examples of InputSource subclasses may be:
 #include "DataFormats/Provenance/interface/Timestamp.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/ProcessingController.h"
-
+#include "FWCore/Utilities/interface/LuminosityBlockIndex.h"
+#include "FWCore/Utilities/interface/RunIndex.h"
 #include "FWCore/Utilities/interface/Signal.h"
 #include "FWCore/Utilities/interface/get_underlying_safe.h"
+#include "FWCore/Utilities/interface/StreamID.h"
 
 #include <memory>
 #include <string>
@@ -73,22 +75,9 @@ namespace edm {
 
   class InputSource {
   public:
-    enum ItemType {
-      IsInvalid,
-      IsStop,
-      IsFile,
-      IsRun,
-      IsLumi,
-      IsEvent,
-      IsRepeat,
-      IsSynchronize
-    };
+    enum ItemType { IsInvalid, IsStop, IsFile, IsRun, IsLumi, IsEvent, IsRepeat, IsSynchronize };
 
-    enum ProcessingMode {
-      Runs,
-      RunsAndLumis,
-      RunsLumisAndEvents
-    };
+    enum ProcessingMode { Runs, RunsAndLumis, RunsLumisAndEvents };
 
     /// Constructor
     explicit InputSource(ParameterSet const&, InputSourceDescription const&);
@@ -96,22 +85,22 @@ namespace edm {
     /// Destructor
     virtual ~InputSource() noexcept(false);
 
-    InputSource(InputSource const&) = delete; // Disallow copying and moving
-    InputSource& operator=(InputSource const&) = delete; // Disallow copying and moving
+    InputSource(InputSource const&) = delete;             // Disallow copying and moving
+    InputSource& operator=(InputSource const&) = delete;  // Disallow copying and moving
 
     static void fillDescriptions(ConfigurationDescriptions& descriptions);
     static const std::string& baseType();
     static void fillDescription(ParameterSetDescription& desc);
-    static void prevalidate(ConfigurationDescriptions& );
+    static void prevalidate(ConfigurationDescriptions&);
 
     /// Advances the source to the next item
     ItemType nextItemType();
 
     /// Read next event
-    void readEvent(EventPrincipal& ep, StreamContext &);
+    void readEvent(EventPrincipal& ep, StreamContext&);
 
     /// Read a specific event
-    bool readEvent(EventPrincipal& ep, EventID const&, StreamContext &);
+    bool readEvent(EventPrincipal& ep, EventID const&, StreamContext&);
 
     /// Read next luminosity block Auxilary
     std::shared_ptr<LuminosityBlockAuxiliary> readLuminosityBlockAuxiliary();
@@ -131,6 +120,9 @@ namespace edm {
     /// Read next luminosity block (same as a prior lumi)
     void readAndMergeLumi(LuminosityBlockPrincipal& lbp);
 
+    /// Read next process block
+    bool readProcessBlock();
+
     /// Read next file
     std::unique_ptr<FileBlock> readFile();
 
@@ -147,66 +139,72 @@ namespace edm {
     void rewind();
 
     /// Set the run number
-    void setRunNumber(RunNumber_t r) {setRun(r);}
+    void setRunNumber(RunNumber_t r) { setRun(r); }
 
     /// Set the luminosity block ID
-    void setLuminosityBlockNumber_t(LuminosityBlockNumber_t lb) {setLumi(lb);}
+    void setLuminosityBlockNumber_t(LuminosityBlockNumber_t lb) { setLumi(lb); }
 
     /// issue an event report
-    void issueReports(EventID const& eventID);
+    void issueReports(EventID const& eventID, StreamID streamID);
 
     /// Register any produced products
     virtual void registerProducts();
 
     /// Accessors for product registry
-    std::shared_ptr<ProductRegistry const> productRegistry() const {return get_underlying_safe(productRegistry_);}
-    std::shared_ptr<ProductRegistry>& productRegistry() {return get_underlying_safe(productRegistry_);}
+    std::shared_ptr<ProductRegistry const> productRegistry() const { return get_underlying_safe(productRegistry_); }
+    std::shared_ptr<ProductRegistry>& productRegistry() { return get_underlying_safe(productRegistry_); }
 
     /// Accessors for process history registry.
-    ProcessHistoryRegistry const& processHistoryRegistry() const {return *processHistoryRegistry_;}
-    ProcessHistoryRegistry& processHistoryRegistry() {return *processHistoryRegistry_;}
+    ProcessHistoryRegistry const& processHistoryRegistry() const { return *processHistoryRegistry_; }
+    ProcessHistoryRegistry& processHistoryRegistry() { return *processHistoryRegistry_; }
 
     /// Accessors for branchIDListHelper
-    std::shared_ptr<BranchIDListHelper const> branchIDListHelper() const {return get_underlying_safe(branchIDListHelper_);}
-    std::shared_ptr<BranchIDListHelper>& branchIDListHelper() {return get_underlying_safe(branchIDListHelper_);}
+    std::shared_ptr<BranchIDListHelper const> branchIDListHelper() const {
+      return get_underlying_safe(branchIDListHelper_);
+    }
+    std::shared_ptr<BranchIDListHelper>& branchIDListHelper() { return get_underlying_safe(branchIDListHelper_); }
 
     /// Accessors for thinnedAssociationsHelper
-    std::shared_ptr<ThinnedAssociationsHelper const> thinnedAssociationsHelper() const {return get_underlying_safe(thinnedAssociationsHelper_);}
-    std::shared_ptr<ThinnedAssociationsHelper>& thinnedAssociationsHelper() {return get_underlying_safe(thinnedAssociationsHelper_);}
+    std::shared_ptr<ThinnedAssociationsHelper const> thinnedAssociationsHelper() const {
+      return get_underlying_safe(thinnedAssociationsHelper_);
+    }
+    std::shared_ptr<ThinnedAssociationsHelper>& thinnedAssociationsHelper() {
+      return get_underlying_safe(thinnedAssociationsHelper_);
+    }
 
     /// Reset the remaining number of events/lumis to the maximum number.
     void repeat() {
       remainingEvents_ = maxEvents_;
       remainingLumis_ = maxLumis_;
     }
-    
+
     /// Returns nullptr if no resource shared between the Source and a DelayedReader
-    std::pair<SharedResourcesAcquirer*,std::recursive_mutex*> resourceSharedWithDelayedReader();
+    std::pair<SharedResourcesAcquirer*, std::recursive_mutex*> resourceSharedWithDelayedReader();
 
     /// Accessor for maximum number of events to be read.
     /// -1 is used for unlimited.
-    int maxEvents() const {return maxEvents_;}
+    int maxEvents() const { return maxEvents_; }
 
     /// Accessor for remaining number of events to be read.
     /// -1 is used for unlimited.
-    int remainingEvents() const {return remainingEvents_;}
+    int remainingEvents() const { return remainingEvents_; }
 
     /// Accessor for maximum number of lumis to be read.
     /// -1 is used for unlimited.
-    int maxLuminosityBlocks() const {return maxLumis_;}
+    int maxLuminosityBlocks() const { return maxLumis_; }
 
     /// Accessor for remaining number of lumis to be read.
     /// -1 is used for unlimited.
-    int remainingLuminosityBlocks() const {return remainingLumis_;}
+    int remainingLuminosityBlocks() const { return remainingLumis_; }
 
     /// Accessor for 'module' description.
-    ModuleDescription const& moduleDescription() const {return moduleDescription_;}
+    ModuleDescription const& moduleDescription() const { return moduleDescription_; }
 
     /// Accessor for Process Configuration
-    ProcessConfiguration const& processConfiguration() const {return moduleDescription().processConfiguration();}
+    ProcessConfiguration const& processConfiguration() const { return moduleDescription().processConfiguration(); }
 
     /// Accessor for global process identifier
-    std::string const& processGUID() const {return processGUID_;}
+    std::string const& processGUID() const { return processGUID_; }
 
     /// Called by framework at beginning of job
     void doBeginJob();
@@ -217,22 +215,16 @@ namespace edm {
     /// Called by framework at beginning of lumi block
     virtual void doBeginLumi(LuminosityBlockPrincipal& lbp, ProcessContext const*);
 
-    /// Called by framework at end of lumi block
-    virtual void doEndLumi(LuminosityBlockPrincipal& lbp, bool cleaningUpAfterException, ProcessContext const*);
-
     /// Called by framework at beginning of run
     virtual void doBeginRun(RunPrincipal& rp, ProcessContext const*);
 
-    /// Called by framework at end of run
-    virtual void doEndRun(RunPrincipal& rp, bool cleaningUpAfterException, ProcessContext const*);
-
     /// Accessor for the current time, as seen by the input source
-    Timestamp const& timestamp() const {return time_;}
+    Timestamp const& timestamp() const { return time_; }
 
     /// Accessor for the reduced process history ID of the current run.
     /// This is the ID of the input process history which does not include
     /// the current process.
-    ProcessHistoryID const&  reducedProcessHistoryID() const;
+    ProcessHistoryID const& reducedProcessHistoryID() const;
 
     /// Accessor for current run number
     RunNumber_t run() const;
@@ -241,59 +233,58 @@ namespace edm {
     LuminosityBlockNumber_t luminosityBlock() const;
 
     /// RunsLumisAndEvents (default), RunsAndLumis, or Runs.
-    ProcessingMode processingMode() const {return processingMode_;}
+    ProcessingMode processingMode() const { return processingMode_; }
 
     /// Accessor for Activity Registry
-    std::shared_ptr<ActivityRegistry> actReg() const {return actReg_;}
+    std::shared_ptr<ActivityRegistry> actReg() const { return actReg_; }
 
     /// Called by the framework to merge or insert run in principal cache.
-    std::shared_ptr<RunAuxiliary> runAuxiliary() const {return runAuxiliary_;}
+    std::shared_ptr<RunAuxiliary> runAuxiliary() const { return runAuxiliary_; }
 
     /// Called by the framework to merge or insert lumi in principal cache.
-    std::shared_ptr<LuminosityBlockAuxiliary> luminosityBlockAuxiliary() const {return lumiAuxiliary_;}
+    std::shared_ptr<LuminosityBlockAuxiliary> luminosityBlockAuxiliary() const { return lumiAuxiliary_; }
 
     bool randomAccess() const;
     ProcessingController::ForwardState forwardState() const;
     ProcessingController::ReverseState reverseState() const;
 
-    class SourceSentry {
-    public:
-      typedef signalslot::Signal<void()> Sig;
-      SourceSentry(Sig& pre, Sig& post);
-      ~SourceSentry();
-
-      SourceSentry(SourceSentry const&) = delete; // Disallow copying and moving
-      SourceSentry& operator=(SourceSentry const&) = delete; // Disallow copying and moving
-
-    private:
-      Sig& post_;
-    };
-
     class EventSourceSentry {
     public:
-      EventSourceSentry(InputSource const& source, StreamContext & sc);
+      EventSourceSentry(InputSource const& source, StreamContext& sc);
       ~EventSourceSentry();
 
-      EventSourceSentry(EventSourceSentry const&) = delete; // Disallow copying and moving
-      EventSourceSentry& operator=(EventSourceSentry const&) = delete; // Disallow copying and moving
+      EventSourceSentry(EventSourceSentry const&) = delete;             // Disallow copying and moving
+      EventSourceSentry& operator=(EventSourceSentry const&) = delete;  // Disallow copying and moving
 
     private:
       InputSource const& source_;
-      StreamContext & sc_;
+      StreamContext& sc_;
     };
 
     class LumiSourceSentry {
     public:
-      explicit LumiSourceSentry(InputSource const& source);
+      LumiSourceSentry(InputSource const& source, LuminosityBlockIndex id);
+      ~LumiSourceSentry();
+
+      LumiSourceSentry(LumiSourceSentry const&) = delete;             // Disallow copying and moving
+      LumiSourceSentry& operator=(LumiSourceSentry const&) = delete;  // Disallow copying and moving
+
     private:
-      SourceSentry sentry_;
+      InputSource const& source_;
+      LuminosityBlockIndex index_;
     };
 
     class RunSourceSentry {
     public:
-      explicit RunSourceSentry(InputSource const& source);
+      RunSourceSentry(InputSource const& source, RunIndex id);
+      ~RunSourceSentry();
+
+      RunSourceSentry(RunSourceSentry const&) = delete;             // Disallow copying and moving
+      RunSourceSentry& operator=(RunSourceSentry const&) = delete;  // Disallow copying and moving
+
     private:
-      SourceSentry sentry_;
+      InputSource const& source_;
+      RunIndex index_;
     };
 
     class FileOpenSentry {
@@ -302,8 +293,8 @@ namespace edm {
       explicit FileOpenSentry(InputSource const& source, std::string const& lfn, bool usedFallback);
       ~FileOpenSentry();
 
-      FileOpenSentry(FileOpenSentry const&) = delete; // Disallow copying and moving
-      FileOpenSentry& operator=(FileOpenSentry const&) = delete; // Disallow copying and moving
+      FileOpenSentry(FileOpenSentry const&) = delete;             // Disallow copying and moving
+      FileOpenSentry& operator=(FileOpenSentry const&) = delete;  // Disallow copying and moving
 
     private:
       Sig& post_;
@@ -317,8 +308,8 @@ namespace edm {
       explicit FileCloseSentry(InputSource const& source, std::string const& lfn, bool usedFallback);
       ~FileCloseSentry();
 
-      FileCloseSentry(FileCloseSentry const&) = delete; // Disallow copying and moving
-      FileCloseSentry& operator=(FileCloseSentry const&) = delete; // Disallow copying and moving
+      FileCloseSentry(FileCloseSentry const&) = delete;             // Disallow copying and moving
+      FileCloseSentry& operator=(FileCloseSentry const&) = delete;  // Disallow copying and moving
 
     private:
       Sig& post_;
@@ -328,17 +319,16 @@ namespace edm {
 
     signalslot::Signal<void(StreamContext const&, ModuleCallingContext const&)> preEventReadFromSourceSignal_;
     signalslot::Signal<void(StreamContext const&, ModuleCallingContext const&)> postEventReadFromSourceSignal_;
-    
 
   protected:
     virtual void skip(int offset);
 
     /// To set the current time, as seen by the input source
-    void setTimestamp(Timestamp const& theTime) {time_ = theTime;}
+    void setTimestamp(Timestamp const& theTime) { time_ = theTime; }
 
-    ProductRegistry& productRegistryUpdate() {return *productRegistry_;}
-    ProcessHistoryRegistry& processHistoryRegistryForUpdate() {return *processHistoryRegistry_;}
-    ItemType state() const{return state_;}
+    ProductRegistry& productRegistryUpdate() { return *productRegistry_; }
+    ProcessHistoryRegistry& processHistoryRegistryForUpdate() { return *processHistoryRegistry_; }
+    ItemType state() const { return state_; }
     void setRunAuxiliary(RunAuxiliary* rp) {
       runAuxiliary_.reset(rp);
       newRun_ = newLumi_ = true;
@@ -360,32 +350,41 @@ namespace edm {
       resetRunAuxiliary();
       state_ = IsInvalid;
     }
-    bool newRun() const {return newRun_;}
-    void setNewRun() {newRun_ = true;}
-    void resetNewRun() {newRun_ = false;}
-    bool newLumi() const {return newLumi_;}
-    void setNewLumi() {newLumi_ = true;}
-    void resetNewLumi() {newLumi_ = false;}
-    bool eventCached() const {return eventCached_;}
+    bool newRun() const { return newRun_; }
+    void setNewRun() { newRun_ = true; }
+    void resetNewRun() { newRun_ = false; }
+    bool newLumi() const { return newLumi_; }
+    void setNewLumi() { newLumi_ = true; }
+    void resetNewLumi() { newLumi_ = false; }
+    bool eventCached() const { return eventCached_; }
     /// Called by the framework to merge or ached() const {return eventCached_;}
-    void setEventCached() {eventCached_ = true;}
-    void resetEventCached() {eventCached_ = false;}
+    void setEventCached() { eventCached_ = true; }
+    void resetEventCached() { eventCached_ = false; }
 
     ///Called by inheriting classes when running multicore when the receiver has told them to
     /// skip some events.
     void decreaseRemainingEventsBy(int iSkipped);
 
+    ///Begin protected makes it easier to do template programming
+    virtual void beginJob();
+
   private:
-    bool eventLimitReached() const {return remainingEvents_ == 0;}
+    bool eventLimitReached() const { return remainingEvents_ == 0; }
     bool lumiLimitReached() const {
-      if (remainingLumis_ == 0) {return true;}
-      if (maxSecondsUntilRampdown_ <= 0) {return false;}
+      if (remainingLumis_ == 0) {
+        return true;
+      }
+      if (maxSecondsUntilRampdown_ <= 0) {
+        return false;
+      }
       auto end = std::chrono::steady_clock::now();
       auto elapsed = end - processingStart_;
-      if (std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() > maxSecondsUntilRampdown_) {return true;}
+      if (std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() > maxSecondsUntilRampdown_) {
+        return true;
+      }
       return false;
     }
-    bool limitReached() const {return eventLimitReached() || lumiLimitReached();}
+    bool limitReached() const { return eventLimitReached() || lumiLimitReached(); }
     virtual ItemType getNextItemType() = 0;
     ItemType nextItemType_();
     virtual std::shared_ptr<RunAuxiliary> readRunAuxiliary_() = 0;
@@ -400,17 +399,15 @@ namespace edm {
     virtual void setRun(RunNumber_t r);
     virtual void setLumi(LuminosityBlockNumber_t lb);
     virtual void rewind_();
-    virtual void beginJob();
     virtual void endJob();
-    virtual std::pair<SharedResourcesAcquirer*,std::recursive_mutex*> resourceSharedWithDelayedReader_();
+    virtual std::pair<SharedResourcesAcquirer*, std::recursive_mutex*> resourceSharedWithDelayedReader_();
 
     virtual bool randomAccess_() const;
     virtual ProcessingController::ForwardState forwardState_() const;
     virtual ProcessingController::ReverseState reverseState_() const;
 
   private:
-
-    std::shared_ptr<ActivityRegistry> actReg_; // We do not use propagate_const because the registry itself is mutable.
+    std::shared_ptr<ActivityRegistry> actReg_;  // We do not use propagate_const because the registry itself is mutable.
     int maxEvents_;
     int remainingEvents_;
     int maxLumis_;
@@ -431,11 +428,11 @@ namespace edm {
     bool eventCached_;
     mutable ItemType state_;
     mutable std::shared_ptr<RunAuxiliary> runAuxiliary_;
-    mutable std::shared_ptr<LuminosityBlockAuxiliary>  lumiAuxiliary_;
+    mutable std::shared_ptr<LuminosityBlockAuxiliary> lumiAuxiliary_;
     std::string statusFileName_;
 
     unsigned int numberOfEventsBeforeBigSkip_;
   };
-}
+}  // namespace edm
 
 #endif

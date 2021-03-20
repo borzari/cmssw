@@ -3,8 +3,6 @@
 
 /** \class DTT0Correction
  *  Class that reads and corrects t0 DB
- *
- *  \author A. Vilela Pereira
  */
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -25,22 +23,20 @@ public:
   DTT0Correction(const edm::ParameterSet& pset);
 
   /// Destructor
-  virtual ~DTT0Correction();
+  ~DTT0Correction() override;
 
   // Operations
 
-  virtual void beginJob() {}
-  virtual void beginRun( const edm::Run& run, const edm::EventSetup& setup );
-  virtual void analyze(const edm::Event& event, const edm::EventSetup& setup){}
-  virtual void endJob();
+  void beginJob() override {}
+  void beginRun(const edm::Run& run, const edm::EventSetup& setup) override;
+  void analyze(const edm::Event& event, const edm::EventSetup& setup) override {}
+  void endJob() override;
 
 protected:
-
 private:
-
   const DTT0* t0Map_;
   edm::ESHandle<DTGeometry> muonGeom_;
 
-  dtCalibration::DTT0BaseCorrection* correctionAlgo_;
+  std::unique_ptr<dtCalibration::DTT0BaseCorrection> correctionAlgo_;
 };
 #endif

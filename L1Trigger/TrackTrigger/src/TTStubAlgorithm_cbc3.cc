@@ -10,11 +10,14 @@
 #include "L1Trigger/TrackTrigger/interface/TTStubAlgorithm_cbc3.h"
 
 /// Matching operations
-template< >
-void TTStubAlgorithm_cbc3< Ref_Phase2TrackerDigi_ >::PatternHitCorrelation( bool &aConfirmation,
-                                                                    int &aDisplacement, 
-                                                                    int &anOffset, 
-                                                                    const TTStub< Ref_Phase2TrackerDigi_ > &aTTStub ) const
+template <>
+void TTStubAlgorithm_cbc3<Ref_Phase2TrackerDigi_>::PatternHitCorrelation(
+    bool &aConfirmation,
+    int &aDisplacement,
+    int &anOffset,
+    float &anHardBend,
+    const TTStub<Ref_Phase2TrackerDigi_> &aTTStub) const
+
 {
   /*
   /// Calculate average coordinates col/row for inner/outer Cluster
@@ -75,4 +78,3 @@ void TTStubAlgorithm_cbc3< Ref_Phase2TrackerDigi_ >::PatternHitCorrelation( bool
     aConfirmation = false;
   */
 }
-

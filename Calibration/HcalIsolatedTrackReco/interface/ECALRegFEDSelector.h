@@ -12,7 +12,6 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/Framework/interface/ESHandle.h"
 
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/FEDRawData/interface/FEDRawData.h"
@@ -24,28 +23,25 @@
 
 #include "Geometry/EcalMapping/interface/EcalElectronicsMapping.h"
 #include "Geometry/EcalMapping/interface/EcalMappingRcd.h"
-#include "RecoEcal/EgammaCoreTools/interface/EcalEtaPhiRegion.h"
 
 #include "DataFormats/EcalRawData/interface/EcalListOfFEDS.h"
 
 class ECALRegFEDSelector : public edm::EDProducer {
- public:
+public:
   ECALRegFEDSelector(const edm::ParameterSet&);
   ~ECALRegFEDSelector() override;
   std::unique_ptr<const EcalElectronicsMapping> ec_mapping;
 
   double delta_;
   bool fedSaved[1200];
-  
+
   edm::EDGetTokenT<FEDRawDataCollection> tok_raw_;
   edm::EDGetTokenT<trigger::TriggerFilterObjectWithRefs> tok_seed_;
-  
- private:
-  void beginJob() override ;
+
+private:
+  void beginJob() override;
   void produce(edm::Event&, const edm::EventSetup&) override;
-  void endJob() override ;
-  
+  void endJob() override;
 };
 
 #endif
-

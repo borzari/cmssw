@@ -71,38 +71,26 @@ elPFIsoValuePU03 = cms.EDProducer("PFCandIsolatorFromDeposits",
    )
 )
 
-elPFIsoValueCharged04 = elPFIsoValueCharged03.clone()
-elPFIsoValueCharged04.deposits[0].deltaR = cms.double(0.4)
+elPFIsoValueCharged04 = elPFIsoValueCharged03.clone(deposits = {0: dict(deltaR = 0.4)} )
+elPFIsoValueChargedAll04 = elPFIsoValueChargedAll03.clone(deposits = {0: dict(deltaR = 0.4)} )
+elPFIsoValueGamma04 = elPFIsoValueGamma03.clone(deposits = {0: dict(deltaR = 0.4)} )
+elPFIsoValueNeutral04 = elPFIsoValueNeutral03.clone(deposits = {0: dict(deltaR = 0.4)} )
+elPFIsoValuePU04 = elPFIsoValuePU03.clone(deposits ={0: dict(deltaR = 0.4)} )
 
-
-elPFIsoValueChargedAll04 = elPFIsoValueChargedAll03.clone()
-elPFIsoValueChargedAll04.deposits[0].deltaR = cms.double(0.4)
-
-elPFIsoValueGamma04 = elPFIsoValueGamma03.clone()
-elPFIsoValueGamma04.deposits[0].deltaR = cms.double(0.4)
-
-
-elPFIsoValueNeutral04 = elPFIsoValueNeutral03.clone()
-elPFIsoValueNeutral04.deposits[0].deltaR = cms.double(0.4)
-
-elPFIsoValuePU04 = elPFIsoValuePU03.clone()
-elPFIsoValuePU04.deposits[0].deltaR = cms.double(0.4)
-
-
-
-electronPFIsolationValuesSequence = cms.Sequence (
-    elPFIsoValueCharged03+
-    elPFIsoValueChargedAll03+
-    elPFIsoValueGamma03+
-    elPFIsoValueNeutral03+
-    elPFIsoValuePU03+
+electronPFIsolationValuesTask = cms.Task(
+    elPFIsoValueCharged03,
+    elPFIsoValueChargedAll03,
+    elPFIsoValueGamma03,
+    elPFIsoValueNeutral03,
+    elPFIsoValuePU03,
     ##############################
-    elPFIsoValueCharged04+
-    elPFIsoValueChargedAll04+
-    elPFIsoValueGamma04+
-    elPFIsoValueNeutral04+
+    elPFIsoValueCharged04,
+    elPFIsoValueChargedAll04,
+    elPFIsoValueGamma04,
+    elPFIsoValueNeutral04,
     elPFIsoValuePU04
 )
+electronPFIsolationValuesSequence = cms.Sequence(electronPFIsolationValuesTask)
 
 #<----------------
 
@@ -177,9 +165,10 @@ gedElPFIsoValuePU03 = cms.EDProducer("PFCandIsolatorFromDeposits",
    )
 )
 
-gedElectronPFIsolationValuesSequence = cms.Sequence (
-    gedElPFIsoValueCharged03+
-    gedElPFIsoValueChargedAll03+
-    gedElPFIsoValueGamma03+
-    gedElPFIsoValueNeutral03+
+gedElectronPFIsolationValuesTask = cms.Task(
+    gedElPFIsoValueCharged03,
+    gedElPFIsoValueChargedAll03,
+    gedElPFIsoValueGamma03,
+    gedElPFIsoValueNeutral03,
     gedElPFIsoValuePU03 )
+gedElectronPFIsolationValuesSequence = cms.Sequence(gedElectronPFIsolationValuesTask)

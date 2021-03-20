@@ -1,26 +1,33 @@
 import FWCore.ParameterSet.Config as cms
 
-from Configuration.StandardSequences.Eras import eras
-process = cms.Process("L1TStage2EmulatorDQM", eras.Run2_2017)
+import sys
+from Configuration.Eras.Era_Run3_cff import Run3
+process = cms.Process("L1TStage2EmulatorDQM", Run3)
+
+unitTest = False
+if 'unitTest=True' in sys.argv:
+    unitTest=True
 
 #--------------------------------------------------
 # Event Source and Condition
 
-# Live Online DQM in P5
-process.load("DQM.Integration.config.inputsource_cfi")
-process.load("DQM.Integration.config.FrontierCondition_GT_cfi")
-# Due to the GT override in the above include, we have trouble with
-# conflicting CaloParams from stage1 and stage2.  This workaround
-# can go away once either the es_prefer is removed from DQM or the
-# new L1TCaloStage2ParamsRcd is integrated into CMSSW.
-if 'es_prefer_GlobalTag' in process.__dict__:
-    process.__dict__.pop('es_prefer_GlobalTag')
-    process._Process__esprefers.pop('es_prefer_GlobalTag')
+if unitTest:
+    process.load("DQM.Integration.config.unittestinputsource_cfi")
+    from DQM.Integration.config.unittestinputsource_cfi import options
+else:
+    # Live Online DQM in P5
+    process.load("DQM.Integration.config.inputsource_cfi")
+    from DQM.Integration.config.inputsource_cfi import options
 
 # Testing in lxplus
 #process.load("DQM.Integration.config.fileinputsource_cfi")
-#process.load("DQM.Integration.config.FrontierCondition_GT_Offline_cfi") 
+#from DQM.Integration.config.fileinputsource_cfi import options
 
+# Required to load Global Tag
+process.load("DQM.Integration.config.FrontierCondition_GT_cfi")
+
+# required for EMTF emulator
+process.load('Configuration.StandardSequences.MagneticField_cff')
 # Required to load EcalMappingRecord
 process.load("Configuration.StandardSequences.GeometryRecoDB_cff")
 
@@ -31,17 +38,36 @@ process.load("DQM.Integration.config.environment_cfi")
 
 process.dqmEnv.subSystemFolder = "L1TEMU"
 process.dqmSaver.tag = "L1TEMU"
-process.DQMStore.referenceFileName = "/dqmdata/dqm/reference/l1temu_reference.root"
+process.dqmSaver.runNumber = options.runNumber
+process.dqmSaverPB.tag = "L1TEMU"
+process.dqmSaverPB.runNumber = options.runNumber
 
 process.dqmEndPath = cms.EndPath(
     process.dqmEnv *
-    process.dqmSaver
+    process.dqmSaver *
+    process.dqmSaverPB
 )
 
 #--------------------------------------------------
 # Standard Unpacking Path
 
 process.load("Configuration.StandardSequences.RawToDigi_Data_cff")    
+
+# remove unneeded unpackers
+process.RawToDigi.remove(process.ecalDigis)
+process.RawToDigi.remove(process.ecalPreshowerDigis)
+process.RawToDigi.remove(process.hcalDigis)
+process.RawToDigi.remove(process.muonCSCDigis)
+process.RawToDigi.remove(process.muonDTDigis)
+process.RawToDigi.remove(process.siPixelDigis)
+process.RawToDigi.remove(process.siStripDigis)
+process.RawToDigi.remove(process.castorDigis)
+process.RawToDigi.remove(process.scalersRawToDigi)
+process.RawToDigi.remove(process.tcdsDigis)
+process.RawToDigi.remove(process.totemTriggerRawToDigi)
+process.RawToDigi.remove(process.totemRPRawToDigi)
+process.RawToDigi.remove(process.ctppsDiamondRawToDigi)
+process.RawToDigi.remove(process.ctppsPixelDigis)
 
 process.rawToDigiPath = cms.Path(process.RawToDigi)
 
@@ -66,12 +92,10 @@ process.selfFatEventFilter = cms.EDFilter("HLTL1NumberFilter",
 process.load("DQM.L1TMonitor.L1TStage2Emulator_cff")
 
 process.l1tEmulatorMonitorPath = cms.Path(
-    process.l1tStage2Unpack  +
     process.Stage2L1HardwareValidation +
     process.l1tStage2EmulatorOnlineDQM +
     process.hltFatEventFilter +
 #    process.selfFatEventFilter +
-    process.l1tStage2UnpackValidationEvents  +
     process.Stage2L1HardwareValidationForValidationEvents +
     process.l1tStage2EmulatorOnlineDQMValidationEvents
     )
@@ -82,9 +106,6 @@ process.l1tEmulatorMonitorPath = cms.Path(
 #process.gmtParams.caloInputsMasked = cms.bool(True) # Disable uGMT calo inputs like in the online configuration
 #process.load("L1Trigger.L1TGlobal.hackConditions_cff")
 process.load("L1Trigger.L1TGlobal.GlobalParameters_cff")
-
-# 2017 EMTF emulator uses payloads and forests from DB, but not yet in GT
-process.load("L1Trigger.L1TMuonEndCap.fakeEmtfParams_2017_MC_cff")
 
 # To get CaloTPGTranscoder
 process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')
@@ -103,36 +124,46 @@ process.l1tStage2EmulatorMonitorClientPath = cms.Path(process.l1tStage2EmulatorM
 
 # Heavy-Ion run
 if (process.runType.getRunType() == process.runType.hi_run):
+    process.onlineMetaDataDigis.onlineMetaDataInputLabel = cms.InputTag("rawDataRepacker")
+    process.onlineMetaDataRawToDigi.onlineMetaDataInputLabel = cms.InputTag("rawDataRepacker")
     process.castorDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.ctppsDiamondRawToDigi.rawDataTag = cms.InputTag("rawDataRepacker")
-    process.ctppsPixelDigis.InputLabel = cms.InputTag("rawDataRepacker")
+    process.ctppsPixelDigis.inputLabel = cms.InputTag("rawDataRepacker")
     process.ecalDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.ecalPreshowerDigis.sourceTag = cms.InputTag("rawDataRepacker")
     process.hcalDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.muonCSCDigis.InputObjects = cms.InputTag("rawDataRepacker")
     process.muonDTDigis.inputLabel = cms.InputTag("rawDataRepacker")
     process.muonRPCDigis.InputLabel = cms.InputTag("rawDataRepacker")
+    process.muonGEMDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.scalersRawToDigi.scalersInputTag = cms.InputTag("rawDataRepacker")
-    process.siPixelDigis.InputLabel = cms.InputTag("rawDataRepacker")
+    process.siPixelDigis.cpu.InputLabel = cms.InputTag("rawDataRepacker")
     process.siStripDigis.ProductLabel = cms.InputTag("rawDataRepacker")
     process.tcdsDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.tcdsRawToDigi.InputLabel = cms.InputTag("rawDataRepacker")
     process.totemRPRawToDigi.rawDataTag = cms.InputTag("rawDataRepacker")
     process.totemTriggerRawToDigi.rawDataTag = cms.InputTag("rawDataRepacker")
+    process.totemTimingRawToDigi.rawDataTag = cms.InputTag("rawDataRepacker")
     process.csctfDigis.producer = cms.InputTag("rawDataRepacker")
     process.dttfDigis.DTTF_FED_Source = cms.InputTag("rawDataRepacker")
     process.gctDigis.inputLabel = cms.InputTag("rawDataRepacker")
     process.gtDigis.DaqGtInputTag = cms.InputTag("rawDataRepacker")
     process.twinMuxStage2Digis.DTTM7_FED_Source = cms.InputTag("rawDataRepacker")
     process.bmtfDigis.InputLabel = cms.InputTag("rawDataRepacker")
+    process.valBmtfAlgoSel.feds = cms.InputTag("rawDataRepacker")
+    process.omtfStage2Digis.inputLabel = cms.InputTag("rawDataRepacker")
     process.emtfStage2Digis.InputLabel = cms.InputTag("rawDataRepacker")
     process.gmtStage2Digis.InputLabel = cms.InputTag("rawDataRepacker")
-    process.l1tCaloLayer1Digis.fedRawDataLabel = cms.InputTag("rawDataRepacker")
+    process.caloLayer1Digis.InputLabel = cms.InputTag("rawDataRepacker")
     process.caloStage1Digis.InputLabel = cms.InputTag("rawDataRepacker")
     process.caloStage2Digis.InputLabel = cms.InputTag("rawDataRepacker")
     process.simHcalTriggerPrimitiveDigis.InputTagFEDRaw = cms.InputTag("rawDataRepacker")
+    process.l1tdeStage2CaloLayer1.fedRawDataLabel = cms.InputTag("rawDataRepacker")
     process.gtStage2Digis.InputLabel = cms.InputTag("rawDataRepacker")
     process.selfFatEventFilter.rawInput = cms.InputTag("rawDataRepacker")
+    process.rpcTwinMuxRawToDigi.inputTag = cms.InputTag("rawDataRepacker")
+    process.rpcCPPFRawToDigi.inputTag = cms.InputTag("rawDataRepacker")
+    process.hltFatEventFilter.HLTPaths.append('HLT_HIPhysics_v*')
 
 #--------------------------------------------------
 # L1T Emulator Online DQM Schedule

@@ -1,8 +1,6 @@
-
 from HLTriggerOffline.Tau.Validation.HLTTauPostValidation_cfi import *
 from HLTriggerOffline.Muon.HLTMuonPostVal_cff import *
 from HLTriggerOffline.Egamma.EgammaPostProcessor_cfi import *
-from HLTriggerOffline.Top.topHLTValidationHarvest_cff import *
 from HLTriggerOffline.B2G.b2gHLTValidationHarvest_cff import *
 from HLTriggerOffline.HeavyFlavor.heavyFlavorValidationHarvestingSequence_cff import *
 from HLTriggerOffline.JetMET.Validation.JetMETPostProcessor_cff import *
@@ -27,7 +25,6 @@ hltpostvalidation = cms.Sequence(
     +EgammaPostVal
     + postProcessorHLTgsfTrackingSequence
     + postProcessorHLTmuonTrackingSequence
-    +topHLTriggerValidationHarvest
     +heavyFlavorValidationHarvestingSequence
     +JetMETPostVal
     #+HLTAlCaPostVal
@@ -44,13 +41,14 @@ from Configuration.Eras.Modifier_phase1Pixel_cff import phase1Pixel
 
 # fastsim customs
 from Configuration.Eras.Modifier_fastSim_cff import fastSim
-if fastSim.isChosen():
-    hltpostvalidation.remove(postProcessorHLTtrackingSequence)
-    hltpostvalidation.remove(postProcessorHLTvertexing)
-    hltpostvalidation.remove(postProcessorHLTgsfTrackingSequence)
-    hltpostvalidation.remove(postProcessorHLTmuonTrackingSequence)
-    # remove this:     +hltvalidationqt ?
-    # remove this:    +hltExoticaPostProcessors ?
+fastSim.toReplaceWith(hltpostvalidation, hltpostvalidation.copyAndExclude([
+    postProcessorHLTtrackingSequence,
+    postProcessorHLTvertexing,
+    postProcessorHLTgsfTrackingSequence,
+    postProcessorHLTmuonTrackingSequence
+    # remove this:    hltvalidationqt ?
+    # remove this:    hltExoticaPostProcessors ?
+]))
     
 hltpostvalidation_preprod = cms.Sequence( 
     postProcessorHLTtrackingSequence

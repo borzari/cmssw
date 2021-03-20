@@ -1,0 +1,20 @@
+<use name="CommonTools/Utils"/>
+<use name="RecoLocalCalo/HGCalRecProducers"/>
+<use name="RecoLocalCalo/HGCalRecAlgos"/>
+<use name="FWCore/Framework"/>
+<use name="FWCore/ParameterSet"/>
+<use name="FWCore/PluginManager"/>
+<use name="DataFormats/CaloRecHit"/>
+<use name="DataFormats/L1Trigger"/>
+<use name="DataFormats/Candidate"/>
+<use name="DataFormats/ParticleFlowCandidate"/>
+<use name="DataFormats/HGCalReco"/>
+<use name="FWCore/MessageLogger"/>
+<use name="DataFormats/TrackReco"/>
+<use name="TrackingTools/Records"/>
+<use name="PhysicsTools/TensorFlow"/>
+<use name="RecoHGCal/TICL"/>
+<use name="RecoParticleFlow/PFProducer"/>
+<library file="*.cc" name="RecoHGCalTICLPlugins">
+  <flags EDM_PLUGIN="1"/>
+</library>

@@ -12,7 +12,7 @@
 #include "FWCore/Framework/interface/DependentRecordImplementation.h"
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
 
-#include "boost/mpl/vector.hpp"
+#include "FWCore/Utilities/interface/mplVector.h"
 
 #include "CondFormats/AlignmentRecord/interface/RPRealAlignmentRecord.h"
 
@@ -20,10 +20,8 @@
  * \ingroup TotemRPGeometry
  * \brief Event setup record containing the real (actual) geometry information.
  **/
-class VeryForwardRealGeometryRecord : public edm::eventsetup::DependentRecordImplementation
-						   <VeryForwardRealGeometryRecord, boost::mpl::vector<IdealGeometryRecord, RPRealAlignmentRecord /*, ... */> >
-{
-};
+class VeryForwardRealGeometryRecord : public edm::eventsetup::DependentRecordImplementation<
+                                          VeryForwardRealGeometryRecord,
+                                          edm::mpl::Vector<IdealGeometryRecord, RPRealAlignmentRecord /*, ... */> > {};
 
 #endif
-

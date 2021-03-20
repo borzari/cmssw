@@ -1,6 +1,5 @@
 import FWCore.ParameterSet.Config as cms
 
-from RecoLocalTracker.SiPixelRecHits.PixelCPEParmError_cfi import *
 from RecoLocalTracker.SiStripRecHitConverter.StripCPEfromTrackAngle_cfi import *
 from RecoLocalTracker.SiStripRecHitConverter.SiStripRecHitMatcher_cfi import *
 from RecoTracker.TransientTrackingRecHit.TransientTrackingRecHitBuilder_cfi import *
@@ -64,15 +63,17 @@ pixelTracks = _pixelTracks.clone(
 )
 trackingLowPU.toModify(pixelTracks, SeedingHitSets = "pixelTracksHitTriplets")
 
-pixelTracksSequence = cms.Sequence(
-    pixelTracksTrackingRegions +
-    pixelFitterByHelixProjections +
-    pixelTrackFilterByKinematics +
-    pixelTracksSeedLayers +
-    pixelTracksHitDoublets +
-    pixelTracksHitQuadruplets +
+pixelTracksTask = cms.Task(
+    pixelTracksTrackingRegions,
+    pixelFitterByHelixProjections,
+    pixelTrackFilterByKinematics,
+    pixelTracksSeedLayers,
+    pixelTracksHitDoublets,
+    pixelTracksHitQuadruplets,
     pixelTracks
 )
-_pixelTracksSequence_lowPU = pixelTracksSequence.copy()
-_pixelTracksSequence_lowPU.replace(pixelTracksHitQuadruplets, pixelTracksHitTriplets)
-trackingLowPU.toReplaceWith(pixelTracksSequence, _pixelTracksSequence_lowPU)
+_pixelTracksTask_lowPU = pixelTracksTask.copy()
+_pixelTracksTask_lowPU.replace(pixelTracksHitQuadruplets, pixelTracksHitTriplets)
+trackingLowPU.toReplaceWith(pixelTracksTask, _pixelTracksTask_lowPU)
+
+pixelTracksSequence = cms.Sequence(pixelTracksTask)

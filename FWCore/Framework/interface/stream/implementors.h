@@ -4,7 +4,7 @@
 //
 // Package:     FWCore/Framework
 // Class  :     implementors
-// 
+//
 /**\file implementors.h "FWCore/Framework/interface/stream/implementors.h"
 
  Description: Base classes used to implement the interfaces for the edm::stream::* module  abilities
@@ -22,6 +22,7 @@
 #include <memory>
 
 // user include files
+#include "FWCore/Framework/interface/stream/EDProducerBase.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Utilities/interface/StreamID.h"
 #include "FWCore/Utilities/interface/RunIndex.h"
@@ -29,61 +30,82 @@
 
 // forward declarations
 namespace edm {
-  
+
+  class WaitingTaskWithArenaHolder;
+
   namespace stream {
     namespace impl {
       class EmptyType {};
-      
-      
+
       template <typename C>
       class GlobalCacheHolder {
       public:
         GlobalCacheHolder() = default;
-        GlobalCacheHolder( GlobalCacheHolder<C> const&) = delete;
+        GlobalCacheHolder(GlobalCacheHolder<C> const&) = delete;
         GlobalCacheHolder<C>& operator=(GlobalCacheHolder<C> const&) = delete;
 
-        void setGlobalCache(C const* iCache) {
-          cache_=iCache;
-        }
+        void setGlobalCache(C const* iCache) { cache_ = iCache; }
+
       protected:
         C const* globalCache() const { return cache_; }
+
       private:
         C const* cache_;
       };
-      
+
+      template <typename C>
+      class InputProcessBlockCacheHolder {
+      public:
+        InputProcessBlockCacheHolder() = default;
+        InputProcessBlockCacheHolder(InputProcessBlockCacheHolder const&) = delete;
+        InputProcessBlockCacheHolder& operator=(InputProcessBlockCacheHolder const&) = delete;
+        //void setProcessBlockCache(C const* iCache) { cache_ = iCache; }
+
+      protected:
+        //C const* inputProcessBlockCache() const { return cache_; }
+
+      private:
+        //C const* cache_;
+      };
+
       template <typename C>
       class RunCacheHolder {
       public:
         RunCacheHolder() = default;
-        RunCacheHolder( RunCacheHolder<C> const&) = delete;
+        RunCacheHolder(RunCacheHolder<C> const&) = delete;
         RunCacheHolder<C>& operator=(RunCacheHolder<C> const&) = delete;
-        void setRunCache(C const* iCache) { cache_=iCache; }
+        void setRunCache(C const* iCache) { cache_ = iCache; }
+
       protected:
         C const* runCache() const { return cache_; }
+
       private:
         C const* cache_;
       };
-      
+
       template <typename C>
       class LuminosityBlockCacheHolder {
       public:
         LuminosityBlockCacheHolder() = default;
-        LuminosityBlockCacheHolder( LuminosityBlockCacheHolder<C> const&) = delete;
+        LuminosityBlockCacheHolder(LuminosityBlockCacheHolder<C> const&) = delete;
         LuminosityBlockCacheHolder<C>& operator=(LuminosityBlockCacheHolder<C> const&) = delete;
-        void setLuminosityBlockCache(C const* iCache) { cache_=iCache; }
+        void setLuminosityBlockCache(C const* iCache) { cache_ = iCache; }
+
       protected:
         C const* luminosityBlockCache() const { return cache_; }
+
       private:
         C const* cache_;
       };
-      
+
       template <typename C>
-      class RunSummaryCacheHolder  {
+      class RunSummaryCacheHolder {
       public:
         RunSummaryCacheHolder() = default;
-        RunSummaryCacheHolder( RunSummaryCacheHolder<C> const&) = delete;
+        RunSummaryCacheHolder(RunSummaryCacheHolder<C> const&) = delete;
         RunSummaryCacheHolder<C>& operator=(RunSummaryCacheHolder<C> const&) = delete;
         virtual ~RunSummaryCacheHolder() noexcept(false) {}
+
       private:
         virtual void endRunSummary(edm::Run const&, edm::EventSetup const&, C*) const = 0;
       };
@@ -92,33 +114,60 @@ namespace edm {
       class LuminosityBlockSummaryCacheHolder {
       public:
         LuminosityBlockSummaryCacheHolder() = default;
-        LuminosityBlockSummaryCacheHolder( LuminosityBlockSummaryCacheHolder<C> const&) = delete;
+        LuminosityBlockSummaryCacheHolder(LuminosityBlockSummaryCacheHolder<C> const&) = delete;
         LuminosityBlockSummaryCacheHolder<C>& operator=(LuminosityBlockSummaryCacheHolder<C> const&) = delete;
         virtual ~LuminosityBlockSummaryCacheHolder() noexcept(false) {}
+
       private:
-        
         virtual void endLuminosityBlockSummary(edm::LuminosityBlock const&, edm::EventSetup const&, C*) const = 0;
       };
 
-      
-      class BeginRunProducer{
+      class WatchProcessBlock {
+      public:
+        WatchProcessBlock() = default;
+        WatchProcessBlock(WatchProcessBlock const&) = delete;
+        WatchProcessBlock& operator=(WatchProcessBlock const&) = delete;
+
+        ///requires the following be defined in the inheriting class
+        ///static void beginProcessBlockProduce(edm::ProcessBlock const&, GlobalCache*);
+      };
+
+      class BeginProcessBlockProducer {
+      public:
+        BeginProcessBlockProducer() = default;
+        BeginProcessBlockProducer(BeginProcessBlockProducer const&) = delete;
+        BeginProcessBlockProducer& operator=(BeginProcessBlockProducer const&) = delete;
+
+        ///requires the following be defined in the inheriting class
+        ///static void beginProcessBlockProduce(edm::ProcessBlock&, GlobalCache*);
+      };
+
+      class EndProcessBlockProducer {
+      public:
+        EndProcessBlockProducer() = default;
+        EndProcessBlockProducer(EndProcessBlockProducer const&) = delete;
+        EndProcessBlockProducer& operator=(EndProcessBlockProducer const&) = delete;
+
+        ///requires the following be defined in the inheriting class
+        /// static void endProcessBlockProduce(edm::ProcessBlock&, GlobalCache*)
+      };
+
+      class BeginRunProducer {
       public:
         BeginRunProducer() = default;
-        BeginRunProducer( BeginRunProducer const&) = delete;
+        BeginRunProducer(BeginRunProducer const&) = delete;
         BeginRunProducer& operator=(BeginRunProducer const&) = delete;
 
         ///requires the following be defined in the inheriting class
         ///static void globalBeginRunProduce(edm::Run&, edm::EventSetup const&, RunContext const* );
       };
-      
+
       class EndRunProducer {
       public:
         EndRunProducer() = default;
-        EndRunProducer( EndRunProducer const&) = delete;
+        EndRunProducer(EndRunProducer const&) = delete;
         EndRunProducer& operator=(EndRunProducer const&) = delete;
-        
-      private:
-        
+
         ///requires the following be defined in the inheriting class
         /// static void globalEndRunProduce(edm::Run&, edm::EventSetup const&, RunContext const* )
       };
@@ -126,27 +175,46 @@ namespace edm {
       class BeginLuminosityBlockProducer {
       public:
         BeginLuminosityBlockProducer() = default;
-        BeginLuminosityBlockProducer( BeginLuminosityBlockProducer const&) = delete;
+        BeginLuminosityBlockProducer(BeginLuminosityBlockProducer const&) = delete;
         BeginLuminosityBlockProducer& operator=(BeginLuminosityBlockProducer const&) = delete;
-        
-      private:
+
         ///requires the following be defined in the inheriting class
         ///static void globalBeginLuminosityBlockProduce(edm::LuminosityBlock&, edm::EventSetup const&, LuminosityBlockContext const*)
       };
-      
+
       class EndLuminosityBlockProducer {
       public:
         EndLuminosityBlockProducer() = default;
-        EndLuminosityBlockProducer( EndLuminosityBlockProducer const&) = delete;
+        EndLuminosityBlockProducer(EndLuminosityBlockProducer const&) = delete;
         EndLuminosityBlockProducer& operator=(EndLuminosityBlockProducer const&) = delete;
-        
-      private:
+
         ///requires the following be defined in the inheriting class
         ///static void globalEndLuminosityBlockProduce(edm::LuminosityBlock&, edm::EventSetup const&, LuminosityBlockContext const*)
       };
-    }
-  }
-}
 
+      class ExternalWork {
+      public:
+        ExternalWork() = default;
+        ExternalWork(ExternalWork const&) = delete;
+        ExternalWork& operator=(ExternalWork const&) = delete;
+        virtual ~ExternalWork() noexcept(false){};
+
+        virtual void acquire(Event const&, edm::EventSetup const&, WaitingTaskWithArenaHolder) = 0;
+      };
+
+      class Accumulator : public EDProducerBase {
+      public:
+        Accumulator() = default;
+        Accumulator(Accumulator const&) = delete;
+        Accumulator& operator=(Accumulator const&) = delete;
+        ~Accumulator() noexcept(false) override{};
+
+        virtual void accumulate(Event const& ev, EventSetup const& es) = 0;
+
+        void produce(Event& ev, EventSetup const& es) final { accumulate(ev, es); }
+      };
+    }  // namespace impl
+  }    // namespace stream
+}  // namespace edm
 
 #endif

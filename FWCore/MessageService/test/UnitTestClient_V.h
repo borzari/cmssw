@@ -3,6 +3,7 @@
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
@@ -12,67 +13,44 @@ namespace edm {
   class ParameterSet;
 }
 
+namespace edmtest {
 
-namespace edmtest
-{
+  class UTC_V1
+      : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one::WatchLuminosityBlocks, edm::WatchProcessBlock> {
+  public:
+    explicit UTC_V1(edm::ParameterSet const& p) : ev(0) { identifier = p.getUntrackedParameter<int>("identifier", 99); }
 
-class UTC_V1
-  : public edm::EDAnalyzer
-{
-public:
-  explicit
-    UTC_V1( edm::ParameterSet const & p) : ev(0)
-  { 
-    identifier = p.getUntrackedParameter<int> ("identifier", 99);
-  }
+    ~UTC_V1() override {}
 
-  virtual
-    ~UTC_V1()
-  { }
+    void analyze(edm::Event const& e, edm::EventSetup const& c) override;
 
-  virtual
-    void analyze( edm::Event      const & e
-                , edm::EventSetup const & c
-                );
+    void beginJob() override;
+    void beginRun(edm::Run const&, edm::EventSetup const&) override;
+    void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
+    void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override {}
+    void endRun(edm::Run const&, edm::EventSetup const&) override {}
 
-  virtual void beginJob ();
-  virtual void beginRun (edm::Run const&, edm::EventSetup const&);
-  virtual void beginLuminosityBlock
-  		(edm::LuminosityBlock const&, edm::EventSetup const&);
+    void beginProcessBlock(edm::ProcessBlock const&) override;
+    void endProcessBlock(edm::ProcessBlock const&) override;
 
+  private:
+    int identifier;
+    int ev;
+  };
 
+  class UTC_V2 : public edm::EDAnalyzer {
+  public:
+    explicit UTC_V2(edm::ParameterSet const& p) : ev(0) { identifier = p.getUntrackedParameter<int>("identifier", 98); }
 
-private:
-  int identifier;
-  int ev;
-};
+    ~UTC_V2() override {}
 
-class UTC_V2
-  : public edm::EDAnalyzer
-{
-public:
-  explicit
-    UTC_V2( edm::ParameterSet const & p) : ev(0)
-  { 
-    identifier = p.getUntrackedParameter<int> ("identifier", 98);
-  }
+    void analyze(edm::Event const& e, edm::EventSetup const& c) override;
 
-  virtual
-    ~UTC_V2()
-  { }
-
-  virtual
-    void analyze( edm::Event      const & e
-                , edm::EventSetup const & c
-                );
-
-private:
-  int identifier;
-  int ev;
-};
-
+  private:
+    int identifier;
+    int ev;
+  };
 
 }  // namespace edmtest
-
 
 #endif  // FWCore_MessageService_test_UnitTestClient_T_h

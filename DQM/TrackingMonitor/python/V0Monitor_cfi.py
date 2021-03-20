@@ -1,11 +1,14 @@
 import FWCore.ParameterSet.Config as cms
 
-v0Monitor = cms.EDAnalyzer("V0Monitor",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+v0Monitor = DQMEDAnalyzer('V0Monitor',
    FolderName    = cms.string("Tracking/V0Monitoring"),
    v0            = cms.InputTag('generalV0Candidates:Kshort'), # generalV0Candidates:Lambda
    beamSpot      = cms.InputTag('offlineBeamSpot'),
    primaryVertex = cms.InputTag('offlinePrimaryVertices'),
    lumiScalers   = cms.InputTag('scalersRawToDigi'),
+   forceSCAL     = cms.bool(True),
+   metadata      = cms.InputTag('onlineMetaDataDigis'),
    pvNDOF = cms.int32(4),   
    genericTriggerEventPSet = cms.PSet(),
    histoPSet = cms.PSet(
@@ -51,3 +54,7 @@ v0Monitor = cms.EDAnalyzer("V0Monitor",
       ),
    ),
 )
+
+
+from Configuration.Eras.Modifier_run3_common_cff import run3_common
+run3_common.toModify(v0Monitor, forceSCAL = False)

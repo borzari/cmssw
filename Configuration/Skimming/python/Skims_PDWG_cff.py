@@ -12,6 +12,11 @@ skimRawContent = RAWEventContent.clone()
 skimRawContent.outputCommands.append("drop *_MEtoEDMConverter_*_*")
 skimRawContent.outputCommands.append("drop *_*_*_SKIM")
 
+from Configuration.EventContent.EventContent_cff import RAWAODEventContent
+skimRawAODContent = RAWAODEventContent.clone()
+skimRawAODContent.outputCommands.append("drop *_MEtoEDMConverter_*_*")
+skimRawAODContent.outputCommands.append("drop *_*_*_SKIM")
+
 #####################
 # event splitting special skims
 
@@ -166,6 +171,17 @@ SKIMStreamDiPhoton = cms.FilteredStream(
     dataTier = cms.untracked.string('RAW-RECO')
     )
 
+########## B-Parking #########
+from Configuration.Skimming.pwdgSkimBPark_cfi import *
+SkimBParkPath = cms.Path(SkimBPark)
+SKIMStreamSkimBPark = cms.FilteredStream(
+    responsible = 'BPH PAG',
+    name = 'SkimBPark',
+    paths = ( SkimBParkPath ),
+    content = skimContent.outputCommands,
+    selectEvents = cms.untracked.PSet(),
+    dataTier = cms.untracked.string('RAW-RECO')
+)
 
 from Configuration.EventContent.EventContent_cff import AODEventContent
 skimAodContent = AODEventContent.clone()
@@ -182,17 +198,6 @@ skimAodContent.outputCommands.append("drop *_*_*_SKIM")
 #    selectEvents = cms.untracked.PSet(),
 #    dataTier = cms.untracked.string('AOD')
 #    )
-
-from Configuration.Skimming.PDWG_EXOHSCP_cff import *
-EXOHSCPPath = cms.Path(exoticaHSCPSeq)
-SKIMStreamEXOHSCP = cms.FilteredStream(
-    responsible = 'PDWG',
-    name = 'EXOHSCP',
-    paths = (EXOHSCPPath),
-    content = EXOHSCPSkim_EventContent.outputCommands,
-    selectEvents = cms.untracked.PSet(),
-    dataTier = cms.untracked.string('USER')
-    )
 
 from Configuration.Skimming.PDWG_HWWSkim_cff import *
 HWWmmPath = cms.Path(diMuonSequence)
@@ -243,6 +248,17 @@ SKIMStreamEXOMONOPOLE = cms.FilteredStream(
         selectEvents = cms.untracked.PSet(),
         dataTier = cms.untracked.string('USER')
         )
+
+from Configuration.Skimming.PDWG_EXODisplacedJet_cff import *
+EXODisplacedJetPath = cms.Path(EXODisplacedJetSkimSequence)
+SKIMStreamEXODisplacedJet = cms.FilteredStream(
+    responsible = 'PDWG',
+    name = 'EXODisplacedJet',
+    paths = (EXODisplacedJetPath),
+    content = skimRawAODContent.outputCommands,
+    selectEvents = cms.untracked.PSet(),
+    dataTier = cms.untracked.string('USER')
+    )
 
 #####################
 # For the Data on Data Mixing in TSG
@@ -377,3 +393,33 @@ SKIMStreamEXOEMu = cms.FilteredStream(
     dataTier = cms.untracked.string('AOD')
     )
 """
+
+#####################
+
+from Configuration.Skimming.PDWG_MuonPOGSkim_cff import *
+MuonPOGSkimTrackPath = cms.Path(MuonPOGSkimTrackSequence)
+MuonPOGSkimSTAPath   = cms.Path(MuonPOGSkimSTASequence)
+SKIMStreamMuonPOGSkim     = cms.FilteredStream(
+    responsible = 'PDWG',
+    name = 'MuonPOGSkim',
+    paths = (MuonPOGSkimTrackPath,MuonPOGSkimSTAPath),
+    content = MuonPOG_EventContent.outputCommands,
+    selectEvents = cms.untracked.PSet(),
+    dataTier = cms.untracked.string('USER')
+    )
+
+
+MuonPOGJPsiSkimTrackPath = cms.Path(MuonPOGJPsiSkimTrackSequence)
+MuonPOGJPsiSkimSTAPath   = cms.Path(MuonPOGJPsiSkimSTASequence)
+
+SKIMStreamMuonPOGJPsiSkim     = cms.FilteredStream(
+    responsible = 'PDWG',
+    name = 'MuonPOGJPsiSkim',
+    paths = (MuonPOGJPsiSkimTrackPath,MuonPOGJPsiSkimSTAPath),
+    content = MuonPOG_EventContent.outputCommands,
+    selectEvents = cms.untracked.PSet(),
+    dataTier = cms.untracked.string('USER')
+    )
+
+
+#####################

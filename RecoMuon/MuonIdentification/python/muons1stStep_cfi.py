@@ -1,9 +1,9 @@
 import FWCore.ParameterSet.Config as cms
 
-# -*-SH-*-
 from RecoMuon.MuonIdentification.isolation_cff import *
 from RecoMuon.MuonIdentification.caloCompatibility_cff import *
 from RecoMuon.MuonIdentification.MuonTimingFiller_cfi import *
+from RecoMuon.MuonIdentification.MuonShowerDigiFiller_cfi import *
 from RecoMuon.MuonIdentification.TrackerKinkFinder_cfi import *
 from TrackingTools.TrackAssociator.default_cfi import *
 muons1stStep = cms.EDProducer("MuonIdProducer",
@@ -15,10 +15,14 @@ muons1stStep = cms.EDProducer("MuonIdProducer",
     MIdIsoExtractorPSetBlock,
     # MuonTiming
     TimingFillerBlock,
+    # MuonShowerDigi
+    MuonShowerDigiFillerBlock,
     # Kink finder
     TrackerKinkFinderParametersBlock,
 
     fillEnergy = cms.bool(True),
+    storeCrossedHcalRecHits = cms.bool(True),
+
     # OR
     maxAbsPullX = cms.double(3.0),
     maxAbsEta = cms.double(3.0),
@@ -53,6 +57,7 @@ muons1stStep = cms.EDProducer("MuonIdProducer",
     writeIsoDeposits = cms.bool(True),
     minNumberOfMatches = cms.int32(1),
     fillMatching = cms.bool(True),
+    fillShowerDigis = cms.bool(True),
 
     # global fit for candidate p4 requirements
     ptThresholdToFillCandidateP4WithGlobalFit = cms.double(200.0),
@@ -84,12 +89,18 @@ muons1stStep = cms.EDProducer("MuonIdProducer",
 )
 
 from Configuration.Eras.Modifier_run3_GEM_cff import run3_GEM
-run3_GEM.toModify( muons1stStep, TrackAssociatorParameters = dict(useGEM = cms.bool(True) ) )
+run3_GEM.toModify( muons1stStep, TrackAssociatorParameters = dict(useGEM = True ) )
 from Configuration.Eras.Modifier_phase2_muon_cff import phase2_muon
-phase2_muon.toModify( muons1stStep, TrackAssociatorParameters = dict(useME0 = cms.bool(True) ) )
+phase2_muon.toModify( muons1stStep, TrackAssociatorParameters = dict(useME0 = True ) )
+from Configuration.Eras.Modifier_phase2_GE0_cff import phase2_GE0
+phase2_GE0.toModify( muons1stStep, TrackAssociatorParameters = dict(useME0 = False ) )
 
 muonEcalDetIds = cms.EDProducer("InterestingEcalDetIdProducer",
                                 inputCollection = cms.InputTag("muons1stStep")
 )
 
+from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
+pp_on_AA.toModify(muons1stStep, minPt = 0.8)
 
+from Configuration.ProcessModifiers.recoFromReco_cff import recoFromReco
+recoFromReco.toModify(muons1stStep,fillShowerDigis = False)

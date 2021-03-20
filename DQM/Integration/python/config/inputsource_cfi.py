@@ -1,8 +1,10 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import FWCore.ParameterSet.Config as cms
 import FWCore.ParameterSet.VarParsing as VarParsing
 
 import sys
-from dqmPythonTypes import *
+from .dqmPythonTypes import *
 
 options = VarParsing.VarParsing('analysis')
 
@@ -30,6 +32,18 @@ options.register('skipFirstLumis',
                  VarParsing.VarParsing.multiplicity.singleton,
                  VarParsing.VarParsing.varType.bool,
                  "Skip (and ignore the minEventsPerLumi parameter) for the files which have been available at the begining of the processing. ")
+
+options.register('transDelay',
+                 0, #default value, int limit -3
+                 VarParsing.VarParsing.multiplicity.singleton,
+                 VarParsing.VarParsing.varType.int,
+                 "delay in seconds for the commit of the db transaction")
+
+options.register('noDB',
+                 True, # default value
+                 VarParsing.VarParsing.multiplicity.singleton,
+                 VarParsing.VarParsing.varType.bool,
+                 "Don't upload the BeamSpot conditions to the DB")
 
 # Parameters for runType
 
@@ -74,8 +88,8 @@ if not options.inputFiles:
         endOfRunKills  = cms.untracked.bool(endOfRunKills),
     )
 else:
-    print "The list of input files is provided. Disabling discovery and running on everything."
-    files = map(lambda x: "file://" + x, options.inputFiles)
+    print("The list of input files is provided. Disabling discovery and running on everything.")
+    files = ["file://" + x for x in options.inputFiles]
     source = cms.Source("PoolSource",
         fileNames = cms.untracked.vstring(files),
         secondaryFileNames = cms.untracked.vstring()
@@ -88,4 +102,4 @@ else:
 #    secondaryFileNames = cms.untracked.vstring()
 #)
 
-print "Source:", source
+print("Source:", source)

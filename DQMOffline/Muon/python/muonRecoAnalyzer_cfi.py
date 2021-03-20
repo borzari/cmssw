@@ -2,10 +2,16 @@ import FWCore.ParameterSet.Config as cms
 
 from RecoMuon.TrackingTools.MuonServiceProxy_cff import *
 
-muonRecoAnalyzer = cms.EDAnalyzer("MuonRecoAnalyzer",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+muonRecoAnalyzer = DQMEDAnalyzer('MuonRecoAnalyzer',
                                   MuonServiceProxy, 
                                   MuonCollection       = cms.InputTag("muons"),
+                                  inputTagVertex       = cms.InputTag("offlinePrimaryVertices"),
+                                  inputTagBeamSpot     = cms.InputTag("offlineBeamSpot"),
                                   IsminiAOD            = cms.bool( False ),
+                                  doMVA                = cms.bool( False ),
+                                  useGEM               = cms.untracked.bool(False),
+                                  maxGEMhitsSoftMuonMVA = cms.untracked.int32(6),
                                   # histograms parameters
                                   thetaBin = cms.int32(100),
                                   thetaMin = cms.double(0.0),
@@ -44,11 +50,15 @@ muonRecoAnalyzer = cms.EDAnalyzer("MuonRecoAnalyzer",
                                   tunePMax = cms.double(1.0),
                                   folder = cms.string("Muons/MuonRecoAnalyzer")
                                   )
-muonRecoAnalyzer_miniAOD = cms.EDAnalyzer("MuonRecoAnalyzer",
+muonRecoAnalyzer_miniAOD = DQMEDAnalyzer('MuonRecoAnalyzer',
                                           MuonServiceProxy, 
                                           MuonCollection = cms.InputTag("slimmedMuons"),
+                                          inputTagVertex       = cms.InputTag("offlinePrimaryVertices"),
+                                          inputTagBeamSpot     = cms.InputTag("offlineBeamSpot"),
                                           IsminiAOD            = cms.bool( True ),
-                                          
+                                          doMVA                = cms.bool( False ),
+                                          useGEM               = cms.untracked.bool(False),
+                                          maxGEMhitsSoftMuonMVA = cms.untracked.int32(6),
                                           # histograms parameters
                                           thetaBin = cms.int32(100),
                                           thetaMin = cms.double(0.0),
@@ -87,3 +97,11 @@ muonRecoAnalyzer_miniAOD = cms.EDAnalyzer("MuonRecoAnalyzer",
                                           tunePMax = cms.double(1.0),
                                           folder = cms.string("Muons_miniAOD/MuonRecoAnalyzer")
                                           )
+
+from Configuration.Eras.Modifier_run3_GEM_cff import run3_GEM
+run3_GEM.toModify(muonRecoAnalyzer, useGEM=cms.untracked.bool(True))
+run3_GEM.toModify(muonRecoAnalyzer_miniAOD, useGEM=cms.untracked.bool(True))
+
+from Configuration.Eras.Modifier_phase2_GEM_cff import phase2_GEM
+phase2_GEM.toModify(muonRecoAnalyzer, maxGEMhitsSoftMuonMVA=cms.untracked.int32(22))
+phase2_GEM.toModify(muonRecoAnalyzer_miniAOD, maxGEMhitsSoftMuonMVA=cms.untracked.int32(22))

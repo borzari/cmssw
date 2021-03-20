@@ -3,7 +3,8 @@ import FWCore.ParameterSet.Config as cms
 from DQMOffline.Trigger.topMonitoring_cfi import topMonitoring
 
 hltHIGmonitoring = topMonitoring.clone()
-hltHIGmonitoring.FolderName = cms.string('HLT/Higgs/default/')
+#hltHIGmonitoring.FolderName = cms.string('HLT/Higgs/default/')
+hltHIGmonitoring.FolderName = cms.string('HLT/HIG/default/')
 hltHIGmonitoring.histoPSet.lsPSet = cms.PSet(
   nbins = cms.uint32 ( 250 ),
   xmin  = cms.double(    0.),
@@ -51,7 +52,7 @@ hltHIGmonitoring.histoPSet.DRPSet = cms.PSet(
    xmax  = cms.double( 6.0 ),
 )
 
-hltHIGmonitoring.applyleptonPVcuts = cms.bool(True)
+hltHIGmonitoring.applyLeptonPVcuts = True
 hltHIGmonitoring.leptonPVcuts = cms.PSet(
   dxy = cms.double(   0.5  ),
   dz  = cms.double(   1.   ),

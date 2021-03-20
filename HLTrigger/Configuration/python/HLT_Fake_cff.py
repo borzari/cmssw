@@ -1,13 +1,13 @@
-# hltGetConfiguration --cff --data /dev/CMSSW_9_2_0/Fake --type Fake
+# hltGetConfiguration --cff --data /dev/CMSSW_11_3_0/Fake --type Fake
 
-# /dev/CMSSW_9_2_0/Fake/V9 (CMSSW_9_2_14)
+# /dev/CMSSW_11_3_0/Fake/V7 (CMSSW_11_3_0_pre4)
 
 import FWCore.ParameterSet.Config as cms
 
 fragment = cms.ProcessFragment( "HLT" )
 
 fragment.HLTConfigVersion = cms.PSet(
-  tableName = cms.string('/dev/CMSSW_9_2_0/Fake/V9')
+  tableName = cms.string('/dev/CMSSW_11_3_0/Fake/V7')
 )
 
 fragment.streams = cms.PSet(  A = cms.vstring( 'InitialPD' ) )
@@ -41,10 +41,10 @@ fragment.hltTriggerType = cms.EDFilter( "HLTTriggerTypeFilter",
 )
 fragment.hltGtDigis = cms.EDProducer( "L1GlobalTriggerRawToDigi",
     DaqGtFedId = cms.untracked.int32( 813 ),
-    Verbosity = cms.untracked.int32( 0 ),
-    UnpackBxInEvent = cms.int32( 5 ),
+    DaqGtInputTag = cms.InputTag( "rawDataCollector" ),
     ActiveBoardsMask = cms.uint32( 0xffff ),
-    DaqGtInputTag = cms.InputTag( "rawDataCollector" )
+    Verbosity = cms.untracked.int32( 0 ),
+    UnpackBxInEvent = cms.int32( 5 )
 )
 fragment.hltGctDigis = cms.EDProducer( "GctRawToDigi",
     checkHeaders = cms.untracked.bool( False ),
@@ -145,8 +145,8 @@ fragment.hltFEDSelector = cms.EDProducer( "EvFFEDSelector",
 fragment.hltTriggerSummaryAOD = cms.EDProducer( "TriggerSummaryProducerAOD",
     moduleLabelPatternsToSkip = cms.vstring(  ),
     processName = cms.string( "@" ),
-    moduleLabelPatternsToMatch = cms.vstring( 'hlt*' ),
-    throw = cms.bool( False )
+    throw = cms.bool( False ),
+    moduleLabelPatternsToMatch = cms.vstring( 'hlt*' )
 )
 fragment.hltTriggerSummaryRAW = cms.EDProducer( "TriggerSummaryProducerRAW",
     processName = cms.string( "@" )
@@ -186,7 +186,7 @@ fragment.HLTAnalyzerEndpath = cms.EndPath( fragment.hltGtDigis + fragment.hltPre
 fragment.HLTSchedule = cms.Schedule( *(fragment.HLTriggerFirstPath, fragment.HLT_Physics_v1, fragment.HLT_Random_v1, fragment.HLT_ZeroBias_v1, fragment.HLTriggerFinalPath, fragment.HLTAnalyzerEndpath ))
 
 
-# dummyfy hltGetConditions in cff's
+# dummify hltGetConditions in cff's
 if 'hltGetConditions' in fragment.__dict__ and 'HLTriggerFirstPath' in fragment.__dict__ :
     fragment.hltDummyConditions = cms.EDFilter( "HLTBool",
         result = cms.bool( True )

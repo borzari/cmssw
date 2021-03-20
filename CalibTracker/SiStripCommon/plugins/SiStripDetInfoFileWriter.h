@@ -4,7 +4,7 @@
 //
 // Package:    SiStripDetInfoFileWriter
 // Class:      SiStripDetInfoFileWriter
-// 
+//
 /**\class SiStripDetInfoFileWriter SiStripDetInfoFileWriter.cc CalibTracker/SiStripCommon/src/SiStripDetInfoFileWriter.cc
 
  Description: <one line class summary>
@@ -23,25 +23,22 @@
 #include <iostream>
 #include <fstream>
 
+#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
+
 class SiStripDetInfoFileWriter : public edm::EDAnalyzer {
-
 public:
-
   explicit SiStripDetInfoFileWriter(const edm::ParameterSet&);
   ~SiStripDetInfoFileWriter() override;
 
 private:
+  void beginRun(const edm::Run&, const edm::EventSetup& iSetup) override;
 
-  void beginRun(const edm::Run& , const edm::EventSetup& iSetup) override;
-
-  void analyze(const edm::Event &, const edm::EventSetup &) override{};
+  void analyze(const edm::Event&, const edm::EventSetup&) override{};
 
 private:
-
-
-  std::ofstream outputFile_; 
+  std::ofstream outputFile_;
   std::string filePath_;
-
-
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> tkGeomToken_;
 };
 #endif

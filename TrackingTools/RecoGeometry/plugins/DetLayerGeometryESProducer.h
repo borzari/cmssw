@@ -7,14 +7,11 @@
 #include "TrackingTools/DetLayers/interface/DetLayerGeometry.h"
 #include <memory>
 
-class  DetLayerGeometryESProducer: public edm::ESProducer{
- public:
-  DetLayerGeometryESProducer(const edm::ParameterSet & p);
-  ~DetLayerGeometryESProducer() override; 
-  std::shared_ptr<DetLayerGeometry> produce(const RecoGeometryRecord &);
- private:
-  std::shared_ptr<DetLayerGeometry> geometry_;
+class DetLayerGeometryESProducer : public edm::ESProducer {
+public:
+  DetLayerGeometryESProducer(const edm::ParameterSet &p);
+  ~DetLayerGeometryESProducer() override;
+  std::unique_ptr<DetLayerGeometry> produce(const RecoGeometryRecord &);
 };
-
 
 #endif

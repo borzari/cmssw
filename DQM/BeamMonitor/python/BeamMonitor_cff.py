@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
 
-dqmBeamMonitor = cms.EDAnalyzer("BeamMonitor",
+dqmBeamMonitor = DQMEDAnalyzer("BeamMonitor",
                               monitorName = cms.untracked.string('BeamMonitor'),
                               beamSpot = cms.untracked.InputTag('offlineBeamSpot'), ## hltOfflineBeamSpot for HLTMON
                               primaryVertex = cms.untracked.InputTag('offlinePrimaryVertices'),
@@ -11,6 +12,7 @@ dqmBeamMonitor = cms.EDAnalyzer("BeamMonitor",
                               resetPVEveryNLumi = cms.untracked.int32(5),
                               Debug = cms.untracked.bool(False),
                               OnlineMode = cms.untracked.bool(True),
+                              recordName = cms.untracked.string('BeamSpotOnlineHLTObjectsRcd'),
                               BeamFitter = cms.PSet(
                                 Debug = cms.untracked.bool(False),
                                 TrackCollection = cms.untracked.InputTag('generalTracks'),

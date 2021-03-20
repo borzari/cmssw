@@ -4,21 +4,23 @@ from SimG4Core.Configuration.SimG4Core_cff import *
 g4SimHits.Watchers = cms.VPSet(cms.PSet(
         SimG4HGCalValidation = cms.PSet(
             Names = cms.vstring(
-                'HGCalEECell',  
-                'HGCalHECell',
-                'HEScintillator',
+                'HGCalEESensitive',  
+                'HGCalHESiliconSensitive',
+                'HGCalHEScintillatorSensitive',
                 ),
-            Types = cms.vint32(1,1,2),
+            Types = cms.vint32(1,1,1),
             LabelLayerInfo = cms.string("HGCalInfoLayer"),
             ),
         type = cms.string('SimG4HGCalValidation')
         )
                                )
 
-hgcGeomAnalysis = cms.EDAnalyzer("HGCGeometryValidation",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+hgcGeomAnalysis = DQMEDAnalyzer('HGCGeometryValidation',
                                  geometrySource = cms.untracked.vstring(
         'HGCalEESensitive',
         'HGCalHESiliconSensitive',
-        'Hcal'),
+        'HGCalHEScintillatorSensitive'),
                                  g4Source = cms.InputTag("g4SimHits","HGCalInfoLayer"),
+                                 verbosity= cms.int32(0),
                                  )

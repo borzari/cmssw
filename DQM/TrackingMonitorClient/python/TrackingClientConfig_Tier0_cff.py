@@ -60,17 +60,35 @@ trackingOfflineAnalyser = DQMEDHarvester("TrackingOfflineDQM",
     )
 )
 
-trackingQTester = cms.EDAnalyzer("QualityTester",
+from DQMServices.Core.DQMQualityTester import DQMQualityTester
+trackingQTester = DQMQualityTester(
     qtList = cms.untracked.FileInPath('DQM/TrackingMonitorClient/data/tracking_qualitytest_config_tier0.xml'),
     prescaleFactor = cms.untracked.int32(1),                               
     getQualityTestsFromFile = cms.untracked.bool(True)
 )
 
+from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
+pp_on_AA.toModify(trackingQTester,
+                  qtList = cms.untracked.FileInPath('DQM/TrackingMonitorClient/data/tracking_qualitytest_config_tier0_heavyions.xml')
+)
+
 from DQM.TrackingMonitorClient.TrackingEffFromHitPatternClientConfig_cff import trackingEffFromHitPattern
+from DQM.TrackingMonitorClient.TrackingEffFromHitPatternClientConfigZeroBias_cff import trackingEffFromHitPatternZeroBias
 
 from DQM.TrackingMonitorClient.V0MonitoringClient_cff import *
 from DQM.TrackingMonitorClient.primaryVertexResolutionClient_cfi import *
 # Sequence
-TrackingOfflineDQMClient = cms.Sequence(trackingQTester*trackingOfflineAnalyser*trackingEffFromHitPattern*voMonitoringClientSequence*primaryVertexResolutionClient)
 
+#import DQM.TrackingMonitor.TrackEfficiencyMonitor_cfi
+#TrackEffMon_ckf = DQM.TrackingMonitor.TrackEfficiencyMonitor_cfi.TrackEffMon.clone()
+#TrackEffMon_ckf.TKTrackCollection                  = 'ctfWithMaterialTracksP5'
+#TrackEffMon_ckf.AlgoName                           = 'CKFTk'
+#TrackEffMon_ckf.FolderName                         = 'Tracking/TrackParameters/TrackEfficiency'
 
+from DQM.TrackingMonitor.TrackEfficiencyClient_cfi import *
+TrackEffClient.FolderName = 'Tracking/TrackParameters/TrackEfficiency'
+TrackEffClient.AlgoName   = 'CKFTk'
+
+TrackingOfflineDQMClient = cms.Sequence(trackingQTester*trackingOfflineAnalyser*trackingEffFromHitPattern*voMonitoringClientSequence*primaryVertexResolutionClient*TrackEffClient)
+
+TrackingOfflineDQMClientZeroBias = cms.Sequence(trackingQTester*trackingOfflineAnalyser*trackingEffFromHitPatternZeroBias*voMonitoringClientSequence*primaryVertexResolutionClient*TrackEffClient)

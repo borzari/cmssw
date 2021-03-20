@@ -1,7 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 
 # MonitorTrackGlobal
-SiStripMonitorTrack = cms.EDAnalyzer(
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+SiStripMonitorTrack = DQMEDAnalyzer(
     "SiStripMonitorTrack",
 
     TopFolderName = cms.string('SiStrip'),
@@ -37,7 +38,7 @@ SiStripMonitorTrack = cms.EDAnalyzer(
 
     TH1nClustersOff = cms.PSet( Nbinx = cms.int32(100),
                              xmin  = cms.double(-0.5),
-                             xmax  = cms.double(100000.)
+                             xmax  = cms.double(99999.5)
                              ),
 
     TH1ClusterGain = cms.PSet(
@@ -154,4 +155,7 @@ SiStripMonitorTrack = cms.EDAnalyzer(
 
     UseDCSFiltering = cms.bool(True)
 
-    )
+)
+
+from Configuration.Eras.Modifier_run3_common_cff import run3_common
+run3_common.toModify(SiStripMonitorTrack,  TH1nClustersOn = dict(xmax = 5999.5))

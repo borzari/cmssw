@@ -25,6 +25,8 @@ updatedPatJets = cms.EDProducer("PATJetUpdater",
       userFunctions = cms.vstring(),
       userFunctionLabels = cms.vstring()
     ),
+    # sort
+    sort                 = cms.bool(True),
     # jet energy corrections
     addJetCorrFactors    = cms.bool(True),
     jetCorrFactorsSource = cms.VInputTag(cms.InputTag("updatedPatJetCorrFactors") ),
@@ -36,7 +38,8 @@ updatedPatJets = cms.EDProducer("PATJetUpdater",
     # usually the discriminators from the default algos
     # are sufficient
     addTagInfos     = cms.bool(False),
-    tagInfoSources  = cms.VInputTag()
+    tagInfoSources  = cms.VInputTag(),
+    printWarning = cms.bool(True)
 )
 
 

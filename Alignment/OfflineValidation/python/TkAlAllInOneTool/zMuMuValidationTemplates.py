@@ -69,7 +69,15 @@ process.looper = cms.Looper(
 
     # Output settings
     # ---------------
+    # Use compressions settings of TFile
+    # see https://root.cern.ch/root/html534/TFile.html#TFile:SetCompressionSettings
+    # settings = 100 * algorithm + level
+    # level is from 1 (small) to 9 (large compression)
+    # algo: 1 (ZLIB), 2 (LMZA)
+    # see more about compression & performance: https://root.cern.ch/root/html534/guides/users-guide/InputOutput.html#compression-and-performance
+
     OutputFileName = cms.untracked.string("zmumuHisto.root"),
+    compressionSettings = cms.untracked.int32(compressionSettings), 
 
     # BiasType=0 means no bias to muon momenta
     # ----------------------------------------
@@ -155,8 +163,8 @@ process.looper = cms.Looper(
 
     ########## TO BE ENABLED ################################
     # Set the cuts on muons to be used in the fit
-    MinMuonPt = cms.untracked.double(0.),
-    MaxMuonPt = cms.untracked.double(1000.),
+    MinMuonPt = cms.untracked.double(.oO[minpt]Oo.),
+    MaxMuonPt = cms.untracked.double(.oO[maxpt]Oo.),
     MinMuonEtaFirstRange = cms.untracked.double(.oO[etaminneg]Oo.),
     MaxMuonEtaFirstRange = cms.untracked.double(.oO[etamaxneg]Oo.),
     MinMuonEtaSecondRange = cms.untracked.double(.oO[etaminpos]Oo.),
@@ -197,9 +205,9 @@ process.p = cms.Path(
 
 ####################################################################
 ####################################################################
-zMuMuScriptTemplate="""
-#!/bin/bash
+zMuMuScriptTemplate="""#!/bin/bash
 source /afs/cern.ch/cms/caf/setup.sh
+export X509_USER_PROXY=.oO[scriptsdir]Oo./.user_proxy
 
 echo  -----------------------
 echo  Job started at `date`
@@ -211,15 +219,15 @@ export SCRAM_ARCH=.oO[SCRAM_ARCH]Oo.
 eval `scram runtime -sh`
 cd $cwd
 
-rfmkdir -p .oO[datadir]Oo.
-rfmkdir -p .oO[workingdir]Oo.
-rfmkdir -p .oO[logdir]Oo.
+mkdir -p .oO[datadir]Oo.
+mkdir -p .oO[workingdir]Oo.
+mkdir -p .oO[logdir]Oo.
 rm -f .oO[logdir]Oo./*.stdout
 rm -f .oO[logdir]Oo./*.stderr
 
 if [[ $HOSTNAME = lxplus[0-9]*[.a-z0-9]* ]] # check for interactive mode
 then
-    rfmkdir -p .oO[workdir]Oo.
+    mkdir -p .oO[workdir]Oo.
     rm -f .oO[workdir]Oo./*
     cd .oO[workdir]Oo.
 else
@@ -248,17 +256,17 @@ cp  .oO[MuonAnalysis/MomentumScaleCalibration]Oo./test/Macros/RooFit/MultiHistoO
 if [[ .oO[zmumureference]Oo. == *store* ]]; then xrdcp -f .oO[zmumureference]Oo. BiasCheck_Reference.root; else ln -fs .oO[zmumureference]Oo. ./BiasCheck_Reference.root; fi
 root -q -b -l MultiHistoOverlap_.oO[resonance]Oo..C
 
-eos mkdir -p /store/caf/user/$USER/.oO[eosdir]Oo./plots/
+eos mkdir -p /store/group/alca_trackeralign/AlignmentValidation/.oO[eosdir]Oo./plots/
 for RootOutputFile in $(ls *root )
 do
-    xrdcp -f ${RootOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./
-    rfcp ${RootOutputFile}  .oO[workingdir]Oo.
+    xrdcp -f ${RootOutputFile}  root://eoscms//eos/cms/store/group/alca_trackeralign/AlignmentValidation/.oO[eosdir]Oo./
+    cp ${RootOutputFile}  .oO[workingdir]Oo.
 done
 
 mkdir -p .oO[plotsdir]Oo.
 for PngOutputFile in $(ls *png ); do
-    xrdcp -f ${PngOutputFile}  root://eoscms//eos/cms/store/caf/user/$USER/.oO[eosdir]Oo./plots/
-    rfcp ${PngOutputFile}  .oO[plotsdir]Oo.
+    xrdcp -f ${PngOutputFile}  root://eoscms//eos/cms/store/group/alca_trackeralign/AlignmentValidation/.oO[eosdir]Oo./plots/
+    cp ${PngOutputFile}  .oO[plotsdir]Oo.
 done
 
 
@@ -274,7 +282,7 @@ echo  -----------------------
 mergeZmumuPlotsExecution="""
 #merge Z->mumu histograms
 
-rfcp .oO[mergeZmumuPlotsScriptPath]Oo. .
+cp .oO[mergeZmumuPlotsScriptPath]Oo. .
 root -l -x -b -q TkAlMergeZmumuPlots.C++
 
 """
@@ -306,6 +314,6 @@ void TkAlMergeZmumuPlots(){
   TkAlStyle::legendheader = ".oO[legendheader]Oo.";
   TkAlStyle::set(.oO[publicationstatus]Oo., .oO[era]Oo., ".oO[customtitle]Oo.", ".oO[customrighttitle]Oo.");
 
-  MultiHistoOverlapAll_.oO[resonance]Oo.(separatebycommas(filenames), separatebycommas(titles), separatebycommas(colors), separatebycommas(linestyles_new), separatebycommas(markerstyles_new), ".oO[datadir]Oo./.oO[PlotsDirName]Oo.", .oO[switchONfit]Oo.);
+  MultiHistoOverlapAll_.oO[resonance]Oo.(separatebycommas(filenames), separatebycommas(titles), separatebycommas(colors), separatebycommas(linestyles_new), separatebycommas(markerstyles_new), ".oO[datadir]Oo./.oO[PlotsDirName]Oo.", .oO[switchONfit]Oo., .oO[AutoSetRange]Oo., .oO[CustomMinY]Oo., .oO[CustomMaxY]Oo.);
 }
 """

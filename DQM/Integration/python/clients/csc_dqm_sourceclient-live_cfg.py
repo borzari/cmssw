@@ -1,12 +1,8 @@
+from __future__ import print_function
 import FWCore.ParameterSet.Config as cms
+import sys
 
 process = cms.Process("CSCDQMLIVE")
-
-#-------------------------------------------------
-# CSC L1 Emulator Configuration
-#-------------------------------------------------
-
-process.load("L1Trigger.CSCTriggerPrimitives.CSCTPE_setup_cfi")
 
 #-------------------------------------------------
 # DQM Module Configuration
@@ -37,11 +33,22 @@ process.csc2DRecHits.readBadChambers = cms.bool(False)
 #----------------------------
 # Event Source
 #-----------------------------
-# for live online DQM in P5
-process.load("DQM.Integration.config.inputsource_cfi")
+
+unitTest=False
+if 'unitTest=True' in sys.argv:
+  unitTest=True
+
+if unitTest:
+  process.load("DQM.Integration.config.unittestinputsource_cfi")
+  from DQM.Integration.config.unittestinputsource_cfi import options
+else:
+  # for live online DQM in P5
+  process.load("DQM.Integration.config.inputsource_cfi")
+  from DQM.Integration.config.inputsource_cfi import options
 
 # for testing in lxplus
 #process.load("DQM.Integration.config.fileinputsource_cfi")
+#from DQM.Integration.config.fileinputsource_cfi import options
 
 #----------------------------
 # DQM Environment
@@ -54,8 +61,10 @@ process.load("DQM.Integration.config.inputsource_cfi")
 process.load("DQM.Integration.config.environment_cfi")
 process.dqmEnv.subSystemFolder    = "CSC"
 process.dqmSaver.tag = "CSC"
+process.dqmSaver.runNumber = options.runNumber
+process.dqmSaverPB.tag = "CSC"
+process.dqmSaverPB.runNumber = options.runNumber
 
-process.DQMStore.referenceFileName = '/dqmdata/dqm/reference/csc_reference.root'
 
 #process.DQM.collectorHost = 'pccmsdqm02.cern.ch'
 #process.DQM.collectorHost = 'localhost'
@@ -153,8 +162,8 @@ MessageLogger = cms.Service("MessageLogger",
     threshold = cms.untracked.string('ERROR')
   ),
   debugModules = cms.untracked.vstring('CSCMonitormodule'),
-#  destinations = cms.untracked.vstring('detailedInfo', 
-#    'critical', 
+#  destinations = cms.untracked.vstring('detailedInfo',
+#    'critical',
 #    'cout')
 
 )
@@ -163,10 +172,8 @@ MessageLogger = cms.Service("MessageLogger",
 # Sequences
 #--------------------------
 
-#process.p = cms.Path(process.dqmCSCClient+process.dqmEnv+process.dqmSaver)
-# Configuration not working due to process.lctreader
-#process.p = cms.Path(process.dqmCSCClient * process.muonCSCDigis * process.cscTriggerPrimitiveDigis * process.lctreader * process.csc2DRecHits * process.cscSegments * process.cscMonitor + process.dqmEnv + process.dqmSaver)
-process.p = cms.Path(process.dqmCSCClient * process.muonCSCDigis * process.cscTriggerPrimitiveDigis * process.csc2DRecHits * process.cscSegments * process.cscMonitor + process.dqmEnv + process.dqmSaver)
+#process.p = cms.Path(process.dqmCSCClient+process.dqmEnv+process.dqmSaver+process.dqmSaverPB)
+process.p = cms.Path(process.dqmCSCClient * process.muonCSCDigis * process.csc2DRecHits * process.cscSegments * process.cscMonitor + process.dqmEnv + process.dqmSaver + process.dqmSaverPB)
 
 
 process.castorDigis.InputLabel = cms.InputTag("rawDataCollector")
@@ -182,7 +189,7 @@ process.muonCSCDigis.InputObjects = cms.InputTag("rawDataCollector")
 process.muonDTDigis.inputLabel = cms.InputTag("rawDataCollector")
 process.muonRPCDigis.InputLabel = cms.InputTag("rawDataCollector")
 process.scalersRawToDigi.scalersInputTag = cms.InputTag("rawDataCollector")
-process.siPixelDigis.InputLabel = cms.InputTag("rawDataCollector")
+process.siPixelDigis.cpu.InputLabel = cms.InputTag("rawDataCollector")
 process.siStripDigis.ProductLabel = cms.InputTag("rawDataCollector")
 process.cscMonitor.FEDRawDataCollectionTag = cms.InputTag("rawDataCollector")
 process.dqmCSCClient.InputObjects = cms.untracked.InputTag("rawDataCollector")
@@ -191,7 +198,7 @@ process.dqmCSCClient.InputObjects = cms.untracked.InputTag("rawDataCollector")
 # Heavy Ion Specific Fed Raw Data Collection Label
 #--------------------------------------------------
 
-print "Running with run type = ", process.runType.getRunType()
+print("Running with run type = ", process.runType.getRunType())
 
 if (process.runType.getRunType() == process.runType.hi_run):
     process.castorDigis.InputLabel = cms.InputTag("rawDataRepacker")
@@ -207,7 +214,7 @@ if (process.runType.getRunType() == process.runType.hi_run):
     process.muonDTDigis.inputLabel = cms.InputTag("rawDataRepacker")
     process.muonRPCDigis.InputLabel = cms.InputTag("rawDataRepacker")
     process.scalersRawToDigi.scalersInputTag = cms.InputTag("rawDataRepacker")
-    process.siPixelDigis.InputLabel = cms.InputTag("rawDataRepacker")
+    process.siPixelDigis.cpu.InputLabel = cms.InputTag("rawDataRepacker")
     process.siStripDigis.ProductLabel = cms.InputTag("rawDataRepacker")
     process.cscMonitor.FEDRawDataCollectionTag = cms.InputTag("rawDataRepacker")
     process.dqmCSCClient.InputObjects = cms.untracked.InputTag("rawDataRepacker")

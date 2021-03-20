@@ -1,11 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 A moving average function using @guvectorize.
 """
+from __future__ import print_function
 
 # from examples in numba documentaiton
 # http://numba.pydata.org/numba-doc/dev/user/examples.html (0.33.0)
 
+from builtins import range
 import numpy as np
 
 from numba import guvectorize

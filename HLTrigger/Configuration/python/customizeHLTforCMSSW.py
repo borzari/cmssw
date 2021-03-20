@@ -17,50 +17,127 @@ from HLTrigger.Configuration.common import *
 #                     pset.minGoodStripCharge = cms.PSet(refToPSet_ = cms.string('HLTSiStripClusterChargeCutNone'))
 #     return process
 
-# Add new parameters to RecoTrackRefSelector
-def customiseFor19029(process):
-    for producer in producers_by_type(process, "RecoTrackRefSelector"):
-        if not hasattr(producer, "minPhi"):
-            producer.minPhi = cms.double(-3.2)
-            producer.maxPhi = cms.double(3.2)
-    return process
 
-def customiseFor20269(process) :
-    for producer in esproducers_by_type(process, "ClusterShapeHitFilterESProducer"):
-         producer.PixelShapeFile   = cms.string('RecoPixelVertexing/PixelLowPtUtilities/data/pixelShapePhase1_noL1.par')
-         producer.PixelShapeFileL1 = cms.string('RecoPixelVertexing/PixelLowPtUtilities/data/pixelShapePhase1_loose.par')
-    return process
+def customiseHCALFor2018Input(process):
+    """Customise the HLT to run on Run 2 data/MC using the old readout for the HCAL barel"""
 
-# Migrate uGT non-CondDB parameters to new cff: remove StableParameters dependence in favour of GlobalParameters
-def customiseFor19989(process):
-    if hasattr(process,'StableParametersRcdSource'):
-        delattr(process,'StableParametersRcdSource')
-    if hasattr(process,'StableParameters'):
-        delattr(process,'StableParameters')
-    if not hasattr(process,'GlobalParameters'):
-        from L1Trigger.L1TGlobal.GlobalParameters_cff import GlobalParameters
-        process.GlobalParameters = GlobalParameters
-    return process
-
-# new parameter for HCAL method 2 reconstruction
-def customiseFor20422(process):
-    from RecoLocalCalo.HcalRecProducers.HBHEMethod2Parameters_cfi import m2Parameters
     for producer in producers_by_type(process, "HBHEPhase1Reconstructor"):
-        producer.algorithm.applyDCConstraint = m2Parameters.applyDCConstraint
-    for producer in producers_by_type(process, "HcalHitReconstructor"):
-        producer.applyDCConstraint = m2Parameters.applyDCConstraint
+        # switch on the QI8 processing for 2018 HCAL barrel
+        producer.processQIE8 = True
+
+    # adapt CaloTowers threshold for 2018 HCAL barrel with only one depth
+    for producer in producers_by_type(process, "CaloTowersCreator"):
+        producer.HBThreshold1  = 0.7
+        producer.HBThreshold2  = 0.7
+        producer.HBThreshold   = 0.7
+
+    # adapt Particle Flow threshold for 2018 HCAL barrel with only one depth
+    from RecoParticleFlow.PFClusterProducer.particleFlowClusterHBHE_cfi import _thresholdsHB, _thresholdsHEphase1, _seedingThresholdsHB
+
+    logWeightDenominatorHCAL2018 = cms.VPSet(
+        cms.PSet(
+            depths = cms.vint32(1, 2, 3, 4),
+            detector = cms.string('HCAL_BARREL1'),
+            logWeightDenominator = _thresholdsHB
+        ),
+        cms.PSet(
+            depths = cms.vint32(1, 2, 3, 4, 5, 6, 7),
+            detector = cms.string('HCAL_ENDCAP'),
+            logWeightDenominator = _thresholdsHEphase1
+        )
+    )
+
+    for producer in producers_by_type(process, "PFRecHitProducer"):
+        if producer.producers[0].name.value() == 'PFHBHERecHitCreator':
+            producer.producers[0].qualityTests[0].cuts[0].threshold = _thresholdsHB
+
+    for producer in producers_by_type(process, "PFClusterProducer"):
+        if producer.seedFinder.thresholdsByDetector[0].detector.value() == 'HCAL_BARREL1':
+            producer.seedFinder.thresholdsByDetector[0].seedingThreshold = _seedingThresholdsHB
+            producer.initialClusteringStep.thresholdsByDetector[0].gatheringThreshold = _thresholdsHB
+            producer.pfClusterBuilder.recHitEnergyNorms[0].recHitEnergyNorm = _thresholdsHB
+            producer.pfClusterBuilder.positionCalc.logWeightDenominatorByDetector = logWeightDenominatorHCAL2018
+            producer.pfClusterBuilder.allCellsPositionCalc.logWeightDenominatorByDetector = logWeightDenominatorHCAL2018
+
+    for producer in producers_by_type(process, "PFMultiDepthClusterProducer"):
+        producer.pfClusterBuilder.allCellsPositionCalc.logWeightDenominatorByDetector = logWeightDenominatorHCAL2018
+
+    # done
     return process
 
-# Refactor track MVA classifiers
-def customiseFor20429(process):
-    for producer in producers_by_type(process, "TrackMVAClassifierDetached", "TrackMVAClassifierPrompt"):
-        producer.mva.GBRForestLabel = producer.GBRForestLabel
-        producer.mva.GBRForestFileName = producer.GBRForestFileName
-        del producer.GBRForestLabel
-        del producer.GBRForestFileName
-    for producer in producers_by_type(process, "TrackCutClassifier"):
-        del producer.GBRForestLabel
-        del producer.GBRForestFileName
+
+def customiseFor2017DtUnpacking(process):
+    """Adapt the HLT to run the legacy DT unpacking
+    for pre2018 data/MC workflows as the default"""
+
+    if hasattr(process,'hltMuonDTDigis'):
+        process.hltMuonDTDigis = cms.EDProducer( "DTUnpackingModule",
+            useStandardFEDid = cms.bool( True ),
+            maxFEDid = cms.untracked.int32( 779 ),
+            inputLabel = cms.InputTag( "rawDataCollector" ),
+            minFEDid = cms.untracked.int32( 770 ),
+            dataType = cms.string( "DDU" ),
+            readOutParameters = cms.PSet(
+                localDAQ = cms.untracked.bool( False ),
+                debug = cms.untracked.bool( False ),
+                rosParameters = cms.PSet(
+                    localDAQ = cms.untracked.bool( False ),
+                    debug = cms.untracked.bool( False ),
+                    writeSC = cms.untracked.bool( True ),
+                    readDDUIDfromDDU = cms.untracked.bool( True ),
+                    readingDDU = cms.untracked.bool( True ),
+                    performDataIntegrityMonitor = cms.untracked.bool( False )
+                    ),
+                performDataIntegrityMonitor = cms.untracked.bool( False )
+                ),
+            dqmOnly = cms.bool( False )
+        )
+
+    return process
+
+def customisePixelGainForRun2Input(process):
+    """Customise the HLT to run on Run 2 data/MC using the old definition of the pixel calibrations
+
+    Up to 11.0.x, the pixel calibarations were fully specified in the configuration:
+        VCaltoElectronGain      =   47
+        VCaltoElectronGain_L1   =   50
+        VCaltoElectronOffset    =  -60
+        VCaltoElectronOffset_L1 = -670
+
+    Starting with 11.1.x, the calibrations for Run 3 were moved to the conditions, leaving in the configuration only:
+        VCaltoElectronGain      =    1
+        VCaltoElectronGain_L1   =    1
+        VCaltoElectronOffset    =    0
+        VCaltoElectronOffset_L1 =    0
+
+    Since the conditions for Run 2 have not been updated to the new scheme, the HLT configuration needs to be reverted.
+    """
+    # revert the Pixel parameters to be compatible with the Run 2 conditions
+    for producer in producers_by_type(process, "SiPixelClusterProducer"):
+        producer.VCaltoElectronGain      =   47
+        producer.VCaltoElectronGain_L1   =   50
+        producer.VCaltoElectronOffset    =  -60
+        producer.VCaltoElectronOffset_L1 = -670
+
+    return process
+
+
+def customiseFor2018Input(process):
+    """Customise the HLT to run on Run 2 data/MC"""
+    process = customisePixelGainForRun2Input(process)
+    process = customiseHCALFor2018Input(process)
+
+    return process
+
+def customiseFor33104(process):
+    """Customise the HLT menu to remove the unused use_vdt parameters"""
+    for producer in producers_by_type(process, "PrimaryVertexProducer"):
+        if hasattr(producer, "TkClusParameters"):
+            pset = getattr(producer, "TkClusParameters")
+            if hasattr(pset, "TkDAClusParameters"):
+                if hasattr(getattr(pset, "TkDAClusParameters"),"use_vdt"):
+                    del producer.TkClusParameters.TkDAClusParameters.use_vdt
+
     return process
 
 # CMSSW version specific customizations
@@ -69,10 +146,6 @@ def customizeHLTforCMSSW(process, menuType="GRun"):
     # add call to action function in proper order: newest last!
     # process = customiseFor12718(process)
 
-    process = customiseFor19029(process)
-    process = customiseFor20269(process)
-    process = customiseFor19989(process)
-    process = customiseFor20422(process)
-    process = customiseFor20429(process)
+    process = customiseFor33104(process)
 
     return process

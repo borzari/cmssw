@@ -12,15 +12,10 @@
 
 class CSCObjectMapESProducer : public edm::ESProducer {
 public:
-  CSCObjectMapESProducer(const edm::ParameterSet&) {
-    setWhatProduced(this);
-  }
+  CSCObjectMapESProducer(const edm::ParameterSet&) : rpcGeomToken_(setWhatProduced(this).consumes<RPCGeometry>()) {}
 
-  ~CSCObjectMapESProducer() override {
-  }
-
-  std::shared_ptr<CSCObjectMap> produce(MuonGeometryRecord const& record) {
-    return std::make_shared<CSCObjectMap>(record);
+  std::unique_ptr<CSCObjectMap> produce(MuonGeometryRecord const& record) {
+    return std::make_unique<CSCObjectMap>(record.get(rpcGeomToken_));
   }
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -28,6 +23,8 @@ public:
     descriptions.add("cscObjectMapESProducer", desc);
   }
 
+private:
+  const edm::ESGetToken<RPCGeometry, MuonGeometryRecord> rpcGeomToken_;
 };
 
 //define this as a plug-in

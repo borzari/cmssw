@@ -21,6 +21,8 @@ hcalSimParameters = cms.PSet(
         timePhase = cms.double(14.0),
         doSiPMSmearing = cms.bool(False),
         sipmTau = cms.double(0.),
+        threshold_currentTDC = cms.double(-999.),
+        delayQIE = cms.int32(-999),
     ),
     hf2 = cms.PSet(
         readoutFrameSize = cms.int32(4),
@@ -33,6 +35,8 @@ hcalSimParameters = cms.PSet(
         timePhase = cms.double(13.0),
         doSiPMSmearing = cms.bool(False),
         sipmTau = cms.double(0.),
+        threshold_currentTDC = cms.double(-999.),
+        delayQIE = cms.int32(-999),
     ),
     ho = cms.PSet(
         readoutFrameSize = cms.int32(10),
@@ -50,6 +54,8 @@ hcalSimParameters = cms.PSet(
         siPMCode = cms.int32(2),
         doSiPMSmearing = cms.bool(False),
         sipmTau = cms.double(5.),
+        threshold_currentTDC = cms.double(-999.),
+        delayQIE = cms.int32(-999),
     ),
     hb = cms.PSet(
         readoutFrameSize = cms.int32(10),
@@ -67,6 +73,8 @@ hcalSimParameters = cms.PSet(
         timeSmearing = cms.bool(True),
         doSiPMSmearing = cms.bool(False),
         sipmTau = cms.double(0.),
+        threshold_currentTDC = cms.double(-999.),
+        delayQIE = cms.int32(-999),
     ),
     he = cms.PSet(
         readoutFrameSize = cms.int32(10),
@@ -83,6 +91,8 @@ hcalSimParameters = cms.PSet(
         timeSmearing = cms.bool(True),
         doSiPMSmearing = cms.bool(False),
         sipmTau = cms.double(0.),
+        threshold_currentTDC = cms.double(-999.),
+        delayQIE = cms.int32(-999),
     ),
     zdc = cms.PSet(
         readoutFrameSize = cms.int32(10),
@@ -95,6 +105,8 @@ hcalSimParameters = cms.PSet(
         timePhase = cms.double(-4.0),
         doSiPMSmearing = cms.bool(False),
         sipmTau = cms.double(0.),
+        threshold_currentTDC = cms.double(-999.),
+        delayQIE = cms.int32(-999),
     ),
 )
 
@@ -108,8 +120,8 @@ run2_common.toModify( hcalSimParameters,
     ho = dict(
         siPMCode = cms.int32(1)
     ),
-    hf1 = dict( samplingFactor = cms.double(0.67) ),
-    hf2 = dict( samplingFactor = cms.double(0.67) )
+    hf1 = dict( samplingFactor = cms.double(0.335) ),
+    hf2 = dict( samplingFactor = cms.double(0.335) )
 )
 
 from Configuration.Eras.Modifier_run2_HE_2017_cff import run2_HE_2017
@@ -132,13 +144,44 @@ run2_HF_2017.toModify( hcalSimParameters,
               )
 )
 
+from Configuration.Eras.Modifier_run2_HB_2018_cff import run2_HB_2018
+run2_HB_2018.toModify( hcalSimParameters,
+    hb = dict(
+               readoutFrameSize = cms.int32(8), 
+               binOfMaximum     = cms.int32(4)
+              )
+)
+from Configuration.Eras.Modifier_run2_HE_2018_cff import run2_HE_2018
+run2_HE_2018.toModify( hcalSimParameters,
+    he = dict(
+               readoutFrameSize = cms.int32(8), 
+               binOfMaximum     = cms.int32(4),
+               threshold_currentTDC = cms.double(18.7)
+              )
+)
+
+
 from Configuration.Eras.Modifier_run3_HB_cff import run3_HB
 run3_HB.toModify( hcalSimParameters,
     hb = dict(
         doSiPMSmearing = cms.bool(True),
+        threshold_currentTDC = cms.double(18.7),
         sipmTau = cms.double(10.),
     )
 )
+
+from Configuration.Eras.Modifier_run3_common_cff import run3_common
+run3_common.toModify( hcalSimParameters, 
+    hb = dict(
+               readoutFrameSize = cms.int32(10), 
+               binOfMaximum     = cms.int32(6)
+              ),
+    he = dict(
+               readoutFrameSize = cms.int32(10), 
+               binOfMaximum     = cms.int32(6)
+              )
+) 
+
 
 _newFactors = cms.vdouble(
     210.55, 197.93, 186.12, 189.64, 189.63,

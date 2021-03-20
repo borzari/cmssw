@@ -1,5 +1,5 @@
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/global/EDProducer.h"
+#include "FWCore/Framework/interface/stream/EDProducer.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -13,32 +13,33 @@
 #include "DataFormats/MuonDetId/interface/RPCDetId.h"
 #include "RecoLocalMuon/RPCRecHit/interface/DTSegtoRPC.h"
 #include "RecoLocalMuon/RPCRecHit/interface/CSCSegtoRPC.h"
-#include "RecoLocalMuon/RPCRecHit/interface/TracktoRPC.h" 
+#include "RecoLocalMuon/RPCRecHit/interface/TracktoRPC.h"
 
 //
 // class decleration
 //
 
-class RPCPointProducer : public edm::global::EDProducer<> {
-   public:
-      explicit RPCPointProducer(const edm::ParameterSet&);
+class RPCPointProducer : public edm::stream::EDProducer<> {
+public:
+  explicit RPCPointProducer(const edm::ParameterSet&);
 
-   private:
-      void produce(edm::StreamID, edm::Event&, const edm::EventSetup&) const override;
+private:
+  void produce(edm::Event&, const edm::EventSetup&) override;
 
-      const edm::EDGetTokenT<CSCSegmentCollection> cscSegments;
-      const edm::EDGetTokenT<DTRecSegment4DCollection> dt4DSegments;
-      const edm::EDGetTokenT<reco::TrackCollection> tracks;
-      const edm::InputTag tracks_;
+  edm::EDGetTokenT<CSCSegmentCollection> cscSegments;
+  edm::EDGetTokenT<DTRecSegment4DCollection> dt4DSegments;
+  edm::EDGetTokenT<reco::TrackCollection> tracks;
 
-      const bool incldt;
-      const bool inclcsc;
-      const bool incltrack; 
-      const bool debug;
-      const double MinCosAng;
-      const double MaxD;
-      const double MaxDrb4;
-      const double ExtrapolatedRegion;
-      const edm::ParameterSet trackTransformerParam;
+  std::unique_ptr<DTSegtoRPC> dtSegtoRPC;
+  std::unique_ptr<CSCSegtoRPC> cscSegtoRPC;
+  std::unique_ptr<TracktoRPC> tracktoRPC;
+
+  const bool incldt;
+  const bool inclcsc;
+  const bool incltrack;
+  const bool debug;
+  const double MinCosAng;
+  const double MaxD;
+  const double MaxDrb4;
+  const double ExtrapolatedRegion;
 };
-

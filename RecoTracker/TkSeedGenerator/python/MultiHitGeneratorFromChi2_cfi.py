@@ -28,6 +28,6 @@ MultiHitGeneratorFromChi2 = cms.PSet(
 
 from Configuration.Eras.Modifier_peripheralPbPb_cff import peripheralPbPb
 from Configuration.Eras.Modifier_pp_on_XeXe_2017_cff import pp_on_XeXe_2017
-for e in [peripheralPbPb, pp_on_XeXe_2017]:
-    e.toModify(MultiHitGeneratorFromChi2, maxElement = 1000000)
+from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
+(peripheralPbPb | pp_on_XeXe_2017 | pp_on_AA).toModify(MultiHitGeneratorFromChi2, maxElement = 1000000)
 

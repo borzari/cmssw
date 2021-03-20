@@ -10,58 +10,69 @@
 #include "Geometry/Records/interface/CSCRecoGeometryRcd.h"
 #include "Geometry/Records/interface/CSCRecoDigiParametersRcd.h"
 #include "Geometry/Records/interface/MuonGeometryRecord.h"
-#include "Geometry/MuonNumbering/interface/MuonDDDConstants.h"
+#include "Geometry/MuonNumbering/interface/MuonGeometryConstants.h"
 #include "Geometry/CSCGeometryBuilder/src/CSCGeometryParsFromDD.h"
 #include "DetectorDescription/Core/interface/DDCompactView.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
+#include "DetectorDescription/DDCMS/interface/DDCompactView.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 
-class CSCRecoIdealDBLoader : public edm::one::EDAnalyzer<edm::one::WatchRuns>
-{
+class CSCRecoIdealDBLoader : public edm::one::EDAnalyzer<edm::one::WatchRuns> {
 public:
-  CSCRecoIdealDBLoader( edm::ParameterSet const& ) {}
+  CSCRecoIdealDBLoader(edm::ParameterSet const&);
 
   void beginRun(edm::Run const& iEvent, edm::EventSetup const&) override;
   void analyze(edm::Event const& iEvent, edm::EventSetup const&) override {}
   void endRun(edm::Run const& iEvent, edm::EventSetup const&) override {}
+
+private:
+  bool fromDD4Hep_;
 };
 
-void
-CSCRecoIdealDBLoader::beginRun( const edm::Run&, edm::EventSetup const& es) 
-{
-  edm::LogInfo("CSCRecoIdealDBLoader")<<"CSCRecoIdealDBLoader::beginRun";
-  
+CSCRecoIdealDBLoader::CSCRecoIdealDBLoader(const edm::ParameterSet& iC) {
+  fromDD4Hep_ = iC.getUntrackedParameter<bool>("fromDD4Hep", false);
+}
+
+void CSCRecoIdealDBLoader::beginRun(const edm::Run&, edm::EventSetup const& es) {
+  edm::LogInfo("CSCRecoIdealDBLoader") << "CSCRecoIdealDBLoader::beginRun";
+
   RecoIdealGeometry* rig = new RecoIdealGeometry;
   CSCRecoDigiParameters* rdp = new CSCRecoDigiParameters;
   edm::Service<cond::service::PoolDBOutputService> mydbservice;
-  if( !mydbservice.isAvailable() ){
-    edm::LogError("CSCRecoIdealDBLoader")<<"PoolDBOutputService unavailable";
+  if (!mydbservice.isAvailable()) {
+    edm::LogError("CSCRecoIdealDBLoader") << "PoolDBOutputService unavailable";
     return;
   }
 
-  edm::ESTransientHandle<DDCompactView> pDD;
-  edm::ESHandle<MuonDDDConstants> pMNDC;
-  es.get<IdealGeometryRecord>().get( pDD );
-  es.get<MuonNumberingRecord>().get( pMNDC );
-
-  const DDCompactView& cpv = *pDD;
+  edm::ESHandle<MuonGeometryConstants> pMNDC;
   CSCGeometryParsFromDD cscgp;
 
-  cscgp.build( &cpv, *pMNDC, *rig, *rdp );
-
-  if ( mydbservice->isNewTagRequest("CSCRecoGeometryRcd") ) {
-    mydbservice->createNewIOV<RecoIdealGeometry>(rig
-						 , mydbservice->beginOfTime()
-						 , mydbservice->endOfTime()
-						 , "CSCRecoGeometryRcd");
+  if (fromDD4Hep_) {
+    edm::ESTransientHandle<cms::DDCompactView> pDD;
+    es.get<IdealGeometryRecord>().get(pDD);
+    es.get<IdealGeometryRecord>().get(pMNDC);
+    const cms::DDCompactView& cpv = *pDD;
+    cscgp.build(&cpv, *pMNDC, *rig, *rdp);
   } else {
-    edm::LogError("CSCRecoIdealDBLoader")<<"CSCRecoGeometryRcd Tag is already present.";
+    edm::ESTransientHandle<DDCompactView> pDD;
+    es.get<IdealGeometryRecord>().get(pDD);
+    es.get<IdealGeometryRecord>().get(pMNDC);
+    const DDCompactView& cpv = *pDD;
+    cscgp.build(&cpv, *pMNDC, *rig, *rdp);
   }
-  if ( mydbservice->isNewTagRequest("CSCRecoDigiParametersRcd") ) {
-    mydbservice->createNewIOV<CSCRecoDigiParameters>(rdp
-						     , mydbservice->beginOfTime()
-						     , mydbservice->endOfTime()
-						     , "CSCRecoDigiParametersRcd");
+
+  if (mydbservice->isNewTagRequest("CSCRecoGeometryRcd")) {
+    mydbservice->createNewIOV<RecoIdealGeometry>(
+        rig, mydbservice->beginOfTime(), mydbservice->endOfTime(), "CSCRecoGeometryRcd");
   } else {
-    edm::LogError("CSCRecoIdealDBLoader")<<"CSCRecoDigiParametersRcd Tag is already present.";
+    edm::LogError("CSCRecoIdealDBLoader") << "CSCRecoGeometryRcd Tag is already present.";
+  }
+  if (mydbservice->isNewTagRequest("CSCRecoDigiParametersRcd")) {
+    mydbservice->createNewIOV<CSCRecoDigiParameters>(
+        rdp, mydbservice->beginOfTime(), mydbservice->endOfTime(), "CSCRecoDigiParametersRcd");
+  } else {
+    edm::LogError("CSCRecoIdealDBLoader") << "CSCRecoDigiParametersRcd Tag is already present.";
   }
 }
 

@@ -39,3 +39,10 @@ ALCARECOSiStripCalMinBias.TwoBodyDecaySelector.applyMissingETFilter    = False
 
 # Sequence #
 seqALCARECOSiStripCalMinBias = cms.Sequence(ALCARECOSiStripCalMinBiasHLT*DCSStatusForSiStripCalMinBias*ALCARECOSiStripCalMinBias)
+
+## customizations for the pp_on_AA eras
+from Configuration.Eras.Modifier_pp_on_XeXe_2017_cff import pp_on_XeXe_2017
+from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
+(pp_on_XeXe_2017 | pp_on_AA).toModify(ALCARECOSiStripCalMinBiasHLT,
+                                    eventSetupPathsKey='SiStripCalMinBiasHI'
+)

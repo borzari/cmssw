@@ -56,7 +56,6 @@ process.load("DQM.SiStripMonitorClient.RecoForDQM_Cosmic_cff")
 # DQM
 #--------------------------
 process.load("DQM.SiStripMonitorClient.SiStripDQMOnline_cff")
-process.DQMStore.referenceFileName = ''
 
 process.SiStripMonitorCluster.TH1ClusterPos.moduleswitchon = cms.bool(True)
 process.SiStripMonitorCluster.TH1nClusters.layerswitchon  = cms.bool(True)
@@ -73,10 +72,11 @@ process.SiStripMonitorCluster.TH1ClusterWidth.moduleswitchon = cms.bool(False)
 #--------------------------
 
 
-process.stat = cms.EDAnalyzer("SiStripQualityStatistics",
-                              dataLabel = cms.untracked.string(""),
-                              TkMapFileName = cms.untracked.string("TkMapBadComponents.pdf")  #available filetypes: .pdf .png .jpg .svg
-                              )
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+process.stat = DQMEDAnalyzer("SiStripQualityStatistics",
+                             dataLabel = cms.untracked.string(""),
+                             TkMapFileName = cms.untracked.string("TkMapBadComponents.pdf")  #available filetypes: .pdf .png .jpg .svg
+                             )
 
 
 process.p = cms.Path(process.siStripDigis*process.siStripZeroSuppression*process.siStripClusters*process.SiStripMonitorCluster*process.dqmSaver*process.stat)

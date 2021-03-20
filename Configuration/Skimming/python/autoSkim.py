@@ -7,22 +7,26 @@ autoSkim = {
  'MET' : 'HighMET+EXOMONOPOLE+LogError+LogErrorMonitor',
  'SingleElectron' : 'LogError+LogErrorMonitor',
  'SinglePhoton' : 'SinglePhotonJetPlusHOFilter+EXOMONOPOLE+LogError+LogErrorMonitor',
- 'DoubleEG' : 'ZElectron+LogError+LogErrorMonitor',
+ 'DoubleEG' : 'ZElectron+EXOMONOPOLE+LogError+LogErrorMonitor',
+ 'EGamma':'SinglePhotonJetPlusHOFilter+ZElectron+EXOMONOPOLE+LogError+LogErrorMonitor',
  'Tau' : 'LogError+LogErrorMonitor',
- 'SingleMuon' : 'ZMu+MuTau+LogError+LogErrorMonitor',
+ 'SingleMuon' : 'MuonPOGSkim+ZMu+MuTau+LogError+LogErrorMonitor',
  'DoubleMuon' : 'LogError+LogErrorMonitor',
  'MuonEG' : 'TopMuEG+LogError+LogErrorMonitor',
  'DoubleMuonLowMass' : 'BPHSkim+LogError+LogErrorMonitor',
  'MuOnia' : 'BPHSkim+LogError+LogErrorMonitor',
- 'Charmonium' : 'BPHSkim+LogError+LogErrorMonitor',
+ 'Charmonium' : 'MuonPOGJPsiSkim+BPHSkim+LogError+LogErrorMonitor',
  'NoBPTX' : 'EXONoBPTXSkim+LogError+LogErrorMonitor',
  'HcalHPDNoise' : 'LogError+LogErrorMonitor',
  'HcalNZS' : 'LogError+LogErrorMonitor',
  'HLTPhysics' : 'LogError+LogErrorMonitor',
  'ZeroBias' : 'LogError+LogErrorMonitor',
  'Commissioning' : 'EcalActivity+LogError+LogErrorMonitor',
- 'Cosmics':'CosmicSP+CosmicTP+LogError+LogErrorMonitor'
+ 'Cosmics':'CosmicSP+CosmicTP+LogError+LogErrorMonitor',
+ 'ParkingBPH':'SkimBPark+LogError+LogErrorMonitor',
+ 
 }
+#2018 EGamma is a merged datasets of SingleElectron, SinglePhoton, DoubleEG
 
 autoSkimRunI = {
     'MinBias':'MuonTrack+BeamBkg+ValSkim+LogError+HSCPSD',

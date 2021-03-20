@@ -1,9 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 
-# -*-SH-*-
 # include geometry and magnetic field
 # from Geometry.CaloEventSetup.CaloTopology_cfi import *
-# from Geometry.CommonDetUnit.bareGlobalTrackingGeometry_cfi import *
+# from Geometry.CommonTopologies.bareGlobalTrackingGeometry_cfi import *
 # add the SteppingHelixPropagator to the EventSetup
 from TrackPropagation.SteppingHelixPropagator.SteppingHelixPropagatorAny_cfi import *
 from TrackPropagation.SteppingHelixPropagator.SteppingHelixPropagatorAlong_cfi import *
@@ -20,5 +19,5 @@ muons1stStep.fillGlobalTrackQuality = True
 from RecoMuon.MuonIdentification.cosmics_id import *
 
 from RecoMuon.MuonIdentification.muonShowerInformationProducer_cff import *
-muonIdProducerSequence = cms.Sequence(glbTrackQual*muons1stStep*muonEcalDetIds*muonShowerInformation)
-
+muonIdProducerTask = cms.Task(glbTrackQual,muons1stStep,muonEcalDetIds,muonShowerInformation)
+muonIdProducerSequence = cms.Sequence(muonIdProducerTask)

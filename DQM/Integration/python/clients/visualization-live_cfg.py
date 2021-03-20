@@ -1,16 +1,25 @@
-import re,os
+from __future__ import print_function
+import re, os, sys
 import FWCore.ParameterSet.Config as cms
 from Configuration.DataProcessing.GetScenario import getScenario
 
 """
 Example configuration for online reconstruction meant for visualization clients.
 """
-from DQM.Integration.config.inputsource_cfi import options,runType,source
+
+unitTest = False
+if 'unitTest=True' in sys.argv:
+    unitTest=True
+
+if unitTest:
+    from DQM.Integration.config.unittestinputsource_cfi import options, runType, source
+else:
+    from DQM.Integration.config.inputsource_cfi import options, runType, source
 
 # this is needed to map the names of the run-types chosen by DQM to the scenarios, ideally we could converge to the same names
 #scenarios = {'pp_run': 'ppEra_Run2_2016','cosmic_run':'cosmicsEra_Run2_2016','hi_run':'HeavyIons'}
 #scenarios = {'pp_run': 'ppEra_Run2_2016','pp_run_stage1': 'ppEra_Run2_2016','cosmic_run':'cosmicsEra_Run2_2016','cosmic_run_stage1':'cosmicsEra_Run2_2016','hi_run':'HeavyIonsEra_Run2_HI'}
-scenarios = {'pp_run': 'ppEra_Run2_2017','cosmic_run':'cosmicsEra_Run2_2017','hi_run':'HeavyIonsEra_Run2_HI'}
+scenarios = {'pp_run': 'ppEra_Run3','cosmic_run':'cosmicsEra_Run3','hi_run':'ppEra_Run2_2016_pA'}
 
 if not runType.getRunTypeName() in scenarios.keys():
     msg = "Error getting the scenario out of the 'runkey', no mapping for: %s\n"%runType.getRunTypeName()
@@ -18,8 +27,7 @@ if not runType.getRunTypeName() in scenarios.keys():
 
 scenarioName = scenarios[runType.getRunTypeName()]
 
-print "Using scenario:",scenarioName
-
+print("Using scenario:",scenarioName)
 
 try:
     scenario = getScenario(scenarioName)
@@ -29,31 +37,48 @@ except Exception as ex:
     msg += str(ex)
     raise RuntimeError(msg)
 
+# A hack necessary to prevert scenario.visualizationProcessing
+# from overriding the connect string
+from DQM.Integration.config.FrontierCondition_GT_autoExpress_cfi import GlobalTag
+kwds = {
+   'globalTag': GlobalTag.globaltag.value(),
+   'globalTagConnect': GlobalTag.connect.value()
+}
 
-kwds = {}
+# explicitly select the input collection, since we get multiple in online
+from EventFilter.RawDataCollector.rawDataMapperByLabel_cfi import rawDataMapperByLabel
+rawDataMapperByLabel.rawCollectionList = [cms.InputTag("rawDataRepacker")]
+
+
 # example of how to add a filer IN FRONT of all the paths, eg for HLT selection
 #kwds['preFilter'] = 'DQM/Integration/python/config/visualizationPreFilter.hltfilter'
 
-process = scenario.visualizationProcessing(globalTag='DUMMY', writeTiers=['FEVT'], **kwds)
+process = scenario.visualizationProcessing(writeTiers=['FEVT'], **kwds)
+
+if unitTest:
+    process.__dict__['_Process__name'] = "RECONEW"
 
 process.source = source
-process.source.inputFileTransitionsEachEvent = cms.untracked.bool(True)
-process.source.skipFirstLumis                = cms.untracked.bool(True)
-process.source.minEventsPerLumi              = cms.untracked.int32(0)
-process.source.nextLumiTimeoutMillis         = cms.untracked.int32(10000)
-process.source.streamLabel                   = cms.untracked.string('streamDQM')
 
-m = re.search(r"\((\w+)\)", str(source.runNumber))
-runno = str(m.group(1))
-outDir= '/fff/BU0/output/EvD/run'+runno+'/streamEvDOutput'
+if not unitTest:
+    process.source.inputFileTransitionsEachEvent = cms.untracked.bool(True)
+    process.source.skipFirstLumis                = cms.untracked.bool(True)
+    process.source.minEventsPerLumi              = cms.untracked.int32(0)
+    process.source.nextLumiTimeoutMillis         = cms.untracked.int32(10000)
+    process.source.streamLabel                   = cms.untracked.string('streamDQM')
+
+    m = re.search(r"\((\w+)\)", str(source.runNumber))
+    runno = str(m.group(1))
+    outDir= '/fff/BU0/output/EvD/run'+runno+'/streamEvDOutput'
+else:
+    runno = options.runNumber
+    outDir = "./upload"
 
 #create output directory
 try:
     os.makedirs(outDir)
 except:
     pass
-
-process.load("DQM.Integration.config.FrontierCondition_GT_autoExpress_cfi")
 
 process.options = cms.untracked.PSet(
         Rethrow = cms.untracked.vstring('ProductNotFound'),
@@ -70,7 +95,6 @@ del process._Process__outputmodules["FEVToutput"]
 
 process.FEVToutput = cms.OutputModule("JsonWritingTimeoutPoolOutputModule",
     splitLevel = oldo.splitLevel,
-    eventAutoFlushCompressedSize = oldo.eventAutoFlushCompressedSize,
     outputCommands = oldo.outputCommands,
     fileName = oldo.fileName,
     dataset = oldo.dataset,
@@ -88,4 +112,4 @@ if dump:
     psetFile.write(process.dumpPython())
     psetFile.close()
     cmsRun = "cmsRun -e RunVisualizationProcessingCfg.py"
-    print "Now do:\n%s" % cmsRun
+    print("Now do:\n%s" % cmsRun)

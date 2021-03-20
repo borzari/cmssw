@@ -1,8 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 
-ecalSimHitsValidation = cms.EDAnalyzer("EcalSimHitsValidation",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+ecalSimHitsValidation = DQMEDAnalyzer("EcalSimHitsValidation",
     ESHitsCollection = cms.string('EcalHitsES'),
-    outputFile = cms.untracked.string(''),
     verbose = cms.untracked.bool(False),
     moduleLabelMC = cms.string('generatorSmeared'),
     EBHitsCollection = cms.string('EcalHitsEB'),
@@ -11,5 +11,4 @@ ecalSimHitsValidation = cms.EDAnalyzer("EcalSimHitsValidation",
 )
 
 from Configuration.Eras.Modifier_fastSim_cff import fastSim
-if fastSim.isChosen():
-    ecalSimHitsValidation.moduleLabelG4 = cms.string("famosSimHits")
+fastSim.toModify(ecalSimHitsValidation, moduleLabelG4 = "fastSimProducer")

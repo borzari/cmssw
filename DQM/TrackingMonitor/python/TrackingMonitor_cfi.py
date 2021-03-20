@@ -2,7 +2,8 @@ import FWCore.ParameterSet.Config as cms
 
 from DQM.TrackingMonitor.BXlumiParameters_cfi import BXlumiSetup
 
-TrackMon = cms.EDAnalyzer("TrackingMonitor",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+TrackMon = DQMEDAnalyzer('TrackingMonitor',
     
     # input tags
     numCut           = cms.string(" pt >= 1 & quality('highPurity') "),
@@ -66,6 +67,8 @@ TrackMon = cms.EDAnalyzer("TrackingMonitor",
     pvNDOF                              = cms.int32(4),
     pixelCluster4lumi                   = cms.InputTag('siPixelClustersPreSplitting'),
     scal                                = cms.InputTag('scalersRawToDigi'),
+    forceSCAL                           = cms.bool(True),
+    metadata                            = cms.InputTag('onlineMetaDataDigis'),
     useBPixLayer1                       = cms.bool(False),
     minNumberOfPixelsPerCluster         = cms.int32(2), # from DQM/PixelLumi/python/PixelLumiDQM_cfi.py
     minPixelClusterCharge               = cms.double(15000.),
@@ -381,15 +384,31 @@ TrackMon = cms.EDAnalyzer("TrackingMonitor",
     NClusStrMin = cms.double(-0.5),
 
     # NCluster Vs Tracks
-    NTrk2DBin     = cms.int32(50),
-    NTrk2DMax     = cms.double(1999.5),                      
-    NTrk2DMin     = cms.double(-0.5),
-
+    NTrk2D = cms.PSet(
+        NTrk2DBin     = cms.int32(50),
+        NTrk2DMax     = cms.double(1999.5),                      
+        NTrk2DMin     = cms.double(-0.5),
+    ),
     # PU monitoring
+    # Nunmber of Tracks per Primary Vertices
+    NTrkPVtx = cms.PSet(
+        NTrkPVtxBin = cms.int32(100),
+        NTrkPVtxMin = cms.double( 0.),
+        NTrkPVtxMax = cms.double(100.)
+    ),
+
     # Nunmber of Good Primary Vertices
-    GoodPVtxBin = cms.int32(200),
-    GoodPVtxMin = cms.double( 0.),
-    GoodPVtxMax = cms.double(200.),
+    SumPtPVtx = cms.PSet(
+        SumPtPVtxBin = cms.int32(100),
+        SumPtPVtxMin = cms.double( 0.),
+        SumPtPVtxMax = cms.double(500.)
+    ),
+    # Nunmber of Good Primary Vertices
+    GoodPVtx = cms.PSet(
+        GoodPVtxBin = cms.int32(200),
+        GoodPVtxMin = cms.double( 0.),
+        GoodPVtxMax = cms.double(200.)
+    ),
 
     LUMIBin  = cms.int32 ( 300 ),   # irrelevant
     LUMIMin  = cms.double(  200.),
@@ -413,14 +432,27 @@ LongDCAMax = cms.double(8.0),
 )
 
 # Overcoming the 255 arguments limit
+# binning for 2D plots (identical to 1D, but in muon tracks)
+# track eta 2D histo
+TrackMon.Eta2DBin = cms.int32(26)
+# track phi 2D histo
+TrackMon.Phi2DBin = cms.int32(32)
+# track pt 2D histo
+TrackMon.TrackPt2DBin = cms.int32(100)
+
 # TrackingRegion monitoring
 TrackMon.PVBin = cms.int32 ( 40 )
 TrackMon.PVMin = cms.double( -0.5)
 TrackMon.PVMax = cms.double( 79.5) ## it might need to be adjust if CMS asks to have lumi levelling at lower values
 
+TrackMon.DxyErrBin = cms.int32(200)
+TrackMon.DxyErrMax = cms.double(0.1)
+
 TrackMon.RegionProducer = cms.InputTag("")
+TrackMon.RegionSeedingLayersProducer = cms.InputTag("")
 TrackMon.RegionCandidates = cms.InputTag("")
 TrackMon.doRegionPlots = cms.bool(False)
+TrackMon.doRegionCandidatePlots = cms.bool(False)
 TrackMon.RegionSizeBin = cms.int32(20)
 TrackMon.RegionSizeMax = cms.double(19.5)
 TrackMon.RegionSizeMin = cms.double(-0.5)
@@ -435,8 +467,10 @@ TrackMon.SeedCandMin = cms.double(-0.5)
 
 from Configuration.Eras.Modifier_phase1Pixel_cff import phase1Pixel
 from Configuration.Eras.Modifier_phase2_tracker_cff import phase2_tracker
+from Configuration.Eras.Modifier_run3_common_cff import run3_common
 phase1Pixel.toModify(TrackMon, EtaBin=31, EtaMin=-3., EtaMax=3.)
 phase1Pixel.toModify(TrackMon, LUMIBin=300, LUMIMin=200., LUMIMax=20000.)
+run3_common.toModify(TrackMon, forceSCAL = False)
 phase2_tracker.toModify(TrackMon, EtaBin=46, EtaMin=-4.5, EtaMax=4.5)
 phase2_tracker.toModify(TrackMon, PVBin=125, PVMin=-0.5, PVMax=249.5)
-phase2_tracker.toModify(TrackMon, LUMIBin=700, LUMIMin=0., LUMIMax=70000.)
+phase2_tracker.toModify(TrackMon, LUMIBin=700, LUMIMin=200., LUMIMax=70000.)

@@ -1,4 +1,6 @@
 #! /usr/bin/env python
+from __future__ import print_function
+from builtins import range
 import re
 topfunc = re.compile("::(produce|analyze|filter|beginLuminosityBlock|beginRun|beginStream|streamBeginRun|streamBeginLuminosityBlock|streamEndRun|streamEndLuminosityBlock|globalBeginRun|globalEndRun|globalBeginLuminosityBlock|globalEndLuminosityBlock|endRun|endLuminosityBlock)\(")
 baseclass = re.compile("edm::(one::|stream::|global::)?ED(Producer|Filter|Analyzer)(Base)?")
@@ -7,7 +9,7 @@ fre = re.compile("function")
 
 statics = set()
 toplevelfuncs = set()
-skipfunc = re.compile("(edm::(LuminosityBlock::|Run::|Event::)getBy(Label|Token))|(fwlite::|edm::EDProductGetter::getIt|edm::Event::|edm::eventsetup::EventSetupRecord::get|edm::eventsetup::DataProxy::getImpl|edm::EventPrincipal::unscheduledFill|edm::ServiceRegistry::get|edm::eventsetup::EventSetupRecord::getImplementation|edm::eventsetup::EventSetupRecord::getFromProxy|edm::eventsetup::DataProxy::get|edm::serviceregistry::ServicesManager::MakerHolder::add|(cond::service::PoolDBOutputService::(writeOne|appendSinceTime|tagInfo))|edm::EventProcessor::|edm::SubProcess::)")
+skipfunc = re.compile("(edm::(LuminosityBlock::|Run::|Event::|Principal::)getBy(Label|Token))|(fwlite::|edm::EDProductGetter::getIt|edm::Event::|edm::eventsetup::EventSetupRecord::get|edm::eventsetup::DataProxy::getImpl|edm::EventPrincipal::unscheduledFill|edm::ServiceRegistry::get|edm::eventsetup::EventSetupRecord::getImplementation|edm::eventsetup::EventSetupRecord::getFromProxy|edm::eventsetup::DataProxy::get|edm::serviceregistry::ServicesManager::MakerHolder::add|(cond::service::PoolDBOutputService::(writeOne|appendSinceTime|tagInfo))|edm::EventProcessor::|edm::SubProcess::)")
 skipfuncs=set()
 
 import networkx as nx
@@ -38,24 +40,24 @@ fileinput.close()
 
 for tfunc in sorted(toplevelfuncs):
 	for static in sorted(statics):
-		if nx.has_path(G,tfunc,static): 
+		if G.has_node(tfunc) and G.has_node(static) and nx.has_path(G,tfunc,static): 
 			path = nx.shortest_path(G,tfunc,static)
 
-			print "Non-const static variable \'"+re.sub(farg,"()",static)+"' is accessed in call stack '",
+			print("Non-const static variable \'"+re.sub(farg,"()",static)+"' is accessed in call stack '", end=' ')
 			for i in range(0,len(path)-1) :			
-				print re.sub(farg,"()",path[i])+G[path[i]][path[i+1]]['kind'],
-			print re.sub(farg,"()",path[i+1])+"' ,",
+				print(re.sub(farg,"()",path[i])+G[path[i]][path[i+1]]['kind'], end=' ')
+			print(re.sub(farg,"()",path[i+1])+"' ,", end=' ')
 			for key in  G[tfunc].keys() :
 				if 'kind' in G[tfunc][key] and G[tfunc][key]['kind'] == ' overrides function '  :
-					print "'"+re.sub(farg,"()",tfunc)+"' overrides '"+re.sub(farg,"()",key)+"'",
-			print
+					print("'"+re.sub(farg,"()",tfunc)+"' overrides '"+re.sub(farg,"()",key)+"'", end=' ')
+			print()
 
-			print "In call stack ' ",
+			print("In call stack ' ", end=' ')
 			for i in range(0,len(path)-1) :			
-				print re.sub(farg,"()",path[i])+G[path[i]][path[i+1]]['kind'],
-			print re.sub(farg,"()",path[i+1])+"' is accessed ,",
+				print(re.sub(farg,"()",path[i])+G[path[i]][path[i+1]]['kind'], end=' ')
+			print(re.sub(farg,"()",path[i+1])+"' is accessed ,", end=' ')
 			for key in  G[tfunc].keys() :
 				if 'kind' in G[tfunc][key] and G[tfunc][key]['kind'] == ' overrides function '  :
-					print "'"+re.sub(farg,"()",tfunc)+"' overrides '"+re.sub(farg,"()",key)+"'",
-			print
+					print("'"+re.sub(farg,"()",tfunc)+"' overrides '"+re.sub(farg,"()",key)+"'", end=' ')
+			print()
 

@@ -15,28 +15,22 @@
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
 
 #include <string>
-#include <iostream>
-#include <fstream>
 
 class TH1F;
 class BPHRecoCandidate;
 
-class TestBPHSpecificDecay:
-      public BPHAnalyzerWrapper<BPHModuleWrapper::one_analyzer> {
+class TestBPHSpecificDecay : public BPHAnalyzerWrapper<BPHModuleWrapper::one_analyzer> {
+public:
+  explicit TestBPHSpecificDecay(const edm::ParameterSet& ps);
+  ~TestBPHSpecificDecay() override;
 
- public:
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
-  explicit TestBPHSpecificDecay( const edm::ParameterSet& ps );
-  virtual ~TestBPHSpecificDecay();
+  void beginJob() override;
+  void analyze(const edm::Event& ev, const edm::EventSetup& es) override;
+  void endJob() override;
 
-  static void fillDescriptions( edm::ConfigurationDescriptions& descriptions );
-
-  virtual void beginJob();
-  virtual void analyze( const edm::Event& ev, const edm::EventSetup& es );
-  virtual void endJob();
-
- private:
-
+private:
   std::string patMuonLabel;
   std::string ccCandsLabel;
   std::string pfCandsLabel;
@@ -44,11 +38,11 @@ class TestBPHSpecificDecay:
   std::string gpCandsLabel;
 
   // token wrappers to allow running both on "old" and "new" CMSSW versions
-  BPHTokenWrapper< pat::MuonCollection                       > patMuonToken;
-  BPHTokenWrapper< std::vector<pat::CompositeCandidate>      > ccCandsToken;
-  BPHTokenWrapper< std::vector<reco::PFCandidate>            > pfCandsToken;
-  BPHTokenWrapper< std::vector<BPHTrackReference::candidate> > pcCandsToken;
-  BPHTokenWrapper< std::vector<pat::GenericParticle>         > gpCandsToken;
+  BPHTokenWrapper<pat::MuonCollection> patMuonToken;
+  BPHTokenWrapper<std::vector<pat::CompositeCandidate>> ccCandsToken;
+  BPHTokenWrapper<std::vector<reco::PFCandidate>> pfCandsToken;
+  BPHTokenWrapper<std::vector<BPHTrackReference::candidate>> pcCandsToken;
+  BPHTokenWrapper<std::vector<pat::GenericParticle>> gpCandsToken;
 
   bool usePM;
   bool useCC;
@@ -61,17 +55,13 @@ class TestBPHSpecificDecay:
 
   std::ostream* fPtr;
 
-  std::map<std::string,TH1F*> histoMap;
+  std::map<std::string, TH1F*> histoMap;
 
-  void dumpRecoCand( const std::string& name,
-                     const BPHRecoCandidate* cand );
-  void fillHisto   ( const std::string& name,
-                     const BPHRecoCandidate* cand );
-  void fillHisto( const std::string& name, float x );
+  void dumpRecoCand(const std::string& name, const BPHRecoCandidate* cand);
+  void fillHisto(const std::string& name, const BPHRecoCandidate* cand);
+  void fillHisto(const std::string& name, float x);
 
-  void createHisto( const std::string& name,
-                    int nbin, float hmin, float hmax );
-
+  void createHisto(const std::string& name, int nbin, float hmin, float hmax);
 };
 
 #endif

@@ -1,4 +1,4 @@
-#include <boost/shared_ptr.hpp>
+
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -15,75 +15,52 @@
 
 namespace triggerExpression {
 
-template <typename T>
-static 
-const T * get(const edm::Event & event, const edm::EDGetTokenT<T> & token) {
-  edm::Handle<T> handle;
-  event.getByToken(token, handle);
-  if (not handle.isValid()) {
-    auto const & error = handle.whyFailed();
-    edm::LogWarning(error->category()) << error->what();
-    return nullptr;
-  } else {
-    return handle.product();
-  }
-}
+  bool Data::setEvent(const edm::Event& event, const edm::EventSetup& setup) {
+    // cache the event number
+    m_eventNumber = event.id().event();
 
-template <typename R, typename T>
-static
-const T * get(const edm::EventSetup & setup) {
-  edm::ESHandle<T> handle;
-  setup.get<R>().get(handle);
-  return handle.product();
-}
+    // access L1 objects only if L1 is used
+    if (hasL1T()) {
+      // cache the L1 GT results objects
+      auto const& l1t = edm::get(event, m_l1tResultsToken);
+      if (l1t.size() == 0 or l1t.isEmpty(0)) {
+        m_l1tResults = nullptr;
+        return false;
+      }
+      if (m_l1tIgnoreMaskAndPrescale)
+        m_l1tResults = &l1t.at(0, 0).getAlgoDecisionInitial();
+      else
+        m_l1tResults = &l1t.at(0, 0).getAlgoDecisionFinal();
 
-bool Data::setEvent(const edm::Event & event, const edm::EventSetup & setup) {
-
-  // cache the event number
-  m_eventNumber = event.id().event();
-
-  // access L1 objects only if L1 is used
-  if (hasL1T()) {
-    // cache the L1 GT results objects
-    auto l1t = get<GlobalAlgBlkBxCollection>(event, m_l1tResultsToken);
-    if (not l1t or l1t->size() == 0 or l1t->isEmpty(0)) {
-      m_l1tResults = nullptr;
-      return false;
+      // cache the L1 trigger menu
+      unsigned long long l1tCacheID = setup.get<L1TUtmTriggerMenuRcd>().cacheIdentifier();
+      if (m_l1tCacheID == l1tCacheID) {
+        m_l1tUpdated = false;
+      } else {
+        m_l1tMenu = &edm::get<L1TUtmTriggerMenu, L1TUtmTriggerMenuRcd>(setup);
+        m_l1tCacheID = l1tCacheID;
+        m_l1tUpdated = true;
+      }
     }
-    if (m_l1tIgnoreMaskAndPrescale)
-      m_l1tResults = & l1t->at(0, 0).getAlgoDecisionInitial();
-    else
-      m_l1tResults = & l1t->at(0, 0).getAlgoDecisionFinal();
 
-    // cache the L1 trigger menu
-    unsigned long long l1tCacheID = setup.get<L1TUtmTriggerMenuRcd>().cacheIdentifier();
-    if (m_l1tCacheID == l1tCacheID) {
-      m_l1tUpdated = false;
-    } else {
-      m_l1tMenu = get<L1TUtmTriggerMenuRcd, L1TUtmTriggerMenu>(setup);
-      m_l1tCacheID = l1tCacheID;
-      m_l1tUpdated = true;
+    // access HLT objects only if HLT is used
+    if (hasHLT()) {
+      // cache the HLT TriggerResults
+      m_hltResults = &edm::get(event, m_hltResultsToken);
+      if (not m_hltResults)
+        return false;
+
+      // access the TriggerNames, and check if it has changed
+      m_hltMenu = &event.triggerNames(*m_hltResults);
+      if (m_hltMenu->parameterSetID() == m_hltCacheID) {
+        m_hltUpdated = false;
+      } else {
+        m_hltCacheID = m_hltMenu->parameterSetID();
+        m_hltUpdated = true;
+      }
     }
+
+    return true;
   }
 
-  // access HLT objects only if HLT is used
-  if (hasHLT()) {
-    // cache the HLT TriggerResults
-    m_hltResults = get<edm::TriggerResults>(event, m_hltResultsToken);
-    if (not m_hltResults)
-      return false;
-
-    // access the TriggerNames, and check if it has changed
-    m_hltMenu = & event.triggerNames(* m_hltResults);
-    if (m_hltMenu->parameterSetID() == m_hltCacheID) {
-      m_hltUpdated = false;
-    } else {
-      m_hltCacheID = m_hltMenu->parameterSetID();
-      m_hltUpdated = true;
-    }
-  }
-
-  return true;
-}
-
-} // namespace triggerExpression
+}  // namespace triggerExpression

@@ -17,17 +17,18 @@
 
 #include "Alignment/CommonAlignment/interface/AlignmentUserVariables.h"
 
-class SelectionUserVariables : public AlignmentUserVariables 
-{
- public:
-  explicit SelectionUserVariables(const std::vector<char> &sel) : myFullSelection(sel) {}
+#include <vector>
+
+class SelectionUserVariables : public AlignmentUserVariables {
+public:
+  explicit SelectionUserVariables(const std::vector<char>& sel) : myFullSelection(sel) {}
   ~SelectionUserVariables() override {}
-  SelectionUserVariables* clone() const override { return new SelectionUserVariables(*this);}
+  SelectionUserVariables* clone() const override { return new SelectionUserVariables(*this); }
 
-  const std::vector<char>& fullSelection() const {return myFullSelection;}
+  const std::vector<char>& fullSelection() const { return myFullSelection; }
 
- private:
-  std::vector<char>  myFullSelection;
+private:
+  std::vector<char> myFullSelection;
 };
 
 #endif

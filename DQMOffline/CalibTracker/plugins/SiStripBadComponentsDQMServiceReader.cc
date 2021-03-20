@@ -1,10 +1,8 @@
 #include "CondFormats/SiStripObjects/interface/SiStripBadStrip.h"
-#include "CondFormats/DataRecord/interface/SiStripBadStripRcd.h"
 
 #include "DQMOffline/CalibTracker/plugins/SiStripBadComponentsDQMServiceReader.h"
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
-#include "Geometry/Records/interface/TrackerTopologyRcd.h"
 
 #include <iostream>
 #include <cstdio>
@@ -14,28 +12,27 @@
 
 using namespace std;
 
-SiStripBadComponentsDQMServiceReader::SiStripBadComponentsDQMServiceReader( const edm::ParameterSet& iConfig ):
-  printdebug_(iConfig.getUntrackedParameter<bool>("printDebug",true)){}
+SiStripBadComponentsDQMServiceReader::SiStripBadComponentsDQMServiceReader(const edm::ParameterSet& iConfig)
+    : printdebug_(iConfig.getUntrackedParameter<bool>("printDebug", true)),
+      tTopoToken_(esConsumes()),
+      badStripToken_(esConsumes()) {}
 
-SiStripBadComponentsDQMServiceReader::~SiStripBadComponentsDQMServiceReader(){}
+SiStripBadComponentsDQMServiceReader::~SiStripBadComponentsDQMServiceReader() {}
 
-void SiStripBadComponentsDQMServiceReader::analyze( const edm::Event& e, const edm::EventSetup& iSetup)
-{
+void SiStripBadComponentsDQMServiceReader::analyze(const edm::Event& e, const edm::EventSetup& iSetup) {
   //Retrieve tracker topology from geometry
-  edm::ESHandle<TrackerTopology> tTopoHandle;
-  iSetup.get<TrackerTopologyRcd>().get(tTopoHandle);
-  const TrackerTopology* const tTopo = tTopoHandle.product();
+  const auto& tTopo = iSetup.getData(tTopoToken_);
 
-  uint32_t FedErrorMask = 1;     // bit 0
-  uint32_t DigiErrorMask = 2;    // bit 1
-  uint32_t ClusterErrorMask = 4; // bit 2
+  uint32_t FedErrorMask = 1;      // bit 0
+  uint32_t DigiErrorMask = 2;     // bit 1
+  uint32_t ClusterErrorMask = 4;  // bit 2
 
-  edm::ESHandle<SiStripBadStrip> SiStripBadStrip_;
-  iSetup.get<SiStripBadStripRcd>().get(SiStripBadStrip_);
-  edm::LogInfo("SiStripBadComponentsDQMServiceReader") << "[SiStripBadComponentsDQMServiceReader::analyze] End Reading SiStripBadStrip" << std::endl;
+  const auto& siStripBadStrip = iSetup.getData(badStripToken_);
+  edm::LogInfo("SiStripBadComponentsDQMServiceReader")
+      << "[SiStripBadComponentsDQMServiceReader::analyze] End Reading SiStripBadStrip" << std::endl;
 
   std::vector<uint32_t> detid;
-  SiStripBadStrip_->getDetIds(detid);
+  siStripBadStrip.getDetIds(detid);
 
   std::stringstream ss;
 
@@ -43,25 +40,25 @@ void SiStripBadComponentsDQMServiceReader::analyze( const edm::Event& e, const e
 
   ss << "subdet  layer   stereo  side \t detId \t\t Errors" << std::endl;
 
-  for (size_t id=0;id<detid.size();id++) {
-    SiStripBadStrip::Range range=SiStripBadStrip_->getRange(detid[id]);
+  for (size_t id = 0; id < detid.size(); id++) {
+    SiStripBadStrip::Range range = siStripBadStrip.getRange(detid[id]);
 
-    for(int it=0;it<range.second-range.first;it++){
-      unsigned int value=(*(range.first+it));
+    for (int it = 0; it < range.second - range.first; it++) {
+      unsigned int value = (*(range.first + it));
       ss << detIdToString(detid[id], tTopo) << "\t" << detid[id] << "\t";
 
-      uint32_t flag = boost::lexical_cast<uint32_t>(SiStripBadStrip_->decode(value).flag);
+      uint32_t flag = boost::lexical_cast<uint32_t>(siStripBadStrip.decode(value).flag);
 
-      printError( ss, ((flag & FedErrorMask) == FedErrorMask), "Fed error, " );
-      printError( ss, ((flag & DigiErrorMask) == DigiErrorMask), "Digi error, " );
-      printError( ss, ((flag & ClusterErrorMask) == ClusterErrorMask), "Cluster error" );
+      printError(ss, ((flag & FedErrorMask) == FedErrorMask), "Fed error, ");
+      printError(ss, ((flag & DigiErrorMask) == DigiErrorMask), "Digi error, ");
+      printError(ss, ((flag & ClusterErrorMask) == ClusterErrorMask), "Cluster error");
       ss << std::endl;
 
       if (printdebug_) {
-        ss << " firstBadStrip " <<  SiStripBadStrip_->decode(value).firstStrip << "\t "
-           << " NconsecutiveBadStrips " << SiStripBadStrip_->decode(value).range << "\t " // << std::endl;
-           << " flag " << SiStripBadStrip_->decode(value).flag << "\t "
-           << " packed integer " <<  std::hex << value << std::dec << "\t " << std::endl;
+        ss << " firstBadStrip " << siStripBadStrip.decode(value).firstStrip << "\t "
+           << " NconsecutiveBadStrips " << siStripBadStrip.decode(value).range << "\t "  // << std::endl;
+           << " flag " << siStripBadStrip.decode(value).flag << "\t "
+           << " packed integer " << std::hex << value << std::dec << "\t " << std::endl;
       }
     }
     ss << std::endl;
@@ -69,18 +66,17 @@ void SiStripBadComponentsDQMServiceReader::analyze( const edm::Event& e, const e
   edm::LogInfo("SiStripBadComponentsDQMServiceReader") << ss.str();
 }
 
-void SiStripBadComponentsDQMServiceReader::printError( std::stringstream & ss, const bool error, const std::string & errorText)
-{
-  if( error ) {
+void SiStripBadComponentsDQMServiceReader::printError(std::stringstream& ss,
+                                                      const bool error,
+                                                      const std::string& errorText) {
+  if (error) {
     ss << errorText << "\t ";
-  }
-  else {
+  } else {
     ss << "\t\t ";
   }
 }
 
-string SiStripBadComponentsDQMServiceReader::detIdToString(const DetId & detid, const TrackerTopology* tTopo)
-{
+string SiStripBadComponentsDQMServiceReader::detIdToString(DetId detid, const TrackerTopology& tTopo) {
   std::string detector;
   int layer = 0;
   int stereo = 0;
@@ -88,53 +84,44 @@ string SiStripBadComponentsDQMServiceReader::detIdToString(const DetId & detid, 
 
   // Using the operator[] if the element does not exist it is created with the default value. That is 0 for integral types.
   switch (detid.subdetId()) {
-  case StripSubdetector::TIB:
-    {
-      
+    case StripSubdetector::TIB: {
       detector = "TIB";
-      layer = tTopo->tibLayer(detid.rawId());
-      stereo = tTopo->tibStereo(detid.rawId());
+      layer = tTopo.tibLayer(detid.rawId());
+      stereo = tTopo.tibStereo(detid.rawId());
       break;
     }
-  case StripSubdetector::TOB:
-    {
-      
+    case StripSubdetector::TOB: {
       detector = "TOB";
-      layer = tTopo->tobLayer(detid.rawId());
-      stereo = tTopo->tobStereo(detid.rawId());
+      layer = tTopo.tobLayer(detid.rawId());
+      stereo = tTopo.tobStereo(detid.rawId());
       break;
     }
-  case StripSubdetector::TEC:
-    {
-      
+    case StripSubdetector::TEC: {
       // is this module in TEC+ or TEC-?
-      side = tTopo->tecSide(detid.rawId());
+      side = tTopo.tecSide(detid.rawId());
       detector = "TEC";
-      layer = tTopo->tecWheel(detid.rawId());
-      stereo = tTopo->tecStereo(detid.rawId());
+      layer = tTopo.tecWheel(detid.rawId());
+      stereo = tTopo.tecStereo(detid.rawId());
       break;
     }
-  case StripSubdetector::TID:
-    {
-      
+    case StripSubdetector::TID: {
       // is this module in TID+ or TID-?
-      side = tTopo->tidSide(detid.rawId());
+      side = tTopo.tidSide(detid.rawId());
       detector = "TID";
-      layer = tTopo->tidWheel(detid.rawId());
-      stereo = tTopo->tidStereo(detid.rawId());
+      layer = tTopo.tidWheel(detid.rawId());
+      stereo = tTopo.tidStereo(detid.rawId());
       break;
     }
   }
-  std::string name( detector + "\t" + std::to_string(layer) + "\t" + std::to_string(stereo) + "\t" );
-  if( side == 1 ) {
+  std::string name(detector + "\t" + std::to_string(layer) + "\t" + std::to_string(stereo) + "\t");
+  if (side == 1) {
     name += "-";
-  }
-  else if ( side == 2 ) {
+  } else if (side == 2) {
     name += "+";
   }
-//   if( side != -1 ) {
-//     name += boost::lexical_cast<string>(side);
-//   }
+  //   if( side != -1 ) {
+  //     name += boost::lexical_cast<string>(side);
+  //   }
 
   return name;
 }

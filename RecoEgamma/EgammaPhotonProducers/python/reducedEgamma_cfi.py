@@ -1,5 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
+from RecoEgamma.EgammaIsolationAlgos.interestingEgammaIsoDetIdsSequence_cff import interestingEgammaIsoHCALSel
+
 reducedEgamma = cms.EDProducer("ReducedEGProducer",
   keepPhotons = cms.string("hadTowOverEm()<0.15 && pt>10 && (pt>14 || chargedHadronIso()<10)"), #keep in output
   slimRelinkPhotons = cms.string("hadTowOverEm()<0.15 && pt>10 && (pt>14 || chargedHadronIso()<10)"), #keep only slimmed SuperCluster plus seed cluster
@@ -19,66 +21,86 @@ reducedEgamma = cms.EDProducer("ReducedEGProducer",
   barrelEcalHits = cms.InputTag("reducedEcalRecHitsEB"),
   endcapEcalHits = cms.InputTag("reducedEcalRecHitsEE"),
   preshowerEcalHits = cms.InputTag("reducedEcalRecHitsES"),
+  hbheHits= cms.InputTag("reducedHcalRecHits","hbhereco"),
   photonsPFValMap = cms.InputTag("particleBasedIsolation","gedPhotons"),
   gsfElectronsPFValMap = cms.InputTag("particleBasedIsolation","gedGsfElectrons"),
-  photonIDSources = cms.VInputTag(
-    cms.InputTag("PhotonIDProdGED","PhotonCutBasedIDLoose"),
-    cms.InputTag("PhotonIDProdGED","PhotonCutBasedIDLooseEM"),    
-    cms.InputTag("PhotonIDProdGED","PhotonCutBasedIDTight")
-  ),
-  photonIDOutput = cms.vstring(
-    "PhotonCutBasedIDLoose",
-    "PhotonCutBasedIDLooseEM",
-    "PhotonCutBasedIDTight",
-  ),
-  gsfElectronIDSources = cms.VInputTag(
-    cms.InputTag("eidLoose"),
-    cms.InputTag("eidRobustHighEnergy"),
-    cms.InputTag("eidRobustLoose"),
-    cms.InputTag("eidRobustTight"),
-    cms.InputTag("eidTight"),
-  ),
-  gsfElectronIDOutput = cms.vstring(
-    "eidLoose",
-    "eidRobustHighEnergy",
-    "eidRobustLoose",
-    "eidRobustTight",
-    "eidTight",
-    ),
-  photonPFClusterIsoSources = cms.VInputTag(
-        cms.InputTag("photonEcalPFClusterIsolationProducer"),
-        cms.InputTag("photonHcalPFClusterIsolationProducer"),
-  ),
-  photonPFClusterIsoOutput = cms.vstring(
-        "phoEcalPFClusIso",
-        "phoHcalPFClusIso",
-  ),
-  ootPhotonPFClusterIsoSources = cms.VInputTag(
-        cms.InputTag("ootPhotonEcalPFClusterIsolationProducer"),
-        cms.InputTag("ootPhotonHcalPFClusterIsolationProducer"),
-  ),
-  ootPhotonPFClusterIsoOutput = cms.vstring(
-        "ootPhoEcalPFClusIso",
-        "ootPhoHcalPFClusIso",
-  ),
-  gsfElectronPFClusterIsoSources = cms.VInputTag(
-        cms.InputTag("electronEcalPFClusterIsolationProducer"),
-        cms.InputTag("electronHcalPFClusterIsolationProducer"),
-  ),
-  gsfElectronPFClusterIsoOutput = cms.vstring(
-        "eleEcalPFClusIso",
-        "eleHcalPFClusIso",
-  ),
+  photonIDSources = cms.VInputTag(),
+  photonIDOutput = cms.vstring(),
+  gsfElectronIDSources = cms.VInputTag(),
+  gsfElectronIDOutput = cms.vstring(),
+  photonFloatValueMapSources = cms.VInputTag(),
+  photonFloatValueMapOutput = cms.vstring(),
+  ootPhotonFloatValueMapSources = cms.VInputTag(),
+  ootPhotonFloatValueMapOutput = cms.vstring(),
+  hiPhotonIsolationMapInput = cms.InputTag(""),
+  hiPhotonIsolationMapOutput = cms.string(""),
+  gsfElectronFloatValueMapSources = cms.VInputTag(),
+  gsfElectronFloatValueMapOutput = cms.vstring(),
+  applyPhotonCalibOnData = cms.bool(False),
+  applyPhotonCalibOnMC = cms.bool(False),
+  applyGsfElectronCalibOnData = cms.bool(False),
+  applyGsfElectronCalibOnMC = cms.bool(False), 
+  photonCalibEnergySource = cms.InputTag(""),
+  photonCalibEnergyErrSource = cms.InputTag(""),
+  gsfElectronCalibEnergySource = cms.InputTag(""),
+  gsfElectronCalibEnergyErrSource = cms.InputTag(""),
+  gsfElectronCalibEcalEnergySource = cms.InputTag(""),
+  gsfElectronCalibEcalEnergyErrSource = cms.InputTag(""),
+  hcalHitSel = interestingEgammaIsoHCALSel
 )
 
 from Configuration.Eras.Modifier_phase2_common_cff import phase2_common
 phase2_common.toModify(reducedEgamma, 
-        preshowerEcalHits = cms.InputTag(""),
+        preshowerEcalHits = "",
 )
 
 from Configuration.Eras.Modifier_run2_miniAOD_80XLegacy_cff import run2_miniAOD_80XLegacy
 run2_miniAOD_80XLegacy.toModify(
     reducedEgamma, 
-    ootPhotonPFClusterIsoSources = [ "ootPhotonEcalPFClusterIsolationProducer" ],
-    ootPhotonPFClusterIsoOutput = [ "ootPhoEcalPFClusIso" ]
+    photonFloatValueMapSources      = ["photonEcalPFClusterIsolationProducer",
+                                       "photonHcalPFClusterIsolationProducer"],
+    photonFloatValueMapOutput       = ["phoEcalPFClusIso",
+                                       "phoHcalPFClusIso"],
+    ootPhotonFloatValueMapSources   = ["ootPhotonEcalPFClusterIsolationProducer"],
+    ootPhotonFloatValueMapOutput    = ["ootPhoEcalPFClusIso"],
+    gsfElectronFloatValueMapSources = ["electronEcalPFClusterIsolationProducer",
+                                       "electronHcalPFClusterIsolationProducer"],
+    gsfElectronFloatValueMapOutput  = ["eleEcalPFClusIso",
+                                       "eleHcalPFClusIso"]
+)
+
+from Configuration.Eras.Modifier_run2_miniAOD_94XFall17_cff import run2_miniAOD_94XFall17
+run2_miniAOD_94XFall17.toModify(
+    reducedEgamma, 
+    photonFloatValueMapSources      = ["photonEcalPFClusterIsolationProducer",
+                                       "photonHcalPFClusterIsolationProducer"],
+    photonFloatValueMapOutput       = ["phoEcalPFClusIso",
+                                       "phoHcalPFClusIso"],
+    ootPhotonFloatValueMapSources   = ["ootPhotonEcalPFClusterIsolationProducer",
+                                       "ootPhotonHcalPFClusterIsolationProducer"],
+    ootPhotonFloatValueMapOutput    = ["ootPhoEcalPFClusIso",
+                                       "ootPhoHcalPFClusIso"],
+    gsfElectronFloatValueMapSources = ["electronEcalPFClusterIsolationProducer",
+                                       "electronHcalPFClusterIsolationProducer"],
+    gsfElectronFloatValueMapOutput  = ["eleEcalPFClusIso",
+                                       "eleHcalPFClusIso"],
+)
+
+from RecoEgamma.EgammaPhotonProducers.reducedEgamma_tools import calibrateReducedEgamma
+from Configuration.Eras.Modifier_run2_miniAOD_94XFall17_cff import run2_miniAOD_94XFall17
+from Configuration.Eras.Modifier_run2_miniAOD_80XLegacy_cff import run2_miniAOD_80XLegacy
+from Configuration.ProcessModifiers.run2_miniAOD_UL_cff import run2_miniAOD_UL
+modifyReducedEGammaRun2MiniAOD = (
+    run2_miniAOD_94XFall17 | run2_miniAOD_80XLegacy | run2_miniAOD_UL).makeProcessModifier(calibrateReducedEgamma)
+
+from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
+
+pp_on_AA.toModify(
+    reducedEgamma,
+    ootPhotons = "",
+    keepPhotons = "pt>15 && abs(eta)<2.5",
+    slimRelinkPhotons = "pt>15 && abs(eta)<2.5",
+    relinkPhotons = "pt>15 && abs(eta)<2.5",
+    hiPhotonIsolationMapInput = "photonIsolationHIProducerppGED",
+    hiPhotonIsolationMapOutput = "photonIsolationHIProducerppGED"
 )

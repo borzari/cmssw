@@ -7134,7 +7134,7 @@ C...in the event weighting.
      &NAREL(6),WTREL(6),WTMAT(6,6),COEFU(6),IACCMX(4),SIGSMX(4),    
      &SIGSSM(3) 
       DATA CVAR/'tau ','tau''','y*  ','cth '/   
-    
+      INTEGER :: IOFF=0
 C...Select subprocess to study: skip cases not applicable.  
       VINT(143)=1.  
       VINT(144)=1.  
@@ -10346,9 +10346,12 @@ C...(Phys. Rev. D33, 665, plus errata from the authors).
     
 C...Define initial two objects, initialize loop.    
       ISUB=MINT(1)  
-      SH=VINT(44)   
-      IREF(1,5)=0   
-      IREF(1,6)=0   
+      SH=VINT(44)
+C...Initialize variable with default value
+      DO I=1,6
+         IREF(1,I)=0.0
+      ENDDO
+
       IF(ISET(ISUB).EQ.1.OR.ISET(ISUB).EQ.3) THEN   
         IREF(1,1)=MINT(84)+2+ISET(ISUB) 
         IREF(1,2)=0 
@@ -10373,7 +10376,7 @@ cms.. pre-intialize
       DO 140 JT=1,JTMAX 
       KDCY(JT)=0    
       KFL1(JT)=0    
-      KFL2(JT)=0    
+      KFL2(JT)=0
       NSD(JT)=IREF(IP,JT)   
       ID=IREF(IP,JT)    
       IF(ID.EQ.0) GOTO 140  
@@ -12116,7 +12119,7 @@ C...pi/s and the conversion factor from GeV^-2 to mb.
       COMMON/PYINT5/NGEN(0:200,3),XSEC(0:200,3) 
       SAVE /PYINT5/ 
       DIMENSION X(2),XPQ(-6:6),KFAC(2,-40:40),WDTP(0:40),WDTE(0:40,0:5) 
-    
+
 C...Reset number of channels and cross-section. 
       NCHN=0    
       SIGS=0.   
@@ -13987,7 +13990,16 @@ C...I: 2 -> 2, tree diagrams, non-standard model processes.
     
       ELSE  
       IF(ISUB.EQ.161) THEN  
+
+clin-7/2018 add "CALL PYWIDT()" to get rid of compiler warning message;
+c     however, expect this statement not to be reached:
+        CALL PYWIDT(40,SQRT(SH),WDTP,WDTE)  
 C...f + g -> f' + H+/- (q + g -> q' + H+/- only).   
+c     if reached, write a message to standard output and then stop the run:
+        write(6,*) 'ISUB=161 reached: check arguments of CALL PYWIDT()'
+        stop
+clin-7/2018-end
+
         FHCQ=COMFAC*FACA*AS*AEM/XW*1./24    
         DO 900 I=1,MSTP(54) 
         IU=I+MOD(I,2)   

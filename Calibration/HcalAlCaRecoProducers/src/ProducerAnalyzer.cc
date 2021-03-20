@@ -6,255 +6,193 @@
 #include "DataFormats/Provenance/interface/StableProvenance.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
-#include "Geometry/Records/interface/CaloGeometryRecord.h" 
-#include "Geometry/CaloGeometry/interface/CaloGeometry.h" 
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
-#include "DataFormats/GeometryVector/interface/GlobalPoint.h" 
+#include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "DataFormats/HcalCalibObjects/interface/HOCalibVariables.h"
 #include "DataFormats/TrackReco/interface/TrackExtra.h"
 #include "DataFormats/TrackReco/interface/TrackExtraFwd.h"
 #include "RecoTracker/TrackProducer/interface/TrackProducerBase.h"
 
-#include <map>
-
-using namespace std;
 using namespace reco;
 
-namespace cms
-{
+namespace cms {
 
-//
-// constructors and destructor
-//
-ProducerAnalyzer::ProducerAnalyzer(const edm::ParameterSet& iConfig)
-{
-  // get name of output file with histogramms  
-   
-   nameProd_ = iConfig.getUntrackedParameter<std::string>("nameProd");
-   jetCalo_ = iConfig.getUntrackedParameter<std::string>("jetCalo","GammaJetJetBackToBackCollection");
-   gammaClus_ = iConfig.getUntrackedParameter<std::string>("gammaClus","GammaJetGammaBackToBackCollection");
-   ecalInput_=iConfig.getUntrackedParameter<std::string>("ecalInput","GammaJetEcalRecHitCollection");
-   hbheInput_ = iConfig.getUntrackedParameter<std::string>("hbheInput");
-   hoInput_ = iConfig.getUntrackedParameter<std::string>("hoInput");
-   hfInput_ = iConfig.getUntrackedParameter<std::string>("hfInput");
-   Tracks_ = iConfig.getUntrackedParameter<std::string>("Tracks","GammaJetTracksCollection");    
+  //
+  // constructors and destructor
+  //
+  ProducerAnalyzer::ProducerAnalyzer(const edm::ParameterSet& iConfig) {
+    // get name of output file with histogramms
 
-   tok_hovar_ = consumes<HOCalibVariableCollection>( edm::InputTag(nameProd_,hoInput_) );
-   tok_horeco_ = consumes<HORecHitCollection>( edm::InputTag("horeco") );
-   tok_ho_ = consumes<HORecHitCollection>( edm::InputTag(hoInput_) );
-   tok_hoProd_ = consumes<HORecHitCollection>( edm::InputTag(nameProd_,hoInput_) );
+    nameProd_ = iConfig.getUntrackedParameter<std::string>("nameProd");
+    jetCalo_ = iConfig.getUntrackedParameter<std::string>("jetCalo", "GammaJetJetBackToBackCollection");
+    gammaClus_ = iConfig.getUntrackedParameter<std::string>("gammaClus", "GammaJetGammaBackToBackCollection");
+    ecalInput_ = iConfig.getUntrackedParameter<std::string>("ecalInput", "GammaJetEcalRecHitCollection");
+    hbheInput_ = iConfig.getUntrackedParameter<std::string>("hbheInput");
+    hoInput_ = iConfig.getUntrackedParameter<std::string>("hoInput");
+    hfInput_ = iConfig.getUntrackedParameter<std::string>("hfInput");
+    Tracks_ = iConfig.getUntrackedParameter<std::string>("Tracks", "GammaJetTracksCollection");
 
-    tok_hf_ = consumes<HFRecHitCollection>( edm::InputTag(hfInput_) );
+    tok_hovar_ = consumes<HOCalibVariableCollection>(edm::InputTag(nameProd_, hoInput_));
+    tok_horeco_ = consumes<HORecHitCollection>(edm::InputTag("horeco"));
+    tok_ho_ = consumes<HORecHitCollection>(edm::InputTag(hoInput_));
+    tok_hoProd_ = consumes<HORecHitCollection>(edm::InputTag(nameProd_, hoInput_));
 
-   tok_jets_ = consumes<reco::CaloJetCollection>( edm::InputTag(nameProd_,jetCalo_) );
-   tok_gamma_ = consumes<reco::SuperClusterCollection>( edm::InputTag(nameProd_,gammaClus_) );
-   tok_muons_ = consumes<reco::MuonCollection>(edm::InputTag(nameProd_,"SelectedMuons"));
-   tok_ecal_ = consumes<EcalRecHitCollection>( edm::InputTag(nameProd_,ecalInput_) );
-   tok_tracks_ = consumes<reco::TrackCollection>( edm::InputTag(nameProd_,Tracks_) );
+    tok_hf_ = consumes<HFRecHitCollection>(edm::InputTag(hfInput_));
 
-   tok_hbheProd_ = consumes<HBHERecHitCollection>( edm::InputTag(nameProd_,hbheInput_) );
-   tok_hbhe_ = consumes<HBHERecHitCollection>( edm::InputTag(hbheInput_) );
+    tok_jets_ = consumes<reco::CaloJetCollection>(edm::InputTag(nameProd_, jetCalo_));
+    tok_gamma_ = consumes<reco::SuperClusterCollection>(edm::InputTag(nameProd_, gammaClus_));
+    tok_muons_ = consumes<reco::MuonCollection>(edm::InputTag(nameProd_, "SelectedMuons"));
+    tok_ecal_ = consumes<EcalRecHitCollection>(edm::InputTag(nameProd_, ecalInput_));
+    tok_tracks_ = consumes<reco::TrackCollection>(edm::InputTag(nameProd_, Tracks_));
 
-}
+    tok_hbheProd_ = consumes<HBHERecHitCollection>(edm::InputTag(nameProd_, hbheInput_));
+    tok_hbhe_ = consumes<HBHERecHitCollection>(edm::InputTag(hbheInput_));
 
-ProducerAnalyzer::~ProducerAnalyzer()
-{
- 
-   // do anything here that needs to be done at desctruction time
-   // (e.g. close files, deallocate resources etc.)
-
-}
-
-void ProducerAnalyzer::beginJob()
-{
-}
-
-void ProducerAnalyzer::endJob()
-{
-}
-
-
-//
-// member functions
-//
-
-// ------------ method called to produce the data  ------------
-void
-ProducerAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
-{
-
-  using namespace edm;
-
-   const CaloGeometry* geo;
-   edm::ESHandle<CaloGeometry> pG;
-   iSetup.get<CaloGeometryRecord>().get(pG);
-   geo = pG.product();
-   
-
-  std::vector<StableProvenance const*> theProvenance;
-  iEvent.getAllStableProvenance(theProvenance);
-  for(auto const& provenance : theProvenance)
-  {
-     cout<<" Print all module/label names "<<provenance->moduleName()<<" "<<provenance->moduleLabel()<<
-     " "<<provenance->productInstanceName()<<endl;
+    tok_geom_ = esConsumes<CaloGeometry, CaloGeometryRecord>();
   }
-  
-  
-  if(nameProd_ == "hoCalibProducer")
-  {
-     edm::Handle<HOCalibVariableCollection> ho;
-     iEvent.getByToken(tok_hovar_, ho);
-     const HOCalibVariableCollection Hitho = *(ho.product());
-     std::cout<<" Size of HO "<<(Hitho).size()<<std::endl;
+
+  ProducerAnalyzer::~ProducerAnalyzer() {
+    // do anything here that needs to be done at desctruction time
+    // (e.g. close files, deallocate resources etc.)
   }
-  
-   if(nameProd_ == "ALCARECOMuAlZMuMu" )
-   {
-   
-   edm::Handle<HORecHitCollection> ho;
-   iEvent.getByToken(tok_horeco_, ho);
-   const HORecHitCollection Hitho = *(ho.product());
-   std::cout<<" Size of HO "<<(Hitho).size()<<std::endl;
-   edm::Handle<MuonCollection> mucand;
-   iEvent.getByToken(tok_muons_, mucand);
-   std::cout<<" Size of muon collection "<<mucand->size()<<std::endl;
-   for(MuonCollection::const_iterator it =  mucand->begin(); it != mucand->end(); it++)
-   {
-      TrackRef mu = (*it).combinedMuon();
-      std::cout<<" Pt muon "<<mu->innerMomentum()<<std::endl;
-   }
-   
-   }  
-  
-   if(nameProd_ != "IsoProd" && nameProd_ != "ALCARECOMuAlZMuMu" && nameProd_ != "hoCalibProducer")
-   {
-   edm::Handle<HBHERecHitCollection> hbhe;
-   iEvent.getByToken(tok_hbhe_, hbhe);
-   const HBHERecHitCollection Hithbhe = *(hbhe.product());
-   std::cout<<" Size of HBHE "<<(Hithbhe).size()<<std::endl;
 
+  void ProducerAnalyzer::beginJob() {}
 
-   edm::Handle<HORecHitCollection> ho;
-   iEvent.getByToken(tok_ho_, ho);
-   const HORecHitCollection Hitho = *(ho.product());
-   std::cout<<" Size of HO "<<(Hitho).size()<<std::endl;
+  void ProducerAnalyzer::endJob() {}
 
+  //
+  // member functions
+  //
 
-   edm::Handle<HFRecHitCollection> hf;
-   iEvent.getByToken(tok_hf_, hf);
-   const HFRecHitCollection Hithf = *(hf.product());
-   std::cout<<" Size of HF "<<(Hithf).size()<<std::endl;
-   }
-   if(nameProd_ == "IsoProd")
-   {
-   cout<<" We are here "<<endl;
-   edm::Handle<reco::TrackCollection> tracks;
-   iEvent.getByToken(tok_tracks_,tracks);
- 
-   
-   std::cout<<" Tracks size "<<(*tracks).size()<<std::endl;
-   reco::TrackCollection::const_iterator track = tracks->begin ();
+  // ------------ method called to produce the data  ------------
+  void ProducerAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+    using namespace edm;
 
-          for (; track != tracks->end (); track++)
-         {
-           cout<<" P track "<<(*track).p()<<" eta "<<(*track).eta()<<" phi "<<(*track).phi()<<" Outer "<<(*track).outerMomentum()<<" "<<
-	   (*track).outerPosition()<<endl;
-	   TrackExtraRef myextra = (*track).extra();
-	   cout<<" Track extra "<<myextra->outerMomentum()<<" "<<myextra->outerPosition()<<endl;
-         }  
+    const CaloGeometry* geo = &(iSetup.getData(tok_geom_));
 
-   edm::Handle<EcalRecHitCollection> ecal;
-   iEvent.getByToken(tok_ecal_,ecal);
-   const EcalRecHitCollection Hitecal = *(ecal.product());
-   std::cout<<" Size of Ecal "<<(Hitecal).size()<<std::endl;
-   EcalRecHitCollection::const_iterator hite = (ecal.product())->begin ();
+    std::vector<StableProvenance const*> theProvenance;
+    iEvent.getAllStableProvenance(theProvenance);
+    for (auto const& provenance : theProvenance) {
+      edm::LogVerbatim("HcalAlCa") << " Print all module/label names " << provenance->moduleName() << " "
+                                   << provenance->moduleLabel() << " " << provenance->productInstanceName();
+    }
 
-   double energyECAL = 0.;
-   double energyHCAL = 0.;
+    if (nameProd_ == "hoCalibProducer") {
+      edm::Handle<HOCalibVariableCollection> ho;
+      iEvent.getByToken(tok_hovar_, ho);
+      const HOCalibVariableCollection Hitho = *(ho.product());
+      edm::LogVerbatim("HcalAlCa") << " Size of HO " << (Hitho).size();
+    }
 
-   for (; hite != (ecal.product())->end (); hite++) {
+    if (nameProd_ == "ALCARECOMuAlZMuMu") {
+      edm::Handle<HORecHitCollection> ho;
+      iEvent.getByToken(tok_horeco_, ho);
+      const HORecHitCollection Hitho = *(ho.product());
+      edm::LogVerbatim("HcalAlCa") << " Size of HO " << (Hitho).size();
+      edm::Handle<MuonCollection> mucand;
+      iEvent.getByToken(tok_muons_, mucand);
+      edm::LogVerbatim("HcalAlCa") << " Size of muon collection " << mucand->size();
+      for (const auto& it : *(mucand.product())) {
+        TrackRef mu = it.combinedMuon();
+        edm::LogVerbatim("HcalAlCa") << " Pt muon " << mu->innerMomentum();
+      }
+    }
 
-//           cout<<" Energy ECAL "<<(*hite).energy()<<endl;
-     
+    if (nameProd_ != "IsoProd" && nameProd_ != "ALCARECOMuAlZMuMu" && nameProd_ != "hoCalibProducer") {
+      edm::Handle<HBHERecHitCollection> hbhe;
+      iEvent.getByToken(tok_hbhe_, hbhe);
+      const HBHERecHitCollection Hithbhe = *(hbhe.product());
+      edm::LogVerbatim("HcalAlCa") << " Size of HBHE " << (Hithbhe).size();
 
-//	   " eta "<<(*hite).detid()<<" phi "<<(*hite).detid().getPosition().phi()<<endl;
+      edm::Handle<HORecHitCollection> ho;
+      iEvent.getByToken(tok_ho_, ho);
+      const HORecHitCollection Hitho = *(ho.product());
+      edm::LogVerbatim("HcalAlCa") << " Size of HO " << (Hitho).size();
 
-     const GlobalPoint& posE = geo->getPosition((*hite).detid());
-       
-     cout<<" Energy ECAL "<<(*hite).energy()<<
-       " eta "<<posE.eta()<<" phi "<<posE.phi()<<endl;
+      edm::Handle<HFRecHitCollection> hf;
+      iEvent.getByToken(tok_hf_, hf);
+      const HFRecHitCollection Hithf = *(hf.product());
+      edm::LogVerbatim("HcalAlCa") << " Size of HF " << (Hithf).size();
+    }
+    if (nameProd_ == "IsoProd") {
+      edm::LogVerbatim("HcalAlCa") << " We are here ";
+      edm::Handle<reco::TrackCollection> tracks;
+      iEvent.getByToken(tok_tracks_, tracks);
 
-     energyECAL = energyECAL + (*hite).energy();
-       
-   }
+      edm::LogVerbatim("HcalAlCa") << " Tracks size " << (*tracks).size();
+      for (const auto& track : *(tracks.product())) {
+        edm::LogVerbatim("HcalAlCa") << " P track " << track.p() << " eta " << track.eta() << " phi " << track.phi()
+                                     << " Outer " << track.outerMomentum() << " " << track.outerPosition();
+        const TrackExtraRef& myextra = track.extra();
+        edm::LogVerbatim("HcalAlCa") << " Track extra " << myextra->outerMomentum() << " " << myextra->outerPosition();
+      }
 
-   edm::Handle<HBHERecHitCollection> hbhe;
-   iEvent.getByToken(tok_hbheProd_,hbhe);
-   const HBHERecHitCollection Hithbhe = *(hbhe.product());
-   std::cout<<" Size of HBHE "<<(Hithbhe).size()<<std::endl;
-   HBHERecHitCollection::const_iterator hith = (hbhe.product())->begin ();
+      edm::Handle<EcalRecHitCollection> ecal;
+      iEvent.getByToken(tok_ecal_, ecal);
+      const EcalRecHitCollection Hitecal = *(ecal.product());
+      edm::LogVerbatim("HcalAlCa") << " Size of Ecal " << (Hitecal).size();
 
-   for (; hith != (hbhe.product())->end (); hith++)  {
+      double energyECAL = 0.;
+      double energyHCAL = 0.;
 
-     GlobalPoint posH = ((HcalGeometry*)(geo->getSubdetectorGeometry((*hith).detid())))->getPosition((*hith).detid());
-     
-     cout<<" Energy HCAL "<<(*hith).energy()<<
-       " eta "<<posH.eta()<<" phi "<<posH.phi()<<endl;
+      for (const auto& hite : *(ecal.product())) {
+        const GlobalPoint& posE = geo->getPosition(hite.detid());
 
-     energyHCAL = energyHCAL + (*hith).energy();
-	 
-   }
-   
-   cout<<" Energy ECAL "<< energyECAL<<" Energy HCAL "<< energyHCAL<<endl;
-   
-   edm::Handle<HORecHitCollection> ho;
-   iEvent.getByToken(tok_hoProd_,ho);
-   const HORecHitCollection Hitho = *(ho.product());
-   std::cout<<" Size of HO "<<(Hitho).size()<<std::endl;
-   HORecHitCollection::const_iterator hito = (ho.product())->begin ();
+        edm::LogVerbatim("HcalAlCa") << " Energy ECAL " << hite.energy() << " eta " << posE.eta() << " phi "
+                                     << posE.phi();
 
-          for (; hito != (ho.product())->end (); hito++)
-         {
-//           cout<<" Energy HO    "<<(*hito).energy()<<endl;
-//	   " eta "<<(*hite).eta()<<" phi "<<(*hite).phi()<<endl;
-         }
+        energyECAL = energyECAL + hite.energy();
+      }
 
-   }
-   
-   
-   if(nameProd_ == "GammaJetProd" || nameProd_ == "DiJProd")
-   {
-    cout<<" we are in GammaJetProd area "<<endl;
-   edm::Handle<EcalRecHitCollection> ecal;
-   iEvent.getByToken(tok_ecal_, ecal);
-   std::cout<<" Size of ECAL "<<(*ecal).size()<<std::endl;
+      edm::Handle<HBHERecHitCollection> hbhe;
+      iEvent.getByToken(tok_hbheProd_, hbhe);
+      const HBHERecHitCollection Hithbhe = *(hbhe.product());
+      edm::LogVerbatim("HcalAlCa") << " Size of HBHE " << (Hithbhe).size();
 
-   edm::Handle<reco::CaloJetCollection> jets;
-   iEvent.getByToken(tok_jets_, jets);
-   std::cout<<" Jet size "<<(*jets).size()<<std::endl; 
-   reco::CaloJetCollection::const_iterator jet = jets->begin ();
-          for (; jet != jets->end (); jet++)
-         {
-           cout<<" Et jet "<<(*jet).et()<<" eta "<<(*jet).eta()<<" phi "<<(*jet).phi()<<endl;
-         }  
+      for (const auto& hith : *(hbhe.product())) {
+        GlobalPoint posH =
+            (static_cast<const HcalGeometry*>(geo->getSubdetectorGeometry(hith.detid())))->getPosition(hith.detid());
 
-   edm::Handle<reco::TrackCollection> tracks;
-   iEvent.getByToken(tok_tracks_, tracks);
-   std::cout<<" Tracks size "<<(*tracks).size()<<std::endl; 
-   }
-   if( nameProd_ == "GammaJetProd")
-   {
-   edm::Handle<reco::SuperClusterCollection> eclus;
-   iEvent.getByToken(tok_gamma_, eclus);
-   std::cout<<" GammaClus size "<<(*eclus).size()<<std::endl;
-      reco::SuperClusterCollection::const_iterator iclus = eclus->begin ();
-          for (; iclus != eclus->end (); iclus++)
-         {
-           cout<<" Et gamma "<<(*iclus).energy()/cosh((*iclus).eta())<<" eta "<<(*iclus).eta()<<" phi "<<(*iclus).phi()<<endl;
-         }
-   }
+        edm::LogVerbatim("HcalAlCa") << " Energy HCAL " << hith.energy() << " eta " << posH.eta() << " phi "
+                                     << posH.phi();
 
-}
-//define this as a plug-in
-//DEFINE_FWK_MODULE(ProducerAnalyzer)
-}
+        energyHCAL = energyHCAL + hith.energy();
+      }
+
+      edm::LogVerbatim("HcalAlCa") << " Energy ECAL " << energyECAL << " Energy HCAL " << energyHCAL;
+    }
+
+    if (nameProd_ == "GammaJetProd" || nameProd_ == "DiJProd") {
+      edm::LogVerbatim("HcalAlCa") << " we are in GammaJetProd area ";
+      edm::Handle<EcalRecHitCollection> ecal;
+      iEvent.getByToken(tok_ecal_, ecal);
+      edm::LogVerbatim("HcalAlCa") << " Size of ECAL " << (*ecal).size();
+
+      edm::Handle<reco::CaloJetCollection> jets;
+      iEvent.getByToken(tok_jets_, jets);
+      edm::LogVerbatim("HcalAlCa") << " Jet size " << (*jets).size();
+
+      for (const auto& jet : *(jets.product())) {
+        edm::LogVerbatim("HcalAlCa") << " Et jet " << jet.et() << " eta " << jet.eta() << " phi " << jet.phi();
+      }
+
+      edm::Handle<reco::TrackCollection> tracks;
+      iEvent.getByToken(tok_tracks_, tracks);
+      edm::LogVerbatim("HcalAlCa") << " Tracks size " << (*tracks).size();
+    }
+    if (nameProd_ == "GammaJetProd") {
+      edm::Handle<reco::SuperClusterCollection> eclus;
+      iEvent.getByToken(tok_gamma_, eclus);
+      edm::LogVerbatim("HcalAlCa") << " GammaClus size " << (*eclus).size();
+      for (const auto& iclus : *(eclus.product())) {
+        edm::LogVerbatim("HcalAlCa") << " Et gamma " << iclus.energy() / cosh(iclus.eta()) << " eta " << iclus.eta()
+                                     << " phi " << iclus.phi();
+      }
+    }
+  }
+  //define this as a plug-in
+  //DEFINE_FWK_MODULE(ProducerAnalyzer)
+}  // namespace cms

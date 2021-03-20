@@ -4,7 +4,7 @@
 import FWCore.ParameterSet.Config as cms
 
 _defaultEraName = ""
-_nonDefaultEraNames = ["trackingLowPU", "trackingPhase1", "trackingPhase1QuadProp", "trackingPhase2PU140"]
+_nonDefaultEraNames = ["trackingLowPU", "trackingPhase1", "trackingPhase2PU140"]
 
 # name, postfix, era
 _defaultEra = (_defaultEraName, "", None)
@@ -46,9 +46,13 @@ _iterations_trackingPhase1 = [
     "MixedTripletStep",
     "PixelLessStep",
     "TobTecStep",
-    "JetCoreRegionalStep",
 ]
-_iterations_trackingPhase1QuadProp = _iterations_trackingPhase1
+
+from Configuration.ProcessModifiers.displacedTracking_cff import displacedTracking
+displacedTracking.toModify(_iterations_trackingPhase1, func=lambda x: x.append('DisplacedGeneralStep'))
+
+_iterations_trackingPhase1.append('JetCoreRegionalStep')
+
 _iterations_trackingPhase2PU140 = [
     "InitialStep",
     "HighPtTripletStep",
@@ -57,6 +61,8 @@ _iterations_trackingPhase2PU140 = [
     "DetachedQuadStep",
     "PixelPairStep",
 ]
+from Configuration.ProcessModifiers.vectorHits_cff import vectorHits
+vectorHits.toModify(_iterations_trackingPhase2PU140, func=lambda x: x.append('PixelLessStep'))
 _iterations_muonSeeded = [
     "MuonSeededStepInOut",
     "MuonSeededStepOutIn",
@@ -78,7 +84,6 @@ _multipleSeedProducers_trackingPhase1 = {
     "MixedTripletStep": ["A", "B"],
     "TobTecStep": ["Pair", "Tripl"],
 }
-_multipleSeedProducers_trackingPhase1QuadProp = _multipleSeedProducers_trackingPhase1
 _multipleSeedProducers_trackingPhase2PU140 = {}
 _oldStyleHasSelector = set([
     "InitialStep",
@@ -98,6 +103,9 @@ _trackClusterRemoverBase = _trackClusterRemover.clone(
     TrackQuality                             = 'highPurity',
     minNumberOfLayersWithMeasBeforeFiltering = 0,
 )
+
+from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
+pp_on_AA.toModify(_trackClusterRemoverBase, TrackQuality = 'tight')
 
 #Phase2 : configuring the phase2 track Cluster Remover
 from RecoLocalTracker.SubCollectionProducers.phase2trackClusterRemover_cfi import phase2trackClusterRemover as _phase2trackClusterRemover
@@ -134,11 +142,11 @@ def allEras():
 def nonDefaultEras():
     return _nonDefaultEras
 
-def createEarlySequence(eraName, postfix, modDict):
-    seq = cms.Sequence()
+def createEarlyTask(eraName, postfix, modDict):
+    task = cms.Task()
     for it in globals()["_iterations"+postfix]:
-        seq += modDict[it]
-    return seq
+        task.add(modDict[it+'Task'])
+    return task
 
 def iterationAlgos(postfix, includeSequenceName=False):
     muonVariable = "_iterations_muonSeeded"+postfix

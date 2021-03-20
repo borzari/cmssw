@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from __future__ import print_function
 import re
 datacl = re.compile("^class ")
 bfunc = re.compile("^function ")
@@ -91,75 +92,75 @@ for line in fileinput.input(files =('function-statics-db.txt','function-calls-db
 		statics.add(fields[3])
 fileinput.close()
 
-for n,nbrdict in G.adjacency_iter():
+for n,nbrdict in G.adjacency():
 	for nbr,eattr in nbrdict.items():
 		if n in badfuncs or nbr in badfuncs :
 			if 'kind' in eattr and eattr['kind'] == ' overrides function '  :
-				print "'"+n+"'"+eattr['kind']+"'"+nbr+"'"
+				print("'"+n+"'"+eattr['kind']+"'"+nbr+"'")
 				virtfuncs.add(nbr)
-print
+print()
 
-for n,nbrdict in H.adjacency_iter():
+for n,nbrdict in H.adjacency():
 	for nbr,eattr in nbrdict.items():
 		if n in badclasses and 'kind' in eattr and eattr['kind'] == ' base class '  :
 			virtclasses.add(nbr)
 
 
-for n,nbrdict in H.adjacency_iter():
+for n,nbrdict in H.adjacency():
 	for nbr,eattr in nbrdict.items():
 		if nbr in dclasses and 'kind' in eattr and eattr['kind'] == ' base class '  :
 			dclasses.add(n)
 
-print "flagged functions found by checker"
+print("flagged functions found by checker")
 for dfunc in sorted(badfuncs) : 
-	print dfunc
-print
+	print(dfunc)
+print()
 
-print "flagged classes found by checker "
+print("flagged classes found by checker ")
 for dclass in sorted(badclasses) :
-	print dclass
-print
+	print(dclass)
+print()
 
-print "flagged classes found by checker union get" 
+print("flagged classes found by checker union get") 
 for dclass in sorted(dclasses.intersection(badclasses)) :
-	print dclass
-print
+	print(dclass)
+print()
 
 
-print "classes inheriting from flagged classes"
+print("classes inheriting from flagged classes")
 for dclass in sorted(virtclasses):
-	print dclass
-print
+	print(dclass)
+print()
 
-print "functions overridden by flagged functions"
+print("functions overridden by flagged functions")
 for dfunc in sorted(virtfuncs):
-	print dfunc
-print
+	print(dfunc)
+print()
 
 
 for badclass in sorted(badclasses):
-	print "Event setup data class '"+badclass+"' is flagged."
+	print("Event setup data class '"+badclass+"' is flagged.")
 	flaggedclasses.add(badclass)
-print
+print()
 
 for virtclass in sorted(virtclasses):
-	print "Event setup data class '"+virtclass+"' is flagged because inheriting class is flagged"
+	print("Event setup data class '"+virtclass+"' is flagged because inheriting class is flagged")
 	flaggedclasses.add(virtclass)
-print
+print()
 
 for badclass in sorted(badclasses):
 	for dataclass in sorted(dataclasses):
 		if H.has_node(badclass) and H.has_node(dataclass):
 			if nx.has_path(H,dataclass, badclass) :
-				print "Event setup data class '"+dataclass+"' contains or inherits from flagged class '"+badclass+"'."
+				print("Event setup data class '"+dataclass+"' contains or inherits from flagged class '"+badclass+"'.")
 				flaggedclasses.add(dataclass)
 			
-print
+print()
 
 
 for dataclassfunc in sorted(dataclassfuncs):
 	for tfunc in sorted(toplevelfuncs):
-		if nx.has_path(G,tfunc,dataclassfunc):
+		if G.has_node(tfunc) and G.has_node(dataclassfunc) and nx.has_path(G,tfunc,dataclassfunc):
 			m = getfunc.match(dataclassfunc)
 			n = handle.match(m.group(1))
 			if n : o = n.group(3)
@@ -171,22 +172,22 @@ for dataclassfunc in sorted(dataclassfuncs):
 				exact= r"^" + re.escape(flaggedclass) + r"$"
 				exactmatch=re.match(exact,dataclass)
 				if exactmatch:
-					print "Flagged event setup data class '"+dataclass+"' is accessed in call stack '",
+					print("Flagged event setup data class '"+dataclass+"' is accessed in call stack '", end=' ')
 					path = nx.shortest_path(G,tfunc,dataclassfunc)
 					for p in path:
-						print p+"; ",
-					print "' ",
+						print(p+"; ", end=' ')
+					print("' ", end=' ')
 					for key in  G[tfunc].keys() :
 						if 'kind' in G[tfunc][key] and G[tfunc][key]['kind'] == ' overrides function '  :
-							print "'"+tfunc+"'"+G[tfunc][key]['kind']+"'"+key+"'",
-					print ""
-					print "In call stack '",
+							print("'"+tfunc+"'"+G[tfunc][key]['kind']+"'"+key+"'", end=' ')
+					print("")
+					print("In call stack '", end=' ')
 					path = nx.shortest_path(G,tfunc,dataclassfunc)
 					for p in path:
-						print p+"; ",
-					print "' flagged event setup data class '"+dataclass+"' is accessed. ",
+						print(p+"; ", end=' ')
+					print("' flagged event setup data class '"+dataclass+"' is accessed. ", end=' ')
 					for key in  G[tfunc].keys() :
 						if 'kind' in G[tfunc][key] and G[tfunc][key]['kind'] == ' overrides function '  :
-							print "'"+tfunc+"'"+G[tfunc][key]['kind']+"'"+key+"'",
-					print ""
+							print("'"+tfunc+"'"+G[tfunc][key]['kind']+"'"+key+"'", end=' ')
+					print("")
 

@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 # cfg file to test HLTBeamModeFilter
 # it requires as input:
@@ -14,10 +15,10 @@ import sys
 
 process = cms.Process('TestHLTBeamModeFilter')
 
-print '\n'
+print('\n')
 from L1Trigger.GlobalTriggerAnalyzer.UserOptions_cff import *
 if errorUserOptions == True :
-    print '\nError returned by UserOptions_cff\n'
+    print('\nError returned by UserOptions_cff\n')
     sys.exit()
 
 
@@ -93,9 +94,8 @@ else :
 # Message Logger
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.MessageLogger.debugModules = ['gtEvmDigis', 'hltBeamModeFilter']
-process.MessageLogger.categories.append('L1GlobalTriggerEvmRawToDigi')
-process.MessageLogger.categories.append('HLTBeamModeFilter')
-#process.MessageLogger.destinations = ['cerr']
+process.MessageLogger.L1GlobalTriggerEvmRawToDigi=dict()
+process.MessageLogger.HLTBeamModeFilter=dict()
 
 process.MessageLogger.cerr.threshold = 'DEBUG'
 #process.MessageLogger.cerr.threshold = 'INFO'

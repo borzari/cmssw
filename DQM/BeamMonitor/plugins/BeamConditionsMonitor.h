@@ -24,53 +24,51 @@
 //
 
 class BeamConditionsMonitor : public edm::EDAnalyzer {
- public:
-  BeamConditionsMonitor( const edm::ParameterSet& );
+public:
+  BeamConditionsMonitor(const edm::ParameterSet&);
   ~BeamConditionsMonitor() override;
 
- protected:
-   
+  typedef dqm::legacy::MonitorElement MonitorElement;
+  typedef dqm::legacy::DQMStore DQMStore;
+
+protected:
   // BeginJob
   void beginJob() override;
 
   // BeginRun
   void beginRun(const edm::Run& r, const edm::EventSetup& c) override;
-  
+
   // Fake Analyze
   void analyze(const edm::Event& e, const edm::EventSetup& c) override;
-  
-  void beginLuminosityBlock(const edm::LuminosityBlock& lumiSeg, 
-			    const edm::EventSetup& context) override;
-  
+
+  void beginLuminosityBlock(const edm::LuminosityBlock& lumiSeg, const edm::EventSetup& context) override;
+
   // DQM Client Diagnostic
-  void endLuminosityBlock(const edm::LuminosityBlock& lumiSeg, 
-			  const edm::EventSetup& c) override;
-  
+  void endLuminosityBlock(const edm::LuminosityBlock& lumiSeg, const edm::EventSetup& c) override;
+
   // EndRun
   void endRun(const edm::Run& r, const edm::EventSetup& c) override;
-  
+
   // Endjob
   void endJob() override;
-  
- private:
-  
+
+private:
   edm::ParameterSet parameters_;
   std::string monitorName_;
-  edm::InputTag bsSrc_; // beam spot
+  edm::InputTag bsSrc_;  // beam spot
   bool debug_;
-  
+
   DQMStore* dbe_;
-  
-  int countEvt_;      //counter
-  int countLumi_;      //counter
-  
+
+  int countEvt_;   //counter
+  int countLumi_;  //counter
+
   // ----------member data ---------------------------
   BeamSpotObjects condBeamSpot;
-  
+
   // MonitorElements
-  MonitorElement * h_x0_lumi;
-  MonitorElement * h_y0_lumi;
-  
+  MonitorElement* h_x0_lumi;
+  MonitorElement* h_y0_lumi;
 };
 
 #endif

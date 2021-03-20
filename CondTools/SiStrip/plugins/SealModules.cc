@@ -2,7 +2,6 @@
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 
-
 #include "CondTools/SiStrip/plugins/SiStripThresholdBuilder.h"
 DEFINE_FWK_MODULE(SiStripThresholdBuilder);
 
@@ -33,9 +32,6 @@ DEFINE_FWK_MODULE(SiStripBadChannelBuilder);
 #include "CondTools/SiStrip/plugins/SiStripBadFiberBuilder.h"
 DEFINE_FWK_MODULE(SiStripBadFiberBuilder);
 
-#include "CondTools/SiStrip/plugins/SiStripBadStripReader.h"
-DEFINE_FWK_MODULE(SiStripBadStripReader);
-
 #include "CondTools/SiStrip/plugins/SiStripDetVOffFakeBuilder.h"
 DEFINE_FWK_MODULE(SiStripDetVOffFakeBuilder);
 
@@ -59,4 +55,3 @@ DEFINE_FWK_MODULE(SiStripSummaryReader);
 
 #include "CondTools/SiStrip/plugins/SiStripSummaryBuilder.h"
 DEFINE_FWK_MODULE(SiStripSummaryBuilder);
-

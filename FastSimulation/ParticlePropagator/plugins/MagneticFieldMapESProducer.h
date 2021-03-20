@@ -7,19 +7,14 @@
 #include <memory>
 #include <string>
 
-class  MagneticFieldMapESProducer: public edm::ESProducer{
- public:
-  MagneticFieldMapESProducer(const edm::ParameterSet & p);
-  ~MagneticFieldMapESProducer() override; 
-  std::shared_ptr<MagneticFieldMap> produce(const MagneticFieldMapRecord &);
- private:
-  std::shared_ptr<MagneticFieldMap> _map;
+class MagneticFieldMapESProducer : public edm::ESProducer {
+public:
+  MagneticFieldMapESProducer(const edm::ParameterSet &p);
+  ~MagneticFieldMapESProducer() override;
+  std::unique_ptr<MagneticFieldMap> produce(const MagneticFieldMapRecord &);
+
+private:
   std::string _label;
 };
 
-
 #endif
-
-
-
-

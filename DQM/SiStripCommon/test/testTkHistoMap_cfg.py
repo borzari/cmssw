@@ -1,7 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("test")
-process.load("DQMServices.Core.DQM_cfg")
 
 process.load("Geometry.TrackerGeometryBuilder.trackerGeometry_cfi")
 
@@ -12,11 +11,14 @@ process.load("Geometry.CMSCommonData.cmsIdealGeometryXML_cfi")
 process.load("Alignment.CommonAlignmentProducer.FakeAlignmentSource_cfi")
 
 process.MessageLogger = cms.Service("MessageLogger",
-    debugModules = cms.untracked.vstring('*'),
+    cerr = cms.untracked.PSet(
+        enable = cms.untracked.bool(False)
+    ),
     cout = cms.untracked.PSet(
+        enable = cms.untracked.bool(True),
         threshold = cms.untracked.string('DEBUG')
     ),
-    destinations = cms.untracked.vstring('cout')
+    debugModules = cms.untracked.vstring('*')
 )
 
 process.maxEvents = cms.untracked.PSet(
@@ -24,9 +26,10 @@ process.maxEvents = cms.untracked.PSet(
 )
 process.source = cms.Source("EmptySource")
 
-process.TkDetMap = cms.Service("TkDetMap")
-
-process.SiStripDetInfoFileReader = cms.Service("SiStripDetInfoFileReader")
+process.load("DQM.SiStripCommon.TkHistoMap_cff")
+# load TrackerTopology (needed for TkDetMap and TkHistoMap)
+process.load("Geometry.TrackerGeometryBuilder.trackerParameters_cfi")
+process.trackerTopology = cms.ESProducer("TrackerTopologyEP")
 
 process.tester = cms.EDAnalyzer("testTkHistoMap",
                               readFromFile = cms.bool(False)

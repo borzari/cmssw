@@ -20,7 +20,7 @@ process.source = cms.Source("EmptySource",
                             numberEventsInRun = cms.untracked.uint32(1)
                             )
 
-process.load("Configuration.StandardSequences.MagneticField_AutoFromDBCurrent_cff")
+process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("Configuration.StandardSequences.GeometryRecoDB_cff")
 process.load("Configuration.StandardSequences.Reconstruction_cff")
 
@@ -63,16 +63,14 @@ process.detidselectortest = cms.EDAnalyzer("DetIdSelectorTest",
 #process.detidselectortest.selections.extend(OccupancyPlotsStripWantedSubDets)
 #process.detidselectortest.selections.extend(OccupancyPlotsPixelWantedSubDets)
 
-process.DQMStore = cms.Service("DQMStore")
-process.TkDetMap = cms.Service("TkDetMap")
-process.SiStripDetInfoFileReader = cms.Service("SiStripDetInfoFileReader")
+process.load("DQM.SiStripCommon.TkHistoMap_cff")
 
 #process.Timing = cms.Service("Timing")
 
 
 # Conditions (Global Tag is used here):
-process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff")
-from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
+process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
+from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, options.globalTag, '')
 
 process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(True))

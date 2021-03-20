@@ -28,18 +28,16 @@ SimGeneralAOD = cms.PSet(
                                            'keep int_*_bunchSpacing_*',
                                            'keep *_genPUProtons_*_*') 
 )
+# Event content for premixing library
+SimGeneralPREMIX = cms.PSet(
+    outputCommands = cms.untracked.vstring()
+)
 
-# mods for HGCAL
-_phase2_hgc_extraCommands = [ 'keep *_mix_HGCDigisEE_*', 'keep *_mix_HGCDigisHEfront_*', 'keep *_mix_HGCDigisHEback_*', 
-                              'keep *_mix_MergedCaloTruth_*' ]
-from Configuration.Eras.Modifier_phase2_hgcal_cff import phase2_hgcal
-phase2_hgcal.toModify( SimGeneralRAW, outputCommands = SimGeneralRAW.outputCommands + _phase2_hgc_extraCommands )
-phase2_hgcal.toModify( SimGeneralFEVTDEBUG, outputCommands = SimGeneralFEVTDEBUG.outputCommands + _phase2_hgc_extraCommands )
-phase2_hgcal.toModify( SimGeneralRECO, outputCommands = SimGeneralRECO.outputCommands + _phase2_hgc_extraCommands )
-
-_phase2_timing_extraCommands = [ 'keep *_mix_FTLBarrel_*','keep *_mix_FTLEndcap_*','keep *_mix_InitialVertices_*' ]
-from Configuration.Eras.Modifier_phase2_timing_cff import phase2_timing
-phase2_timing.toModify( SimGeneralRAW, outputCommands = SimGeneralRAW.outputCommands + _phase2_timing_extraCommands )
-phase2_timing.toModify( SimGeneralFEVTDEBUG, outputCommands = SimGeneralFEVTDEBUG.outputCommands + _phase2_timing_extraCommands )
-phase2_timing.toModify( SimGeneralRECO, outputCommands = SimGeneralRECO.outputCommands + _phase2_timing_extraCommands )
-
+_pp_on_AA_extraCommands = ['keep CrossingFramePlaybackInfoNew_mix_*_*','keep *_heavyIon_*_*']
+from Configuration.Eras.Modifier_pp_on_XeXe_2017_cff import pp_on_XeXe_2017
+from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
+for e in [pp_on_XeXe_2017, pp_on_AA]:
+    e.toModify( SimGeneralRAW, outputCommands = SimGeneralRAW.outputCommands + _pp_on_AA_extraCommands )
+    e.toModify( SimGeneralFEVTDEBUG, outputCommands = SimGeneralFEVTDEBUG.outputCommands + _pp_on_AA_extraCommands )
+    e.toModify( SimGeneralRECO, outputCommands = SimGeneralRECO.outputCommands + _pp_on_AA_extraCommands )
+    e.toModify( SimGeneralAOD, outputCommands = SimGeneralAOD.outputCommands + _pp_on_AA_extraCommands )

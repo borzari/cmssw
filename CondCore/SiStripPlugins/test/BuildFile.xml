@@ -1,8 +1,7 @@
-<use   name="CondCore/CondDB"/>
-<use   name="CondCore/Utilities"/>
-<use   name="CondFormats/Common"/>
-<use   name="FWCore/PluginManager"/>
-<use   name="FWCore/Utilities"/>
-<use   name="CommonTools/TrackerMap"/>
-<bin   file="testSiStripPayloadInspector.cpp" name="testSiStripPayloadInspector">
+<use name="CommonTools/TrackerMap"/>
+<use name="CondCore/Utilities"/>
+<use name="FWCore/PluginManager"/>
+<use name="CalibTracker/StandaloneTrackerTopology"/>
+<use name="roothistpainter"/>
+<bin file="testSiStripPayloadInspector.cpp" name="testSiStripPayloadInspector">
 </bin>

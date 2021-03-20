@@ -1,8 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 
-from Configuration.StandardSequences.Eras import eras
 
-process = cms.Process('RECO',eras.Phase2)
+from Configuration.Eras.Era_Phase2_cff import Phase2
+process = cms.Process('RECO',Phase2)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -106,12 +106,7 @@ from SimGeneral.MixingModule.fullMixCustomize_cff import setCrossingFrameOn
 process = setCrossingFrameOn(process)
 
 # End of customisation functions
-#do not add changes to your config after this point (unless you know what you are doing)
-from FWCore.ParameterSet.Utilities import convertToUnscheduled
-process=convertToUnscheduled(process)
 process.load('Configuration.StandardSequences.PATMC_cff')
-from FWCore.ParameterSet.Utilities import cleanUnscheduled
-process=cleanUnscheduled(process)
 
 # customisation of the process.
 

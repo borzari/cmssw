@@ -9,9 +9,10 @@
 #include "RecoTauTag/HLTProducers/interface/L2TauJetsMerger.h"
 #include "RecoTauTag/HLTProducers/interface/CaloTowerCreatorForTauHLT.h"
 #include "RecoTauTag/HLTProducers/interface/CaloTowerFromL1TCreatorForTauHLT.h"
-#include "RecoTracker/TkTrackingRegions/interface/TrackingRegionProducerFactory.h" 	 
-#include "RecoTracker/TkTrackingRegions/interface/TrackingRegionProducer.h" 	 
-#include "TauRegionalPixelSeedGenerator.h" 	 
+#include "RecoTauTag/HLTProducers/interface/CaloTowerFromL1TSeededCreatorForTauHLT.h"
+#include "RecoTracker/TkTrackingRegions/interface/TrackingRegionProducerFactory.h"
+#include "RecoTracker/TkTrackingRegions/interface/TrackingRegionProducer.h"
+#include "TauRegionalPixelSeedGenerator.h"
 #include "TrackingRegionsFromBeamSpotAndL2Tau.h"
 #include "RecoTauTag/HLTProducers/interface/TauJetSelectorForHLTTrackSeeding.h"
 #include "RecoTauTag/HLTProducers/interface/VertexFromTrackProducer.h"
@@ -23,12 +24,16 @@
 #include "DataFormats/JetReco/interface/PFJet.h"
 #include "DataFormats/JetReco/interface/CaloJet.h"
 #include "RecoTauTag/HLTProducers/interface/L1TJetsMatching.h"
+#include "RecoTauTag/HLTProducers/interface/PFJetsMaxInvMassModule.h"
+#include "RecoTauTag/HLTProducers/interface/PFTauL1TJetsMatching.h"
 
-typedef L1TJetsMatching<reco::PFJet> L1TPFJetsMatching ;
-typedef L1TJetsMatching<reco::CaloJet> L1TCaloJetsMatching ;
+typedef L1TJetsMatching<reco::PFJet> L1TPFJetsMatching;
+typedef L1TJetsMatching<reco::CaloJet> L1TCaloJetsMatching;
 
-DEFINE_EDM_PLUGIN(TrackingRegionProducerFactory, TauRegionalPixelSeedGenerator, "TauRegionalPixelSeedGenerator");      
-DEFINE_EDM_PLUGIN(TrackingRegionProducerFactory, TrackingRegionsFromBeamSpotAndL2Tau, "TrackingRegionsFromBeamSpotAndL2Tau");
+DEFINE_EDM_PLUGIN(TrackingRegionProducerFactory, TauRegionalPixelSeedGenerator, "TauRegionalPixelSeedGenerator");
+DEFINE_EDM_PLUGIN(TrackingRegionProducerFactory,
+                  TrackingRegionsFromBeamSpotAndL2Tau,
+                  "TrackingRegionsFromBeamSpotAndL2Tau");
 
 #include "RecoTracker/TkTrackingRegions/interface/TrackingRegionEDProducerT.h"
 using TauRegionalPixelSeedTrackingRegionEDProducer = TrackingRegionEDProducerT<TauRegionalPixelSeedGenerator>;
@@ -42,6 +47,7 @@ DEFINE_FWK_MODULE(L1HLTTauMatching);
 DEFINE_FWK_MODULE(L1THLTTauMatching);
 DEFINE_FWK_MODULE(CaloTowerCreatorForTauHLT);
 DEFINE_FWK_MODULE(CaloTowerFromL1TCreatorForTauHLT);
+DEFINE_FWK_MODULE(CaloTowerFromL1TSeededCreatorForTauHLT);
 DEFINE_FWK_MODULE(PFTauToJetProducer);
 DEFINE_FWK_MODULE(PFJetToCaloProducer);
 DEFINE_FWK_MODULE(TauJetSelectorForHLTTrackSeeding);
@@ -52,3 +58,5 @@ DEFINE_FWK_MODULE(L2TauPixelIsoTagProducer);
 DEFINE_FWK_MODULE(L1TCaloJetsMatching);
 DEFINE_FWK_MODULE(L1TPFJetsMatching);
 DEFINE_FWK_MODULE(PFJetsTauOverlapRemoval);
+DEFINE_FWK_MODULE(PFJetsMaxInvMassModule);
+DEFINE_FWK_MODULE(PFTauL1TJetsMatching);

@@ -24,7 +24,7 @@
 
 
 DrawIteration::DrawIteration(unsigned int iterationNumber, const bool overlayMode):
-outpath_(0), file_(0), overlayMode_(overlayMode), yAxisFixed_(false), systematics_(false), cmsText_("")
+outpath_(nullptr), file_(nullptr), overlayMode_(overlayMode), yAxisFixed_(false), systematics_(false), cmsText_("")
 {
   if(!overlayMode_){
     std::stringstream ss_inpath;
@@ -149,24 +149,21 @@ DrawIteration::SectorValues DrawIteration::getSectorValues(TFile* file){
   }
   
   for(std::map<unsigned int, TBranch*>::const_iterator i_branch = m_branchName.begin(); i_branch != m_branchName.end(); ++i_branch){
-    std::string* value(nullptr);
-    i_branch->second->SetAddress(&value);
+    sectorValues.m_sectorName[i_branch->first] = nullptr;
+    i_branch->second->SetAddress( &( sectorValues.m_sectorName[i_branch->first]) );
     i_branch->second->GetEntry(0);
-    sectorValues.m_sectorName[i_branch->first] = value;
   }
   const unsigned int nIter(treeX->GetEntries());
   for(unsigned int iIter = 0; iIter < nIter; ++iIter){
     for(std::map<unsigned int, TBranch*>::const_iterator i_branch = m_branchX.begin(); i_branch != m_branchX.end(); ++i_branch){
-      double value(-999.);
-      (i_branch->second)->SetAddress(&value);
+      sectorValues.m_sectorValueX[i_branch->first].push_back(-999);
+      (i_branch->second)->SetAddress(&(sectorValues.m_sectorValueX[i_branch->first].back()));
       (i_branch->second)->GetEntry(iIter);
-      sectorValues.m_sectorValueX[i_branch->first].push_back(value);
     }
     for(std::map<unsigned int, TBranch*>::const_iterator i_branch = m_branchY.begin(); i_branch != m_branchY.end(); ++i_branch){
-      double value(-999.);
-      (i_branch->second)->SetAddress(&value);
+      sectorValues.m_sectorValueY[i_branch->first].push_back(-999);
+      (i_branch->second)->SetAddress(&(sectorValues.m_sectorValueY[i_branch->first].back()));
       (i_branch->second)->GetEntry(iIter);
-      sectorValues.m_sectorValueY[i_branch->first].push_back(value);
     }
   }
   return sectorValues;
@@ -682,82 +679,82 @@ void DrawIteration::drawFinals(const std::string& xOrY){
       std::vector<std::pair<TH1*, TString> >::iterator i_hist;
       unsigned int iHist(1);
       for(i_hist = v_hist.begin(); i_hist != v_hist.end(); ++i_hist, ++iHist){
-      TH1* hist((*i_hist).first);
-      if(iHist==1){
-        hist->Draw("e0");
+        TH1* hist((*i_hist).first);
+        if(iHist==1){
+          hist->Draw("e0");
+        }
+        else{
+          hist->SetLineColor(iHist);
+          hist->SetMarkerColor(iHist);
+          hist->Draw("e0same");
+        }
       }
-      else{
-        hist->SetLineColor(iHist);
-        hist->SetMarkerColor(iHist);
-        hist->Draw("e0same");
-      }
-    }
       
       TH1* systHist(nullptr);
       if(systematics_){
-  const std::vector<std::string>& v_name(*i_resultHist);
-  
-  bool pixel(false);
-  bool tob(false);
-        std::vector<std::string>::const_iterator i_name;
-        for(i_name=v_name.begin(); i_name!=v_name.end(); ++i_name){
-    const TString name((*i_name).c_str());
-    if(name.BeginsWith("Bpix") || name.BeginsWith("Fpix")){
-      pixel = true;
-      break;
-    }
-    if(name.BeginsWith("Tob")){
-      tob = true;
-      break;
-    }
-  }
-  if(pixel || tob)systHist = new TH1F("systematics", "sytematics", v_name.size(), 0, v_name.size());
-  if(pixel){
-    if(xOrY=="x"){
-      systHist->SetBinContent(1, 10.);
-      systHist->SetBinContent(2, 10.);
-      systHist->SetBinContent(3, 10.);
-      systHist->SetBinContent(4, 10.);
-      systHist->SetBinContent(5, 10.);
-      systHist->SetBinContent(6, 10.);
-      systHist->SetBinContent(7, 10.);
-      systHist->SetBinContent(8, 10.);
-      systHist->SetBinContent(9, 10.);
-      systHist->SetBinContent(10, 10.);
-      systHist->SetBinContent(13, 5.);
-    }
-    else if(xOrY=="y"){
-      systHist->SetBinContent(1, 15.);
-      systHist->SetBinContent(2, 15.);
-      systHist->SetBinContent(3, 15.);
-      systHist->SetBinContent(4, 20.);
-      systHist->SetBinContent(5, 15.);
-      systHist->SetBinContent(6, 15.);
-      systHist->SetBinContent(7, 15.);
-      systHist->SetBinContent(8, 15.);
-      systHist->SetBinContent(9, 15.);
-      systHist->SetBinContent(10, 15.);
-      systHist->SetBinContent(13, 5.);
-    }
-  }
-  if(tob){
-    systHist->SetBinContent(1, 15.);
-    systHist->SetBinContent(2, 15.);
-    systHist->SetBinContent(3, 10.);
-    systHist->SetBinContent(4, 10.);
-    systHist->SetBinContent(5, 10.);
-    systHist->SetBinContent(6, 10.);
-    systHist->SetBinContent(7, 15.);
-    systHist->SetBinContent(8, 10.);
-  }
+        const std::vector<std::string>& v_name(*i_resultHist);
+        
+        bool pixel(false);
+        bool tob(false);
+              std::vector<std::string>::const_iterator i_name;
+              for(i_name=v_name.begin(); i_name!=v_name.end(); ++i_name){
+          const TString name((*i_name).c_str());
+          if(name.BeginsWith("Bpix") || name.BeginsWith("Fpix")){
+            pixel = true;
+            break;
+          }
+          if(name.BeginsWith("Tob")){
+            tob = true;
+            break;
+          }
+        }
+        if(pixel || tob)systHist = new TH1F("systematics", "sytematics", v_name.size(), 0, v_name.size());
+        if(pixel){
+          if(xOrY=="x"){
+            systHist->SetBinContent(1, 10.);
+            systHist->SetBinContent(2, 10.);
+            systHist->SetBinContent(3, 10.);
+            systHist->SetBinContent(4, 10.);
+            systHist->SetBinContent(5, 10.);
+            systHist->SetBinContent(6, 10.);
+            systHist->SetBinContent(7, 10.);
+            systHist->SetBinContent(8, 10.);
+            systHist->SetBinContent(9, 10.);
+            systHist->SetBinContent(10, 10.);
+            systHist->SetBinContent(13, 5.);
+          }
+          else if(xOrY=="y"){
+            systHist->SetBinContent(1, 15.);
+            systHist->SetBinContent(2, 15.);
+            systHist->SetBinContent(3, 15.);
+            systHist->SetBinContent(4, 20.);
+            systHist->SetBinContent(5, 15.);
+            systHist->SetBinContent(6, 15.);
+            systHist->SetBinContent(7, 15.);
+            systHist->SetBinContent(8, 15.);
+            systHist->SetBinContent(9, 15.);
+            systHist->SetBinContent(10, 15.);
+            systHist->SetBinContent(13, 5.);
+          }
+        }
+        if(tob){
+          systHist->SetBinContent(1, 15.);
+          systHist->SetBinContent(2, 15.);
+          systHist->SetBinContent(3, 10.);
+          systHist->SetBinContent(4, 10.);
+          systHist->SetBinContent(5, 10.);
+          systHist->SetBinContent(6, 10.);
+          systHist->SetBinContent(7, 15.);
+          systHist->SetBinContent(8, 10.);
+        }
       }
       
       if(systHist){
         systHist->SetFillColor(1);
-  systHist->SetFillStyle(3004);
-  systHist->Draw("same");
+        systHist->SetFillStyle(3004);
+        systHist->Draw("same");
       }
-      
+        
       canvas->Modified();
       canvas->Update();
       
@@ -769,13 +766,13 @@ void DrawIteration::drawFinals(const std::string& xOrY){
       legend->SetMargin(0.30);
       legend->SetBorderSize(0);
       
-      if(v_hist.size()>1){
+      if(v_hist.size()>0){
         for(i_hist = v_hist.begin(), iHist = 1; i_hist != v_hist.end(); ++i_hist, ++iHist){
-    legend->AddEntry((*i_hist).first, (*i_hist).second, "lp");
-  }
-  legend->Draw("same");
+          legend->AddEntry((*i_hist).first, (*i_hist).second, "lp");
+        }
+        legend->Draw("same");
       }
-      
+        
       canvas->Modified();
       canvas->Update();
       
@@ -785,7 +782,7 @@ void DrawIteration::drawFinals(const std::string& xOrY){
         cmsText->SetNDC();
         cmsText->Draw("same");
       }
-      
+        
       canvas->Modified();
       canvas->Update();
       

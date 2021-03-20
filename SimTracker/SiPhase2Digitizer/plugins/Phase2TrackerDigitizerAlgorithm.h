@@ -4,20 +4,22 @@
 #include <map>
 #include <memory>
 #include <vector>
-#include <iostream>
+
 #include "DataFormats/GeometrySurface/interface/GloballyPositioned.h"
-#include "DataFormats/GeometryVector/interface/LocalPoint.h"
 #include "FWCore/Framework/interface/ESHandle.h"
-#include "SimDataFormats/EncodedEventId/interface/EncodedEventId.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
-#include "SimTracker/Common/interface/SimHitInfoForLinks.h"
 #include "DataFormats/Math/interface/approx_exp.h"
+#include "SimDataFormats/TrackerDigiSimLink/interface/PixelDigiSimLink.h"
 #include "DataFormats/SiPixelDigi/interface/PixelDigi.h"
 #include "DataFormats/Phase2TrackerDigi/interface/Phase2TrackerDigi.h"
-#include "SimDataFormats/TrackerDigiSimLink/interface/PixelDigiSimLink.h"
 
 #include "SimTracker/SiPhase2Digitizer/plugins/DigitizerUtility.h"
 #include "SimTracker/SiPhase2Digitizer/plugins/Phase2TrackerDigitizerFwd.h"
+
+// Units and Constants
+#include "DataFormats/Math/interface/CMSUnits.h"
+#include "CLHEP/Units/GlobalPhysicalConstants.h"
+#include "CLHEP/Units/GlobalSystemOfUnits.h"
 
 // forward declarations
 // For the random numbers
@@ -25,12 +27,12 @@ namespace CLHEP {
   class HepRandomEngine;
   class RandGaussQ;
   class RandFlat;
-}
+}  // namespace CLHEP
 
 namespace edm {
   class EventSetup;
   class ParameterSet;
-}
+}  // namespace edm
 
 class DetId;
 class GaussianTailNoiseGenerator;
@@ -39,181 +41,200 @@ class SiPixelFedCablingMap;
 class SiPixelGainCalibrationOfflineSimService;
 class SiPixelLorentzAngle;
 class SiPixelQuality;
+class SiPhase2OuterTrackerLorentzAngle;
 class TrackerGeometry;
 class TrackerTopology;
 
-class Phase2TrackerDigitizerAlgorithm  {
- public:
-  Phase2TrackerDigitizerAlgorithm(const edm::ParameterSet& conf_common, const edm::ParameterSet& conf_specific, CLHEP::HepRandomEngine&);
-  virtual ~Phase2TrackerDigitizerAlgorithm(); 
+// REMEMBER CMS conventions:
+// -- Energy: GeV
+// -- momentum: GeV/c
+// -- mass: GeV/c^2
+// -- Distance, position: cm
+// -- Time: ns
+// -- Angles: radian
+// Some constants in convenient units
+constexpr double c_cm_ns = CLHEP::c_light * CLHEP::ns / CLHEP::cm;
+constexpr double c_inv = 1.0 / c_cm_ns;
+
+class Phase2TrackerDigitizerAlgorithm {
+public:
+  Phase2TrackerDigitizerAlgorithm(const edm::ParameterSet& conf_common, const edm::ParameterSet& conf_specific);
+  virtual ~Phase2TrackerDigitizerAlgorithm();
 
   // initialization that cannot be done in the constructor
   virtual void init(const edm::EventSetup& es) = 0;
-  virtual void initializeEvent() {
-    _signal.clear();
-  }
+  virtual void initializeEvent(CLHEP::HepRandomEngine& eng);
+
   // run the algorithm to digitize a single det
   virtual void accumulateSimHits(const std::vector<PSimHit>::const_iterator inputBegin,
-				 const std::vector<PSimHit>::const_iterator inputEnd,
-				 const size_t inputBeginGlobalIndex,
-				 const unsigned int tofBin,
-				 const Phase2TrackerGeomDetUnit* pixdet,
-				 const GlobalVector& bfield) = 0;
- virtual void digitize(const Phase2TrackerGeomDetUnit* pixdet,
-		       std::map<int, DigitizerUtility::DigiSimInfo>& digi_map,
-		       const TrackerTopology* tTopo);
+                                 const std::vector<PSimHit>::const_iterator inputEnd,
+                                 const size_t inputBeginGlobalIndex,
+                                 const uint32_t tofBin,
+                                 const Phase2TrackerGeomDetUnit* pixdet,
+                                 const GlobalVector& bfield);
+  virtual void digitize(const Phase2TrackerGeomDetUnit* pixdet,
+                        std::map<int, DigitizerUtility::DigiSimInfo>& digi_map,
+                        const TrackerTopology* tTopo);
+  virtual bool select_hit(const PSimHit& hit, double tCorr, double& sigScale) const { return true; }
+  virtual bool isAboveThreshold(const DigitizerUtility::SimHitInfo* hitInfo, float charge, float thr) const {
+    return true;
+  }
 
- protected:
-  // Accessing Lorentz angle from DB:
-  edm::ESHandle<SiPixelLorentzAngle> SiPixelLorentzAngle_;
+  // For premixing
+  void loadAccumulator(uint32_t detId, const std::map<int, float>& accumulator);
+
+protected:
+  // Accessing Inner Tracker Lorentz angle from DB:
+  edm::ESHandle<SiPixelLorentzAngle> siPixelLorentzAngle_;
+
+  // Accessing Outer Tracker Lorentz angle from DB:
+  edm::ESHandle<SiPhase2OuterTrackerLorentzAngle> siPhase2OTLorentzAngle_;
 
   // Accessing Dead pixel modules from DB:
-  edm::ESHandle<SiPixelQuality> SiPixelBadModule_;
+  edm::ESHandle<SiPixelQuality> siPixelBadModule_;
 
   // Accessing Map and Geom:
-  edm::ESHandle<SiPixelFedCablingMap> map_;
+  edm::ESHandle<SiPixelFedCablingMap> fedCablingMap_;
   edm::ESHandle<TrackerGeometry> geom_;
   struct SubdetEfficiencies {
     SubdetEfficiencies(const edm::ParameterSet& conf);
     std::vector<double> barrel_efficiencies;
     std::vector<double> endcap_efficiencies;
   };
-  
-  // Internal type aliases 
-  using signal_map_type           = std::map<int, DigitizerUtility::Amplitude, std::less<int> >;  // from Digi.Skel.
-  using signal_map_iterator       = signal_map_type::iterator; // from Digi.Skel.  
-  using signal_map_const_iterator = signal_map_type::const_iterator; // from Digi.Skel.  
-  using simlink_map               = std::map<unsigned int, std::vector<float>,std::less<unsigned int> > ;
-  using signalMaps                = std::map<uint32_t, signal_map_type> ;
-  using Frame                     = GloballyPositioned<double> ;
-  using Parameters                = std::vector<edm::ParameterSet> ;
-  
+
+  // Internal type aliases
+  using signal_map_type = std::map<int, DigitizerUtility::Amplitude, std::less<int> >;
+  using signalMaps = std::map<uint32_t, signal_map_type>;
+  using Frame = GloballyPositioned<double>;
+  using Parameters = std::vector<edm::ParameterSet>;
+
   // Contains the accumulated hit info.
   signalMaps _signal;
 
   const bool makeDigiSimLinks_;
 
   const bool use_ineff_from_db_;
-  const bool use_module_killing_; // remove or not the dead pixel modules
-  const bool use_deadmodule_DB_; // if we want to get dead pixel modules from the DataBase.
-  const bool use_LorentzAngle_DB_; // if we want to get Lorentz angle from the DataBase.
-  
-  const Parameters DeadModules;
+  const bool use_module_killing_;   // remove or not the dead pixel modules
+  const bool use_deadmodule_DB_;    // if we want to get dead pixel modules from the DataBase.
+  const bool use_LorentzAngle_DB_;  // if we want to get Lorentz angle from the DataBase.
 
-  // Variables 
-  // external parameters 
+  const Parameters deadModules_;
+
+  // Variables
+  // external parameters
   // go from Geant energy GeV to number of electrons
-  const float GeVperElectron; // 3.7E-09 
-    
+  const float GeVperElectron_;  // 3.7E-09
+
   //-- drift
-  const bool alpha2Order;          // Switch on/off of E.B effect 
-  const bool addXtalk;
-  const float interstripCoupling;     
-  const float Sigma0; //=0.0007  // Charge diffusion in microns for 300 micron Si
-  const float SigmaCoeff; // delta in the diffusion across the strip pitch 
-  
+  const bool alpha2Order_;  // Switch on/off of E.B effect
+  const bool addXtalk_;
+  const float interstripCoupling_;
+  const float Sigma0_;      //=0.0007  // Charge diffusion in microns for 300 micron Si
+  const float SigmaCoeff_;  // delta in the diffusion across the strip pitch
+
   //-- induce_signal
-  const float ClusterWidth;       // Gaussian charge cutoff width in sigma units
-  
-  //-- make_digis 
-  const bool doDigitalReadout;        //  Flag to decide analog or digital readout
-  const float theElectronPerADC;     // Gain, number of electrons per adc count.
-  const int theAdcFullScale;         // Saturation count, 255=8bit.
-  const float theNoiseInElectrons;   // Noise (RMS) in units of electrons.
-  const float theReadoutNoise;       // Noise of the readount chain in elec,
+  const float clusterWidth_;  // Gaussian charge cutoff width in sigma units
+
+  //-- make_digis
+  const int thePhase2ReadoutMode_;   //  Flag to decide readout mode (digital/Analog dual slope etc.)
+  const float theElectronPerADC_;    // Gain, number of electrons per adc count.
+  const int theAdcFullScale_;        // Saturation count, 255=8bit.
+  const float theNoiseInElectrons_;  // Noise (RMS) in units of electrons.
+  const float theReadoutNoise_;      // Noise of the readount chain in elec,
 
   // inludes DCOL-Amp,TBM-Amp, Alt, AOH,OptRec.
-  const float theThresholdInE_Endcap;  // threshold in electrons Endcap.
-  const float theThresholdInE_Barrel;  // threshold in electrons Barrel.
+  const float theThresholdInE_Endcap_;  // threshold in electrons Endcap.
+  const float theThresholdInE_Barrel_;  // threshold in electrons Barrel.
 
-  const double theThresholdSmearing_Endcap;
-  const double theThresholdSmearing_Barrel;
+  const double theThresholdSmearing_Endcap_;
+  const double theThresholdSmearing_Barrel_;
 
-  const double theHIPThresholdInE_Endcap;
-  const double theHIPThresholdInE_Barrel;
+  const double theHIPThresholdInE_Endcap_;
+  const double theHIPThresholdInE_Barrel_;
 
-  const float theTofLowerCut;             // Cut on the particle TOF
-  const float theTofUpperCut;             // Cut on the particle TOF
-  const float tanLorentzAnglePerTesla_Endcap;   //FPix Lorentz angle tangent per Tesla
-  const float tanLorentzAnglePerTesla_Barrel;   //BPix Lorentz angle tangent per Tesla
+  const float theTofLowerCut_;                  // Cut on the particle TOF
+  const float theTofUpperCut_;                  // Cut on the particle TOF
+  const float tanLorentzAnglePerTesla_Endcap_;  //FPix Lorentz angle tangent per Tesla
+  const float tanLorentzAnglePerTesla_Barrel_;  //BPix Lorentz angle tangent per Tesla
 
   // -- add_noise
-  const bool addNoise;
-  const bool addNoisyPixels;
-  const bool fluctuateCharge;
+  const bool addNoise_;
+  const bool addNoisyPixels_;
+  const bool fluctuateCharge_;
 
   //-- pixel efficiency
-  const bool AddPixelInefficiency;        // bool to read in inefficiencies
+  const bool addPixelInefficiency_;  // bool to read in inefficiencies
 
-  const bool addThresholdSmearing;
-    
+  const bool addThresholdSmearing_;
+
   // pseudoRadDamage
-  const double pseudoRadDamage;       // Decrease the amount off freed charge that reaches the collector
-  const double pseudoRadDamageRadius; // Only apply pseudoRadDamage to pixels with radius<=pseudoRadDamageRadius
+  const double pseudoRadDamage_;        // Decrease the amount off freed charge that reaches the collector
+  const double pseudoRadDamageRadius_;  // Only apply pseudoRadDamage to pixels with radius<=pseudoRadDamageRadius
 
   // The PDTable
   // HepPDTable *particleTable;
   // ParticleDataTable *particleTable;
 
   //-- charge fluctuation
-  const double tMax;  // The delta production cut, should be as in OSCAR = 30keV
+  const double tMax_;  // The delta production cut, should be as in OSCAR = 30keV
 
   // Bad Pixels to be killed
-  std::vector<edm::ParameterSet> badPixels;
+  Parameters badPixels_;
 
-  // The eloss fluctuation class from G4. Is the right place? 
-  const std::unique_ptr<SiG4UniversalFluctuation> fluctuate;   // make a pointer
-  const std::unique_ptr<GaussianTailNoiseGenerator> theNoiser;
+  // The eloss fluctuation class from G4. Is the right place?
+  const std::unique_ptr<SiG4UniversalFluctuation> fluctuate_;  // make a pointer
+  const std::unique_ptr<GaussianTailNoiseGenerator> theNoiser_;
 
-  //-- additional member functions    
+  //-- additional member functions
   // Private methods
-  void primary_ionization( const PSimHit& hit, std::vector<DigitizerUtility::EnergyDepositUnit>& ionization_points) const;
-  void drift(const PSimHit& hit,
-	     const Phase2TrackerGeomDetUnit* pixdet,
-	     const GlobalVector& bfield,
-	     const std::vector<DigitizerUtility::EnergyDepositUnit>& ionization_points,
-	     std::vector<DigitizerUtility::SignalPoint>& collection_points) const;
-  void induce_signal(const PSimHit& hit,
-		     const size_t hitIndex,
-		     const unsigned int tofBin,
-		     const Phase2TrackerGeomDetUnit* pixdet,
-		     const std::vector<DigitizerUtility::SignalPoint>& collection_points);
-  void fluctuateEloss(int particleId, float momentum, float eloss, 
-		      float length, int NumberOfSegments,
-		      std::vector<float> & elossVector) const;
-  virtual void add_noise(const Phase2TrackerGeomDetUnit* pixdet, float thePixelThreshold);
+  virtual std::vector<DigitizerUtility::EnergyDepositUnit> primary_ionization(const PSimHit& hit) const;
+  virtual std::vector<DigitizerUtility::SignalPoint> drift(
+      const PSimHit& hit,
+      const Phase2TrackerGeomDetUnit* pixdet,
+      const GlobalVector& bfield,
+      const std::vector<DigitizerUtility::EnergyDepositUnit>& ionization_points) const;
+  virtual void induce_signal(const PSimHit& hit,
+                             const size_t hitIndex,
+                             const uint32_t tofBin,
+                             const Phase2TrackerGeomDetUnit* pixdet,
+                             const std::vector<DigitizerUtility::SignalPoint>& collection_points);
+  virtual std::vector<float> fluctuateEloss(
+      int particleId, float momentum, float eloss, float length, int NumberOfSegments) const;
+  virtual void add_noise(const Phase2TrackerGeomDetUnit* pixdet);
+  virtual void add_cross_talk(const Phase2TrackerGeomDetUnit* pixdet);
+  virtual void add_noisy_cells(const Phase2TrackerGeomDetUnit* pixdet, float thePixelThreshold);
   virtual void pixel_inefficiency(const SubdetEfficiencies& eff,
-				  const Phase2TrackerGeomDetUnit* pixdet,
-				  const TrackerTopology* tTopo);
-  
+                                  const Phase2TrackerGeomDetUnit* pixdet,
+                                  const TrackerTopology* tTopo);
+
   virtual void pixel_inefficiency_db(uint32_t detID);
 
   // access to the gain calibration payloads in the db. Only gets initialized if check_dead_pixels_ is set to true.
-  const std::unique_ptr<SiPixelGainCalibrationOfflineSimService> theSiPixelGainCalibrationService_;    
+  const std::unique_ptr<SiPixelGainCalibrationOfflineSimService> theSiPixelGainCalibrationService_;
   LocalVector DriftDirection(const Phase2TrackerGeomDetUnit* pixdet,
-			     const GlobalVector& bfield,
-			     const DetId& detId) const;
-  
-  virtual void module_killing_conf(uint32_t detID); // remove dead modules using the list in the configuration file PixelDigi_cfi.py
-  virtual void module_killing_DB(uint32_t detID);  // remove dead modules uisng the list in the DB
+                             const GlobalVector& bfield,
+                             const DetId& detId) const;
+
+  // remove dead modules using the list in the configuration file PixelDigi_cfi.py
+  virtual void module_killing_conf(uint32_t detID);
+  virtual void module_killing_DB(
+      const Phase2TrackerGeomDetUnit* pixdet);  // remove dead modules uisng the list in the DB
 
   const SubdetEfficiencies subdetEfficiencies_;
-  
-  // For random numbers
-  const std::unique_ptr<CLHEP::RandFlat> flatDistribution_;
-  const std::unique_ptr<CLHEP::RandGaussQ> gaussDistribution_;
-  
-  // Threshold gaussian smearing:
-  const std::unique_ptr<CLHEP::RandGaussQ> smearedThreshold_Endcap_;
-  const std::unique_ptr<CLHEP::RandGaussQ> smearedThreshold_Barrel_;
-  
-  //for engine passed into the constructor from Digitizer
-  CLHEP::HepRandomEngine* rengine_;   
 
-  double calcQ(float x) const {
-    auto xx = std::min(0.5f * x * x,12.5f);
-    return 0.5 * (1.0-std::copysign(std::sqrt(1.f- unsafe_expf<4>(-xx * (1.f + 0.2733f/(1.f + 0.147f * xx)))), x));
-  }
-  bool pixelFlag;
+  // For random numbers
+  std::unique_ptr<CLHEP::RandGaussQ> gaussDistribution_;
+
+  // Threshold gaussian smearing:
+  std::unique_ptr<CLHEP::RandGaussQ> smearedThreshold_Endcap_;
+  std::unique_ptr<CLHEP::RandGaussQ> smearedThreshold_Barrel_;
+
+  //for engine passed into the constructor from Digitizer
+  CLHEP::HepRandomEngine* rengine_;
+
+  // convert signal in electrons to ADC counts
+  int convertSignalToAdc(uint32_t detID, float signal_in_elec, float threshold);
+
+  bool pixelFlag_;
 };
 #endif

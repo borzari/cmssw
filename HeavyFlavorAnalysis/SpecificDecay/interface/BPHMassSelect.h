@@ -24,19 +24,19 @@
 // C++ Headers --
 //---------------
 
-
 //              ---------------------
 //              -- Class Interface --
 //              ---------------------
 
-class BPHMassSelect: public BPHMomentumSelect, public BPHMassCuts {
-
- public:
-
+class BPHMassSelect : public BPHMomentumSelect, public BPHMassCuts {
+public:
   /** Constructor
    */
-  BPHMassSelect( double minMass, double maxMass ): BPHMassCuts( minMass,
-                                                                maxMass ) {}
+  BPHMassSelect(double minMass, double maxMass) : BPHMassCuts(minMass, maxMass) {}
+
+  // deleted copy constructor and assignment operator
+  BPHMassSelect(const BPHMassSelect& x) = delete;
+  BPHMassSelect& operator=(const BPHMassSelect& x) = delete;
 
   /** Destructor
    */
@@ -45,19 +45,10 @@ class BPHMassSelect: public BPHMomentumSelect, public BPHMassCuts {
   /** Operations
    */
   /// select particle
-  bool accept( const BPHDecayMomentum& cand ) const override {
+  bool accept(const BPHDecayMomentum& cand) const override {
     double mass = cand.composite().mass();
-    return ( ( mass > mMin ) && ( mass < mMax ) );
+    return ((mass >= mMin) && (mass <= mMax));
   }
-
- private:
-
-  // private copy and assigment constructors
-  BPHMassSelect           ( const BPHMassSelect& x ) = delete;
-  BPHMassSelect& operator=( const BPHMassSelect& x ) = delete;
-
 };
 
-
 #endif
-

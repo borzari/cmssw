@@ -1,5 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 
+## Time Slew Parameters
+from CalibCalorimetry.HcalPlugins.HcalTimeSlew_cff import *
+
 ## Recalibration Parameters
 from DataFormats.HcalCalibObjects.HFRecalibrationParameters_cff import *
 
@@ -30,11 +33,13 @@ es_hardcode = cms.ESSource("HcalHardcodeCalibrations",
     testHEPlan1  = cms.bool(False),
     killHE = cms.bool(False),
     useLayer0Weight = cms.bool(False),
+    useIeta18depth1 = cms.bool(True),
     hb = cms.PSet(
         pedestal      = cms.double(3.285),
         pedestalWidth = cms.double(0.809),
         gain          = cms.vdouble(0.19),
         gainWidth     = cms.vdouble(0.0),
+        zsThreshold   = cms.int32(8),
         qieType       = cms.int32(0),
         qieOffset     = cms.vdouble(-0.49,1.8,7.2,37.9),
         qieSlope      = cms.vdouble(0.912,0.917,0.922,0.923),
@@ -42,13 +47,15 @@ es_hardcode = cms.ESSource("HcalHardcodeCalibrations",
         recoShape     = cms.int32(105),
         photoelectronsToAnalog = cms.double(0.3305),
         darkCurrent   = cms.vdouble(0.0),
-        doRadiationDamage = cms.bool(False),
+        noiseCorrelation  = cms.vdouble(0.0),
+        doRadiationDamage = cms.bool(False)
     ),
     he = cms.PSet(
         pedestal      = cms.double(3.163),
         pedestalWidth = cms.double(0.9698),
         gain          = cms.vdouble(0.23),
         gainWidth     = cms.vdouble(0),
+        zsThreshold   = cms.int32(9),
         qieType       = cms.int32(0),
         qieOffset     = cms.vdouble(-0.38,2.0,7.6,39.6),
         qieSlope      = cms.vdouble(0.912,0.916,0.920,0.922),
@@ -56,13 +63,15 @@ es_hardcode = cms.ESSource("HcalHardcodeCalibrations",
         recoShape     = cms.int32(105),
         photoelectronsToAnalog = cms.double(0.3305),
         darkCurrent   = cms.vdouble(0.0),
-        doRadiationDamage = cms.bool(False),
+        noiseCorrelation  = cms.vdouble(0.0),
+        doRadiationDamage = cms.bool(False)
     ),
     hf = cms.PSet(
         pedestal      = cms.double(9.354),
         pedestalWidth = cms.double(2.516),
         gain          = cms.vdouble(0.14,0.135),
         gainWidth     = cms.vdouble(0.0,0.0),
+        zsThreshold   = cms.int32(-9999),
         qieType       = cms.int32(0),
         qieOffset     = cms.vdouble(-0.87,1.4,7.8,-29.6),
         qieSlope      = cms.vdouble(0.359,0.358,0.360,0.367),
@@ -70,13 +79,15 @@ es_hardcode = cms.ESSource("HcalHardcodeCalibrations",
         recoShape     = cms.int32(301),
         photoelectronsToAnalog = cms.double(0.0),
         darkCurrent   = cms.vdouble(0.0),
-        doRadiationDamage = cms.bool(False),
+        noiseCorrelation  = cms.vdouble(0.0),
+        doRadiationDamage = cms.bool(False)
     ),
     ho = cms.PSet(
         pedestal      = cms.double(12.06),
         pedestalWidth = cms.double(0.6285),
         gain          = cms.vdouble(0.0060,0.0087),
         gainWidth     = cms.vdouble(0.0,0.0),
+        zsThreshold   = cms.int32(24),
         qieType       = cms.int32(0),
         qieOffset     = cms.vdouble(-0.44,1.4,7.1,38.5),
         qieSlope      = cms.vdouble(0.907,0.915,0.920,0.921),
@@ -84,20 +95,23 @@ es_hardcode = cms.ESSource("HcalHardcodeCalibrations",
         recoShape     = cms.int32(201),
         photoelectronsToAnalog = cms.double(4.0),
         darkCurrent   = cms.vdouble(0.0),
-        doRadiationDamage = cms.bool(False),
+        noiseCorrelation  = cms.vdouble(0.0),
+        doRadiationDamage = cms.bool(False)
     ),
     hbUpgrade = cms.PSet(
         pedestal      = cms.double(17.3),
         pedestalWidth = cms.double(1.5),
-        gain          = cms.vdouble(1/2276.), #51.72 is pe/GeV 44.0 is fC/pe.
+        gain          = cms.vdouble(0.0006252), # average from 2017 HEP17: ~40 is pe/GeV and 40.0 is fC/pe.
         gainWidth     = cms.vdouble(0),
+        zsThreshold   = cms.int32(16),
         qieType       = cms.int32(2),
         qieOffset     = cms.vdouble(0.,0.,0.,0.),
         qieSlope      = cms.vdouble(0.05376,0.05376,0.05376,0.05376), #1/(3.1*6) where 6 is shunt factor
-        mcShape       = cms.int32(203),
-        recoShape     = cms.int32(203),
-        photoelectronsToAnalog = cms.double(44.0),
+        mcShape       = cms.int32(206),
+        recoShape     = cms.int32(208),
+        photoelectronsToAnalog = cms.double(40.0),
         darkCurrent   = cms.vdouble(0.01,0.015),
+        noiseCorrelation  = cms.vdouble(0.26,0.254),
         doRadiationDamage = cms.bool(True),
         radiationDamage = cms.PSet(
             temperatureBase = cms.double(20),
@@ -105,21 +119,26 @@ es_hardcode = cms.ESSource("HcalHardcodeCalibrations",
             intlumiOffset = cms.double(150),
             depVsTemp = cms.double(0.0631),
             intlumiToNeutrons = cms.double(3.67e8),
-            depVsNeutrons = cms.vdouble(5.69e-11,7.90e-11),
+            # slopes taken from https://twiki.cern.ch/twiki/pub/CMSPublic/HcalDPGResultsCMSDPS2017042/dark_current_vs_lumi.png
+            # crosstalk divided out
+            # heUpgrade intlumiToNeutrons factor (below) used to convert from /fb-1 to /neutrons 
+            depVsNeutrons = cms.vdouble(5.543e-10,8.012e-10),
         ),
     ),
     heUpgrade = cms.PSet(
         pedestal      = cms.double(17.3),
         pedestalWidth = cms.double(1.5),
-        gain          = cms.vdouble(1/2276.), #51.72 is pe/GeV 44.0 is fC/pe.
+        gain          = cms.vdouble(0.0006252), # average from 2017 HEP17: ~40 is pe/GeV and 40.0 is fC/pe.
         gainWidth     = cms.vdouble(0),
+        zsThreshold   = cms.int32(16),
         qieType       = cms.int32(2),
         qieOffset     = cms.vdouble(0.,0.,0.,0.),
         qieSlope      = cms.vdouble(0.05376,0.05376,0.05376,0.05376), #1/(3.1*6) where 6 is shunt factor
-        mcShape       = cms.int32(203),
-        recoShape     = cms.int32(203),
-        photoelectronsToAnalog = cms.double(44.0),
+        mcShape       = cms.int32(206),
+        recoShape     = cms.int32(208),
+        photoelectronsToAnalog = cms.double(40.0),
         darkCurrent   = cms.vdouble(0.01,0.015),
+        noiseCorrelation  = cms.vdouble(0.26,0.254),
         doRadiationDamage = cms.bool(True),
         radiationDamage = cms.PSet(
             temperatureBase = cms.double(20),
@@ -127,7 +146,10 @@ es_hardcode = cms.ESSource("HcalHardcodeCalibrations",
             intlumiOffset = cms.double(75),
             depVsTemp = cms.double(0.0631),
             intlumiToNeutrons = cms.double(2.92e7),
-            depVsNeutrons = cms.vdouble(5.69e-11,7.90e-11),
+            # slopes taken from https://twiki.cern.ch/twiki/pub/CMSPublic/HcalDPGResultsCMSDPS2017042/dark_current_vs_lumi.png
+            # crosstalk divided out
+            # above factor used to convert from /fb-1 to /neutrons 
+            depVsNeutrons = cms.vdouble(5.543e-10,8.012e-10),
         ),
     ),
     hfUpgrade = cms.PSet(
@@ -135,6 +157,7 @@ es_hardcode = cms.ESSource("HcalHardcodeCalibrations",
         pedestalWidth = cms.double(3.33),
         gain          = cms.vdouble(0.14,0.135),
         gainWidth     = cms.vdouble(0.0,0.0),
+        zsThreshold   = cms.int32(-9999),
         qieType       = cms.int32(1),
         qieOffset     = cms.vdouble(0.0697,-0.7405,12.38,-671.9),
         qieSlope      = cms.vdouble(0.297,0.298,0.298,0.313),
@@ -142,7 +165,8 @@ es_hardcode = cms.ESSource("HcalHardcodeCalibrations",
         recoShape     = cms.int32(301),
         photoelectronsToAnalog = cms.double(0.0),
         darkCurrent   = cms.vdouble(0.0),
-        doRadiationDamage = cms.bool(False),
+        noiseCorrelation  = cms.vdouble(0.0),
+        doRadiationDamage = cms.bool(False)
     ),
     # types (in order): HcalHOZecotek, HcalHOHamamatsu, HcalHEHamamatsu1, HcalHEHamamatsu2, HcalHBHamamatsu1, HcalHBHamamatsu2, HcalHPD
     SiPMCharacteristics = cms.VPSet(
@@ -168,6 +192,8 @@ _toGet = [
     'Gains',
     'Pedestals',
     'PedestalWidths',
+    'EffectivePedestals',
+    'EffectivePedestalWidths',
     'ChannelQuality',
     'ZSThresholds',
     'TimeCorrs',
@@ -199,18 +225,18 @@ from Configuration.Eras.Modifier_run2_HCAL_2017_cff import run2_HCAL_2017
 from Configuration.Eras.Modifier_run2_HF_2017_cff import run2_HF_2017
 from Configuration.Eras.Modifier_run2_HE_2017_cff import run2_HE_2017
 from Configuration.Eras.Modifier_run2_HEPlan1_2017_cff import run2_HEPlan1_2017
+from Configuration.Eras.Modifier_run2_HCAL_2018_cff import run2_HCAL_2018
 from Configuration.Eras.Modifier_run3_HB_cff import run3_HB
 from Configuration.Eras.Modifier_phase2_hcal_cff import phase2_hcal
+from Configuration.Eras.Modifier_phase2_hgcal_cff import phase2_hgcal
 
-run2_HCAL_2017.toModify( es_hardcode, useLayer0Weight = cms.bool(True) )
+run2_HCAL_2017.toModify( es_hardcode, useLayer0Weight = cms.bool(True), useIeta18depth1 = cms.bool(False) )
 run2_HF_2017.toModify( es_hardcode, useHFUpgrade = cms.bool(True) )
 run2_HE_2017.toModify( es_hardcode, useHEUpgrade = cms.bool(True), HEreCalibCutoff = cms.double(100.0) )
 run2_HEPlan1_2017.toModify( es_hardcode, testHEPlan1 = cms.bool(True), useHEUpgrade = cms.bool(False), HEreCalibCutoff = cms.double(20.0) )
+
+run2_HCAL_2018.toModify( es_hardcode, useLayer0Weight = cms.bool(True), useIeta18depth1 = cms.bool(False) )
 run3_HB.toModify( es_hardcode, useHBUpgrade = cms.bool(True), HBreCalibCutoff = cms.double(100.0) )
 
-# now that we have an emap
-phase2_hcal.toModify( es_hardcode, toGet = cms.untracked.vstring(_toGet_noEmap) )
-
-from Configuration.Eras.Modifier_phase2_hgcal_cff import phase2_hgcal
+phase2_hcal.toModify( es_hardcode, toGet = cms.untracked.vstring(_toGet_noEmap)) 
 phase2_hgcal.toModify( es_hardcode, killHE = cms.bool(True) )
-                            

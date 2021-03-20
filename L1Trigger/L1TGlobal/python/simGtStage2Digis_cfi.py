@@ -16,6 +16,9 @@ simGtStage2Digis = cms.EDProducer("L1TGlobalProducer",
     EtSumInputTag = cms.InputTag("simCaloStage2Digis"),
     AlgorithmTriggersUnmasked = cms.bool(True),    
     AlgorithmTriggersUnprescaled = cms.bool(True),
+    GetPrescaleColumnFromData = cms.bool(False),
+    RequireMenuToMatchAlgoBlkInput = cms.bool(False),
+    AlgoBlkInputTag = cms.InputTag("gtStage2Digis")
     # deprecated in Mike's version of producer:                              
     #ProduceL1GtDaqRecord = cms.bool(True),
     #GmtInputTag = cms.InputTag("gtInput"),

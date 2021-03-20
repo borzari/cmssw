@@ -20,6 +20,7 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "DataFormats/CaloTowers/interface/CaloTower.h"
+#include "DataFormats/CaloTowers/interface/CaloTowerDefs.h"
 #include "DataFormats/L1Trigger/interface/Tau.h"
 #include <string>
 
@@ -28,17 +29,17 @@ namespace edm {
 }
 
 class CaloTowerFromL1TCreatorForTauHLT : public edm::global::EDProducer<> {
- public:
+public:
   /// constructor from parameter set
-  CaloTowerFromL1TCreatorForTauHLT( const edm::ParameterSet & );
+  CaloTowerFromL1TCreatorForTauHLT(const edm::ParameterSet&);
   /// destructor
   ~CaloTowerFromL1TCreatorForTauHLT() override;
-  /// 
-  static void fillDescriptions( edm::ConfigurationDescriptions& desc );
+  ///
+  static void fillDescriptions(edm::ConfigurationDescriptions& desc);
 
- private:
+private:
   /// process one event
-  void produce( edm::StreamID sid, edm::Event& evt, const edm::EventSetup& stp ) const override;
+  void produce(edm::StreamID sid, edm::Event& evt, const edm::EventSetup& stp) const override;
 
   /// bunch crossing
   const int mBX;
@@ -58,7 +59,6 @@ class CaloTowerFromL1TCreatorForTauHLT : public edm::global::EDProducer<> {
   const double mEThreshold;
   //
   const int mTauId;
-
 };
 
 #endif

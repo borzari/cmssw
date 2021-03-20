@@ -6,10 +6,10 @@ from  PhysicsTools.NanoAOD.common_cff import *
 ##################### User floats producers, selectors ##########################
 
 
-
 ##################### Tables for final output and docs ##########################
 vertexTable = cms.EDProducer("VertexTableProducer",
     pvSrc = cms.InputTag("offlineSlimmedPrimaryVertices"),
+    goodPvCut = cms.string("!isFake && ndof > 4 && abs(z) <= 24 && position.Rho <= 2"), 
     svSrc = cms.InputTag("slimmedSecondaryVertices"),
     svCut = cms.string(""),
     dlenMin = cms.double(0),
@@ -29,8 +29,9 @@ svCandidateTable =  cms.EDProducer("SimpleCandidateFlatTableProducer",
         x   = Var("position().x()", float, doc = "secondary vertex X position, in cm",precision=10),
         y   = Var("position().y()", float, doc = "secondary vertex Y position, in cm",precision=10),
         z   = Var("position().z()", float, doc = "secondary vertex Z position, in cm",precision=14),
-        ndof   = Var("vertexNdof()", float, doc = "number of degrees of freedom",precision=8),
-        chi2   = Var("vertexNormalizedChi2()", float, doc = "reduced chi2, i.e. chi/ndof",precision=8),
+        ndof    = Var("vertexNdof()", float, doc = "number of degrees of freedom",precision=8),
+        chi2    = Var("vertexNormalizedChi2()", float, doc = "reduced chi2, i.e. chi/ndof",precision=8),
+        ntracks = Var("numberOfDaughters()", "uint8", doc = "number of tracks"),
     ),
 )
 svCandidateTable.variables.pt.precision=10

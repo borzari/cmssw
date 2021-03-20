@@ -43,9 +43,12 @@ process.VolumeBasedMagneticFieldESProducer.useParametrizedTrackerField = True
 # If you want to turn on/off pile-up
 #process.famosPileUp.PileUpSimulator.averageNumber = 5.0    
 # You may not want to simulate everything for your study
-process.famosSimHits.SimulateCalorimetry = True
-process.famosSimHits.SimulateTracking = True
-# process.famosSimHits.SimulateMuons = False
+process.fastSimProducer.SimulateCalorimetry = True
+for layer in process.fastSimProducer.detectorDefinition.BarrelLayers: 
+    layer.interactionModels = cms.untracked.vstring("pairProduction", "nuclearInteraction", "bremsstrahlung", "energyLoss", "multipleScattering", "trackerSimHits")
+for layer in process.fastSimProducer.detectorDefinition.ForwardLayers: 
+    layer.interactionModels = cms.untracked.vstring("pairProduction", "nuclearInteraction", "bremsstrahlung", "energyLoss", "multipleScattering", "trackerSimHits")
+# process.fastSimProducer.SimulateMuons = False
 
 # include Castor fast sim
 process.load("FastSimulation.ForwardDetectors.CastorFastReco_cff")
@@ -68,7 +71,7 @@ process.outpath = cms.EndPath(process.o1)
 #process.Timing =  cms.Service("Timing")
 #process.load("FWCore/MessageService/MessageLogger_cfi")
 #process.MessageLogger.destinations = cms.untracked.vstring("pyDetailedInfo.txt","cout")
-#process.MessageLogger.categories.append("FamosManager")
+#
 #process.MessageLogger.cout = cms.untracked.PSet(threshold=cms.untracked.string("INFO"),
 #                                                default=cms.untracked.PSet(limit=cms.untracked.int32(0)),
 #                                                FamosManager=cms.untracked.PSet(limit=cms.untracked.int32(100000)))

@@ -11,32 +11,34 @@
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Sources/interface/ProducerSourceFromFiles.h"
 #include "FWCore/Integration/test/ThingAlgorithm.h"
+#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 
 namespace edmtest {
   class ThingExtSource : public edm::ProducerSourceFromFiles {
   public:
-
     // The following is not yet used, but will be the primary
     // constructor when the parameter set system is available.
     //
     explicit ThingExtSource(edm::ParameterSet const& pset, edm::InputSourceDescription const& desc);
 
-    virtual ~ThingExtSource();
+    ~ThingExtSource() override;
 
-    virtual bool setRunAndEventInfo(edm::EventID&, edm::TimeValue_t&, edm::EventAuxiliary::ExperimentType&);
+    bool setRunAndEventInfo(edm::EventID&, edm::TimeValue_t&, edm::EventAuxiliary::ExperimentType&) override;
 
-    virtual void produce(edm::Event& e);
+    void produce(edm::Event& e) override;
 
-    virtual void beginRun(edm::Run& r);
+    void beginRun(edm::Run& r) override;
 
-    virtual void endRun(edm::Run& r);
+    void beginLuminosityBlock(edm::LuminosityBlock& lb) override;
 
-    virtual void beginLuminosityBlock(edm::LuminosityBlock& lb);
-
-    virtual void endLuminosityBlock(edm::LuminosityBlock& lb);
+    static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
   private:
+    //Not called by the framework, only used internally
+    void endRun(edm::Run& r);
+    void endLuminosityBlock(edm::LuminosityBlock& lb);
+
     ThingAlgorithm alg_;
   };
-}
+}  // namespace edmtest
 #endif

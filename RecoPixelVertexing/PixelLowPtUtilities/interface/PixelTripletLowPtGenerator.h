@@ -7,6 +7,11 @@
     provided Layers
  */
 
+#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/Records/interface/TrackerTopologyRcd.h"
+
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
@@ -20,35 +25,35 @@ class SiPixelClusterShapeCache;
 
 #include <vector>
 
-class   PixelTripletLowPtGenerator :
- public HitTripletGeneratorFromPairAndLayers {
-
-
- public:
-   PixelTripletLowPtGenerator( const edm::ParameterSet& cfg, edm::ConsumesCollector& iC);
+class PixelTripletLowPtGenerator : public HitTripletGeneratorFromPairAndLayers {
+public:
+  PixelTripletLowPtGenerator(const edm::ParameterSet& cfg, edm::ConsumesCollector& iC);
 
   ~PixelTripletLowPtGenerator() override;
 
-  void hitTriplets( const TrackingRegion& region, OrderedHitTriplets & trs,
-                            const edm::Event & ev, const edm::EventSetup& es,
-                            const SeedingLayerSetsHits::SeedingLayerSet& pairLayers,
-                            const std::vector<SeedingLayerSetsHits::SeedingLayer>& thirdLayers) override;
-  void hitTriplets(
-		   const TrackingRegion& region, 
-		   OrderedHitTriplets & result,
-		   const edm::EventSetup & es,
-		   const HitDoublets & doublets,
-		   const RecHitsSortedInPhi ** thirdHitMap,
-		   const std::vector<const DetLayer *> & thirdLayerDetLayer,
-		   const int nThirdLayers)override;
+  void hitTriplets(const TrackingRegion& region,
+                   OrderedHitTriplets& trs,
+                   const edm::Event& ev,
+                   const edm::EventSetup& es,
+                   const SeedingLayerSetsHits::SeedingLayerSet& pairLayers,
+                   const std::vector<SeedingLayerSetsHits::SeedingLayer>& thirdLayers) override;
+  void hitTriplets(const TrackingRegion& region,
+                   OrderedHitTriplets& result,
+                   const edm::EventSetup& es,
+                   const HitDoublets& doublets,
+                   const RecHitsSortedInPhi** thirdHitMap,
+                   const std::vector<const DetLayer*>& thirdLayerDetLayer,
+                   const int nThirdLayers) override;
 
- private:
-  void getTracker (const edm::EventSetup& es);
+private:
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> m_geomToken;
+  edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> m_topoToken;
+
+  void getTracker(const edm::EventSetup& es);
   GlobalPoint getGlobalPosition(const TrackingRecHit* recHit);
 
-  const TrackerGeometry * theTracker;
+  const TrackerGeometry* theTracker;
   std::unique_ptr<TripletFilter> theFilter;
-
 
   edm::EDGetTokenT<SiPixelClusterShapeCache> theClusterShapeCacheToken;
   double nSigMultipleScattering;
@@ -58,7 +63,6 @@ class   PixelTripletLowPtGenerator :
   std::string builderName;
   bool checkMultipleScattering;
   bool checkClusterShape;
- 
 };
 
 #endif

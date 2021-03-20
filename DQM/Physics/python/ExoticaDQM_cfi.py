@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
-ExoticaDQM = cms.EDAnalyzer(
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+ExoticaDQM = DQMEDAnalyzer(
     "ExoticaDQM",
 
     #Trigger Results
@@ -18,7 +19,7 @@ ExoticaDQM = cms.EDAnalyzer(
     pfJetCollection          = cms.InputTag('ak4PFJetsCHS'),
     jetCorrector             = cms.InputTag('ak4PFL1FastL2L3Corrector'),
 
-    DiJetPFJetCollection     = cms.VInputTag('ak4PFJetsCHS','ak8PFJetsCHS'),
+    DiJetPFJetCollection     = cms.VInputTag('ak4PFJetsCHS','ak8PFJetsPuppi'),
 
     caloMETCollection        = cms.InputTag("caloMetM"),
     pfMETCollection          = cms.InputTag("pfMet"),

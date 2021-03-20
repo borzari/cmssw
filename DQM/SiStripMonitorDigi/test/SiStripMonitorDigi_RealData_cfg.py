@@ -23,11 +23,14 @@ process.maxEvents = cms.untracked.PSet(
 # Message Logger
 #-------------------------------------------------
 process.MessageLogger = cms.Service("MessageLogger",
-    debugModules = cms.untracked.vstring('siStripDigis'),
+    cerr = cms.untracked.PSet(
+        enable = cms.untracked.bool(False)
+    ),
     cout = cms.untracked.PSet(
+        enable = cms.untracked.bool(True),
         threshold = cms.untracked.string('ERROR')
     ),
-    destinations = cms.untracked.vstring('cout')
+    debugModules = cms.untracked.vstring('siStripDigis')
 )
 
 #-------------------------------------------------
@@ -51,13 +54,7 @@ process.siStripDigis.ProductLabel = 'source'
 #--------------------------
 # DQM Services
 #--------------------------
-process.DQMStore = cms.Service("DQMStore",
-    referenceFileName = cms.untracked.string(''),
-    verbose = cms.untracked.int32(0)
-)
-
-process.TkDetMap = cms.Service("TkDetMap")
-process.SiStripDetInfoFileReader = cms.Service("SiStripDetInfoFileReader")
+process.load("DQM.SiStripCommon.TkHistoMap_cff")
 
 #--------------------------
 # SiStrip MonitorDigi

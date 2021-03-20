@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
-dtDigiMonitor = cms.EDAnalyzer("DTDigiTask",
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+dtDigiMonitor = DQMEDAnalyzer('DTDigiTask',
     # set the max TDC counts for the time-box (6400 or 1600)
     maxTTMounts = cms.untracked.int32(1600),
     # bin size for the time boxes
@@ -31,13 +32,17 @@ dtDigiMonitor = cms.EDAnalyzer("DTDigiTask",
     doInTimeOccupancies = cms.untracked.bool(False),                                
     # switch on the mode for running on test pulses (different top folder)
     testPulseMode = cms.untracked.bool(False),
+    # switch on the mode for running on slice test (different top folder and customizations)
+    sliceTestMode = cms.untracked.bool(False),
+    # time pedestal to be subtracted if sliceTestMode is true
+    tdcPedestal = cms.untracked.int32(105100),
     # switch for filtering on synch noise events (threshold on # of digis per chamber)
     filterSyncNoise = cms.untracked.bool(False),
     # look for synch noise events
     lookForSyncNoise = cms.untracked.bool(False),
     # threshold on # of digis per chamber to define sync noise
     maxTDCHitsPerChamber = cms.untracked.int32(100),
-    # switch for time boxes with layer granularity (commissioning only)                           
+    # switch for time boxes with layer granularity (commissioning only)
     doLayerTimeBoxes = cms.untracked.bool(False)
 )
 

@@ -10,32 +10,30 @@
 
 #include "RecoVertex/PrimaryVertexProducer/interface/TrackFilterForPVFinding.h"
 
-
 class HITrackFilterForPVFinding : public TrackFilterForPVFinding {
-
 private:
   unsigned int NumTracksThreshold_;
 
-
- public:
-
-  HITrackFilterForPVFinding(const edm::ParameterSet& conf):TrackFilterForPVFinding(conf){
-    NumTracksThreshold_=conf.getParameter<int>("numTracksThreshold");
+public:
+  HITrackFilterForPVFinding(const edm::ParameterSet& conf) : TrackFilterForPVFinding(conf) {
+    NumTracksThreshold_ = conf.getParameter<int>("numTracksThreshold");
     //std::cout << "HITrackFilterForPVFinding  numTracksThreshold="<< NumTracksThreshold_ <<  std::endl;
   }
-    
 
   // override the select method
-  std::vector<reco::TransientTrack> select (const std::vector<reco::TransientTrack>& tracks) const override{
+  std::vector<reco::TransientTrack> select(const std::vector<reco::TransientTrack>& tracks) const override {
     std::vector<reco::TransientTrack> seltks = TrackFilterForPVFinding::select(tracks);
-    if (seltks.size()<NumTracksThreshold_){
+    if (seltks.size() < NumTracksThreshold_) {
       return tracks;
-    }else{
+    } else {
       return seltks;
     }
   }
 
-
+  static void fillPSetDescription(edm::ParameterSetDescription& desc) {
+    TrackFilterForPVFinding::fillPSetDescription(desc);
+    desc.add<int>("numTracksThreshold", 0);  // HI only
+  }
 };
 
 #endif

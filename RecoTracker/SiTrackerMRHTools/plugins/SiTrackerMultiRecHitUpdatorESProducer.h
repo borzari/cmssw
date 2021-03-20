@@ -8,15 +8,14 @@
 
 #include <memory>
 
-class  SiTrackerMultiRecHitUpdatorESProducer: public edm::ESProducer{
- public:
-  SiTrackerMultiRecHitUpdatorESProducer(const edm::ParameterSet & p);
-  ~SiTrackerMultiRecHitUpdatorESProducer() override; 
-  std::shared_ptr<SiTrackerMultiRecHitUpdator> produce(const MultiRecHitRecord &);
- private:
-  std::shared_ptr<SiTrackerMultiRecHitUpdator> _updator;
+class SiTrackerMultiRecHitUpdatorESProducer : public edm::ESProducer {
+public:
+  SiTrackerMultiRecHitUpdatorESProducer(const edm::ParameterSet &p);
+  ~SiTrackerMultiRecHitUpdatorESProducer() override;
+  std::unique_ptr<SiTrackerMultiRecHitUpdator> produce(const MultiRecHitRecord &);
+
+private:
   edm::ParameterSet pset_;
 };
 
-
-#endif // RecoLocalTracker_ESProducers_SiTrackerMultiRecHitUpdatorESProducer_h
+#endif  // RecoLocalTracker_ESProducers_SiTrackerMultiRecHitUpdatorESProducer_h

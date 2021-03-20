@@ -4,7 +4,8 @@ from copy import deepcopy
 
 
 ### Single Electron + HT triggers
-DQMOffline_Ele15_HT600 = cms.EDAnalyzer('LepHTMonitor',
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+DQMOffline_Ele15_HT600 = DQMEDAnalyzer('LepHTMonitor',
                                               electronCollection = cms.InputTag('gedGsfElectrons'),
                                               electronVID = cms.InputTag("egmGsfElectronIDsForDQM:cutBasedElectronID-Summer16-80X-V1-medium"),
                                               muonCollection = cms.InputTag(''),
@@ -18,6 +19,7 @@ DQMOffline_Ele15_HT600 = cms.EDAnalyzer('LepHTMonitor',
                                               beamSpot = cms.InputTag('offlineBeamSpot'),
 
                                               folderName = cms.string('HLT_Ele15_IsoVVVL_PFHT600'),
+                                              requireValidHLTPaths = cms.bool(True),
 
                                               jetPtCut = cms.untracked.double(30.0),
                                               jetEtaCut = cms.untracked.double(2.5),
@@ -80,7 +82,6 @@ DQMOffline_Ele15_HT600 = cms.EDAnalyzer('LepHTMonitor',
                                                 ),
                                             )
 
-
 DQMOffline_Ele15_HT450 = DQMOffline_Ele15_HT600.clone()
 DQMOffline_Ele15_HT450.folderName =  cms.string('HLT_Ele15_IsoVVVL_PFHT450')
 DQMOffline_Ele15_HT450.numGenericTriggerEventPSet.hltPaths = cms.vstring("HLT_Ele15_IsoVVVL_PFHT450_v*")
@@ -89,7 +90,6 @@ DQMOffline_Ele50_HT450 = DQMOffline_Ele15_HT600.clone()
 DQMOffline_Ele50_HT450.folderName =  cms.string('HLT_Ele50_IsoVVVL_PFH450')
 DQMOffline_Ele50_HT450.leptonPtPlateau = cms.untracked.double(60.0)
 DQMOffline_Ele50_HT450.numGenericTriggerEventPSet.hltPaths = cms.vstring("HLT_Ele50_IsoVVVL_PFHT450_v*")
-
 
 ### Single Muon + HT triggers
 DQMOffline_Mu15_HT600 = DQMOffline_Ele15_HT600.clone()
@@ -116,7 +116,6 @@ DQMOffline_Mu50_HT450 = DQMOffline_Mu15_HT600.clone()
 DQMOffline_Mu50_HT450.folderName =  cms.string('HLT_Mu50_IsoVVVL_PFH450')
 DQMOffline_Mu50_HT450.leptonPtPlateau = cms.untracked.double(60.0)
 DQMOffline_Mu50_HT450.numGenericTriggerEventPSet.hltPaths = cms.vstring("HLT_Mu50_IsoVVVL_PFHT450_v*")
-
 
 ### Dilepton + HT triggers
 DQMOffline_DoubleMu4_Mass8_DZ_PFHT350 = DQMOffline_Mu15_HT600.clone()
@@ -159,7 +158,6 @@ DQMOffline_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT350 = DQMOffline_Mu8_Ele8_CaloIdM
 DQMOffline_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT350.folderName =  cms.string('HLT_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT350')
 DQMOffline_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT350.numGenericTriggerEventPSet.hltPaths = cms.vstring("HLT_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT350_v*")
 
-
 # fastsim has no conversion collection
 from Configuration.Eras.Modifier_fastSim_cff import fastSim
 fastSim.toModify(DQMOffline_Ele15_HT600,conversionCollection=cms.InputTag(''))
@@ -167,8 +165,6 @@ fastSim.toModify(DQMOffline_Ele15_HT450,conversionCollection=cms.InputTag(''))
 fastSim.toModify(DQMOffline_Ele50_HT450,conversionCollection=cms.InputTag(''))
 fastSim.toModify(DQMOffline_DoubleEle8_CaloIdM_TrackIdM_Mass8_DZ_PFHT350,conversionCollection=cms.InputTag(''))
 fastSim.toModify(DQMOffline_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT350_DZ,conversionCollection=cms.InputTag(''))
-
-
 
 DQMOffline_LepHT_POSTPROCESSING = DQMEDHarvester("DQMGenericClient",
                                                              subDirs = cms.untracked.vstring('HLT/SUSY/LepHT/*'),
@@ -187,8 +183,8 @@ DQMOffline_LepHT_POSTPROCESSING = DQMEDHarvester("DQMGenericClient",
 
 from DQMOffline.Trigger.HLTEGTnPMonitor_cfi import egmGsfElectronIDsForDQM
 
-LepHTMonitor = cms.Sequence( egmGsfElectronIDsForDQM # Use of electron VID requires this module being executed first
-                            + DQMOffline_Ele15_HT600
+LepHTMonitor = cms.Sequence( 
+                              DQMOffline_Ele15_HT600
                             + DQMOffline_Ele15_HT450
                             + DQMOffline_Ele50_HT450
                             + DQMOffline_Mu15_HT600
@@ -200,6 +196,7 @@ LepHTMonitor = cms.Sequence( egmGsfElectronIDsForDQM # Use of electron VID requi
                             + DQMOffline_DoubleEle8_CaloIdM_TrackIdM_Mass8_PFHT350
                             + DQMOffline_DoubleMu4_Mass8_PFHT350
                             + DQMOffline_Mu8_Ele8_CaloIdM_TrackIdM_Mass8_PFHT350
+                            , cms.Task(egmGsfElectronIDsForDQM) # Use of electron VID requires this module being executed first
 )
 
 LepHTClient = cms.Sequence(  DQMOffline_LepHT_POSTPROCESSING )

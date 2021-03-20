@@ -54,6 +54,13 @@ _patJets = cms.EDProducer("PATJetProducer",
         cms.InputTag('pfDeepCSVJetTags:probc'),
         cms.InputTag('pfDeepCSVJetTags:probudsg'),
         cms.InputTag('pfDeepCSVJetTags:probbb'),
+        # New DeepFlavour (commented until available in RelVals)
+        #cms.InputTag('pfDeepFlavourJetTags:probb'),
+        #cms.InputTag('pfDeepFlavourJetTags:probbb'),
+        #cms.InputTag('pfDeepFlavourJetTags:problepb'),
+        #cms.InputTag('pfDeepFlavourJetTags:probc'),
+        #cms.InputTag('pfDeepFlavourJetTags:probuds'),
+        #cms.InputTag('pfDeepFlavourJetTags:probg')
     ),
     # clone tag infos ATTENTION: these take lots of space!
     # usually the discriminators from the default algos
@@ -90,6 +97,28 @@ _patJets = cms.EDProducer("PATJetProducer",
     # resolution
     addResolutions = cms.bool(False),
     resolutions     = cms.PSet()
+)
+
+from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
+pp_on_AA.toModify(_patJets, 
+                                           jetSource = "akCs4PFJets",
+                                           genJetMatch = "patJetGenJetMatch",
+                                           genPartonMatch = "patJetPartonMatch",
+                                           JetFlavourInfoSource = "patJetFlavourAssociation",
+                                           JetPartonMapSource = "patJetFlavourAssociationLegacy",
+                                           jetCorrFactorsSource = ["patJetCorrFactors"],
+                                           trackAssociationSource = "ak5JetTracksAssociatorAtVertex",
+                                           useLegacyJetMCFlavour = True,
+                                           discriminatorSources = [
+                                               "simpleSecondaryVertexHighEffBJetTags",
+                                               "simpleSecondaryVertexHighPurBJetTags",
+                                               "combinedSecondaryVertexV2BJetTags",
+                                               "jetBProbabilityBJetTags",
+                                               "jetProbabilityBJetTags",
+                                               "trackCountingHighEffBJetTags",
+                                               "trackCountingHighPurBJetTags",
+                                           ],
+                                           addJetCharge = False,
 )
 
 patJets = _patJets.clone()

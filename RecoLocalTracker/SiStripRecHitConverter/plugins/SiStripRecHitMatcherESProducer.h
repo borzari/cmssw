@@ -7,16 +7,12 @@
 #include "RecoLocalTracker/SiStripRecHitConverter/interface/SiStripRecHitMatcher.h"
 #include <memory>
 
-class SiStripRecHitMatcherESProducer: public edm::ESProducer {
- public:
+class SiStripRecHitMatcherESProducer : public edm::ESProducer {
+public:
   SiStripRecHitMatcherESProducer(const edm::ParameterSet&);
-  std::shared_ptr<SiStripRecHitMatcher> produce(const TkStripCPERecord&);
- private:
-  std::shared_ptr<SiStripRecHitMatcher> matcher_;
+  std::unique_ptr<SiStripRecHitMatcher> produce(const TkStripCPERecord&);
+
+private:
   edm::ParameterSet pset_;
 };
 #endif
-
-
-
-

@@ -1,10 +1,15 @@
 import itertools
-
+import six
 import FWCore.ParameterSet.Config as cms
 
 def producers_by_type(process, *types):
     "Find all EDProducers in the Process that are instances of the given C++ type."
-    return (module for module in process._Process__producers.values() if module._TypedParameterizable__type in types)
+    switches = (module for module in (getattr(switchproducer, case) \
+      for switchproducer in six.itervalues(process._Process__switchproducers) \
+      for case in switchproducer.parameterNames_()) \
+      if isinstance(module, cms.EDProducer))
+    return (module for module in itertools.chain(six.itervalues(process._Process__producers), switches) \
+      if module._TypedParameterizable__type in types)
 
 def filters_by_type(process, *types):
     "Find all EDFilters in the Process that are instances of the given C++ type."
@@ -18,13 +23,21 @@ def esproducers_by_type(process, *types):
     "Find all ESProducers in the Process that are instances of the given C++ type."
     return (module for module in process._Process__esproducers.values() if module._TypedParameterizable__type in types)
 
+def modules_by_type(process, *types):
+    "Find all modiles or other components in the Process that are instances of the given C++ type."
+    switches = (module for module in (getattr(switchproducer, case) \
+      for switchproducer in six.itervalues(process._Process__switchproducers) \
+      for case in switchproducer.parameterNames_()))
+    return (module for module in itertools.chain(six.itervalues(process.__dict__), switches) \
+      if hasattr(module, '_TypedParameterizable__type') and module._TypedParameterizable__type in types)
+
 
 def insert_modules_before(process, target, *modules):
     "Add the `modules` before the `target` in any Sequence, Paths or EndPath that contains the latter."
     for sequence in itertools.chain(
-        process._Process__sequences.itervalues(),
-        process._Process__paths.itervalues(),
-        process._Process__endpaths.itervalues()
+        six.itervalues(process._Process__sequences),
+        six.itervalues(process._Process__paths),
+        six.itervalues(process._Process__endpaths)
     ):
         try:
             position = sequence.index(target)
@@ -38,9 +51,9 @@ def insert_modules_before(process, target, *modules):
 def insert_modules_after(process, target, *modules):
     "Add the `modules` after the `target` in any Sequence, Paths or EndPath that contains the latter."
     for sequence in itertools.chain(
-        process._Process__sequences.itervalues(),
-        process._Process__paths.itervalues(),
-        process._Process__endpaths.itervalues()
+        six.itervalues(process._Process__sequences),
+        six.itervalues(process._Process__paths),
+        six.itervalues(process._Process__endpaths)
     ):
         try:
             position = sequence.index(target)
@@ -59,7 +72,7 @@ def replace_with(fromObj, toObj):
     so all references ot it remain valid.
     """
 
-    if type(toObj) != type(fromObj):
+    if not isinstance(toObj, type(fromObj)):
         raise TypeError('replaceWith requires both arguments to be the same type')
 
     if isinstance(toObj, cms._ModuleSequenceType):

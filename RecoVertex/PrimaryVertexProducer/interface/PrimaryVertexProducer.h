@@ -2,7 +2,7 @@
 //
 // Package:    PrimaryVertexProducer
 // Class:      PrimaryVertexProducer
-// 
+//
 /**\class PrimaryVertexProducer PrimaryVertexProducer.cc RecoVertex/PrimaryVertexProducer/src/PrimaryVertexProducer.cc
 
  Description: steers tracker primary vertex reconstruction and storage
@@ -15,7 +15,6 @@
 //         Created:  Tue Feb 28 11:06:34 CET 2006
 //
 //
-
 
 // system include files
 #include <memory>
@@ -31,11 +30,12 @@
 
 //#include "RecoVertex/PrimaryVertexProducer/interface/PrimaryVertexProducerAlgorithm.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/TrackFilterForPVFindingBase.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/TrackClusterizerInZ.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZ_vect.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZT_vect.h"
-
 
 #include "RecoVertex/PrimaryVertexProducer/interface/TrackFilterForPVFinding.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/HITrackFilterForPVFinding.h"
@@ -57,30 +57,37 @@ class PrimaryVertexProducer : public edm::stream::EDProducer<> {
 public:
   PrimaryVertexProducer(const edm::ParameterSet&);
   ~PrimaryVertexProducer() override;
-  
+
   void produce(edm::Event&, const edm::EventSetup&) override;
+
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
   // access to config
   edm::ParameterSet config() const { return theConfig; }
-  
+
 private:
   // ----------member data ---------------------------
-  TrackFilterForPVFindingBase* theTrackFilter; 
+  const edm::ESGetToken<TransientTrackBuilder, TransientTrackRecord> theTTBToken;
+
+  TrackFilterForPVFindingBase* theTrackFilter;
   TrackClusterizerInZ* theTrackClusterizer;
 
   // vtx fitting algorithms
   struct algo {
-    VertexFitter<5> * fitter;
-    VertexCompatibleWithBeam * vertexSelector;
-    std::string  label;
+    VertexFitter<5>* fitter;
+    VertexCompatibleWithBeam* vertexSelector;
+    std::string label;
     bool useBeamConstraint;
     double minNdof;
   };
 
-  std::vector< algo > algorithms;
+  std::vector<algo> algorithms;
 
   edm::ParameterSet theConfig;
   bool fVerbose;
+
+  bool fRecoveryIteration;
+  edm::EDGetTokenT<reco::VertexCollection> recoveryVtxToken;
 
   edm::EDGetTokenT<reco::BeamSpot> bsToken;
   edm::EDGetTokenT<reco::TrackCollection> trkToken;

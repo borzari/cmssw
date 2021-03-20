@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import cx_Oracle
 import datetime
 import calendar
@@ -7,9 +8,9 @@ import sys
 import logging
 import CondCore.Utilities.conddb_serialization_metadata as sm
 import CondCore.Utilities.credentials as auth
+import CondCore.Utilities.conddb_time as conddb_time
 import os
 
-authPathEnvVar = 'COND_AUTH_PATH'
 prod_db_service = ('cms_orcon_prod',{'w':'cms_orcon_prod/cms_cond_general_w','r':'cms_orcon_prod/cms_cond_general_r'})
 adg_db_service = ('cms_orcon_adg',{'r':'cms_orcon_adg/cms_cond_general_r'})
 dev_db_service = ('cms_orcoff_prep',{'w':'cms_orcoff_prep/cms_cond_general_w','r':'cms_orcoff_prep/cms_cond_general_r'})
@@ -40,13 +41,13 @@ def print_table( headers, table ):
             if ind<len(ws):
                 line += (fmt.format( row[ind] )+' ') 
             ind += 1
-        print line
+        print(line)
     printf( headers )
     hsep = ''
     for w in ws:
         fmt = '{:-<%s}' %w
         hsep += (fmt.format('')+' ')
-    print hsep
+    print(hsep)
     for row in table:
         printf( row )
 
@@ -74,13 +75,18 @@ class version_db(object):
             self.boost_run_map.append( (r[0],r[1],r[2],str(r[3])) )
         return self.boost_run_map
 
-    def insert_boost_run_range( self, run, boost_version ):
+    def insert_boost_run_range( self, run, boost_version, min_ts ):
         cursor = self.db.cursor()
         cursor.execute('SELECT MIN(RUN_NUMBER) FROM RUN_INFO WHERE RUN_NUMBER >= :RUN',(run,))
-        min_run = cursor.fetchone()[0]
-        cursor.execute('SELECT START_TIME FROM RUN_INFO WHERE RUN_NUMBER=:RUN',(min_run,))
-        min_run_time = cursor.fetchone()[0]
-        min_run_ts = calendar.timegm( min_run_time.utctimetuple() ) << 32
+        res = cursor.fetchone()
+        if res is not None and res[0] is not None:
+            min_run = res[0]
+            cursor.execute('SELECT START_TIME FROM RUN_INFO WHERE RUN_NUMBER=:RUN',(min_run,))
+            min_run_time = cursor.fetchone()[0]
+            min_run_ts = calendar.timegm( min_run_time.utctimetuple() ) << 32
+        else:
+            min_run = run
+            min_run_ts = conddb_time.string_to_timestamp(min_ts)
         now = datetime.datetime.utcnow()
         cursor.execute('INSERT INTO BOOST_RUN_MAP ( RUN_NUMBER, RUN_START_TIME, BOOST_VERSION, INSERTION_TIME ) VALUES (:RUN, :RUN_START_T, :BOOST, :TIME)',(run,min_run_ts,boost_version,now) )
 
@@ -162,7 +168,7 @@ class conddb_tool(object):
         if self.args.accessType not in db_service[1].keys():
             raise Exception('The specified database connection %s does not support the requested action.' %db_service[0])
         service = db_service[1][self.args.accessType]
-        creds = auth.get_credentials( authPathEnvVar, service, self.args.auth )
+        creds = auth.get_credentials( service, self.args.auth )
         if creds is None:
             raise Exception("Could not find credentials for service %s" %service)
         (username, account, pwd) = creds
@@ -171,12 +177,16 @@ class conddb_tool(object):
         logging.info('Connected to %s as user %s' %(db_service[0],username))
         self.db.current_schema = schema_name
 
-    def process_tag_boost_version( self, t, timetype, tagBoostVersion, minIov, timeCut ):
+    def process_tag_boost_version( self, t, timetype, tagBoostVersion, minIov, timeCut, validate ):
         if self.iovs is None:
             self.iovs = []
             cursor = self.db.cursor()
             stmt = 'SELECT IOV.SINCE SINCE, IOV.INSERTION_TIME INSERTION_TIME, P.STREAMER_INFO STREAMER_INFO FROM TAG, IOV, PAYLOAD P WHERE TAG.NAME = IOV.TAG_NAME AND P.HASH = IOV.PAYLOAD_HASH AND TAG.NAME = :TAG_NAME'
             params = (t,)
+            if timeCut and tagBoostVersion is not None and not validate:
+                whereClauseOnSince = ' AND IOV.INSERTION_TIME>:TIME_CUT' 
+                stmt = stmt +  whereClauseOnSince
+                params = params + (timeCut,)               
             stmt = stmt + ' ORDER BY SINCE'
             logging.debug('Executing: "%s"' %stmt)
             cursor.execute(stmt,params)
@@ -190,13 +200,8 @@ class conddb_tool(object):
         if tagBoostVersion is not None:
             update = True        
         for iov in self.iovs:            
-            if timeCut is not None:
-                if tagBoostVersion is not None:
-                    if timeCut > iov[1]:
-                        continue
-                else:
-                    if timeCut < iov[1]:
-                        continue
+            if validate and timeCut is not None and  timeCut < iov[1]:
+                continue
             niovs += 1
             iovBoostVersion, tagBoostVersion = sm.update_tag_boost_version( tagBoostVersion, minIov, iov[2], iov[0], timetype, self.version_db.boost_run_map )
             if minIov is None or iov[0]<minIov:
@@ -347,15 +352,16 @@ class conddb_tool(object):
                     tagBoostVersion = tags[t][0]
                     minIov = tags[t][1]
                     timeCut = tags[t][2]
-                tagBoostVersion, minIov = self.process_tag_boost_version( t, timetype, tagBoostVersion, minIov, timeCut )
+                tagBoostVersion, minIov = self.process_tag_boost_version( t, timetype, tagBoostVersion, minIov, timeCut, self.args.validate )
                 if tagBoostVersion is None:
                     continue
                 logging.debug('boost versions in the %s iovs: %s' %(len(self.iovs),str(self.versionIovs)))
-                invalid_gts = self.validate_boost_version( t, timetype, tagBoostVersion )
-                if len(invalid_gts)>0:
-                    with open('invalid_tags_in_gts.txt','a') as error_file:
-                        for gt in invalid_gts:
-                            error_file.write('Tag %s (boost %s) is invalid for GT %s ( boost %s) \n' %(t,tagBoostVersion,gt[0],gt[1]))
+                if self.args.validate: 
+                    invalid_gts = self.validate_boost_version( t, timetype, tagBoostVersion )
+                    if len(invalid_gts)>0:
+                        with open('invalid_tags_in_gts.txt','a') as error_file:
+                            for gt in invalid_gts:
+                                error_file.write('Tag %s (boost %s) is invalid for GT %s ( boost %s) \n' %(t,tagBoostVersion,gt[0],gt[1]))
                 if len(self.iovs):
                     if self.iovs[0][0]<minIov:
                         minIov = self.iovs[0]
@@ -367,7 +373,9 @@ class conddb_tool(object):
     def insert_boost_run( self ):
         cursor = self.db.cursor()
         self.version_db = version_db( self.db )
-        self.version_db.insert_boost_run_range( self.args.since, self.args.label )
+        if self.args.min_ts is None:
+            raise Exception("Run %s has not been found in the database - please provide an explicit TimeType value with the min_ts parameter ." %self.args.since )
+        self.version_db.insert_boost_run_range( self.args.since, self.args.label, self.args.min_ts )
         self.db.commit()
         logging.info('boost version %s inserted with since %s' %(self.args.label,self.args.since))
 
@@ -420,11 +428,11 @@ class conddb_tool(object):
             timeCut = None
             logging.info('Calculating minimum boost version for the available iovs...')
             r_tagBoostVersion, r_minIov = self.process_tag_boost_version( tag, timeType, tagBoostVersion, minIov, timeCut )
-        print '# Currently stored: %s (min iov:%s)' %(tagBoostVersion,minIov)
-        print '# Last update: %s' %mt
-        print '# Last update on the iovs: %s' %str(t_modificationTime)
+        print('# Currently stored: %s (min iov:%s)' %(tagBoostVersion,minIov))
+        print('# Last update: %s' %mt)
+        print('# Last update on the iovs: %s' %str(t_modificationTime))
         if self.args.rebuild or self.args.full:
-            print '# Based on the %s available IOVs: %s (min iov:%s)' %(len(self.iovs),r_tagBoostVersion,r_minIov)
+            print('# Based on the %s available IOVs: %s (min iov:%s)' %(len(self.iovs),r_tagBoostVersion,r_minIov))
             if self.args.full:
                 headers = ['Run','Boost Version']
                 print_table( headers, self.versionIovs ) 
@@ -439,18 +447,20 @@ def main():
     parser.add_argument("--auth","-a", type=str,  help="The path of the authentication file")
     parser.add_argument('--verbose', '-v', action='count', help='The verbosity level')
     parser_subparsers = parser.add_subparsers(title='Available subcommands')
-    parser_update_tags = parser_subparsers.add_parser('update_tags', description='Update the existing tags headers with the boost version')
+    parser_update_tags = parser_subparsers.add_parser('update_tags', description='Update the existing tag headers with the boost version')
     parser_update_tags.add_argument('--name', '-n', type=str, help='Name of the specific tag to process (default=None - in this case all of the tags will be processed.')
     parser_update_tags.add_argument('--max', '-m', type=int, help='the maximum number of tags processed',default=100)
     parser_update_tags.add_argument('--all',action='store_true', help='process all of the tags with boost_version = None')
+    parser_update_tags.add_argument('--validate',action='store_true', help='validate the tag/boost version under processing')
     parser_update_tags.set_defaults(func=tool.update_tags,accessType='w')
-    parser_insert_boost_version = parser_subparsers.add_parser('insert_boost_version', description='Insert a new boost version range in the run map')
+    parser_insert_boost_version = parser_subparsers.add_parser('insert', description='Insert a new boost version range in the run map')
     parser_insert_boost_version.add_argument('--label', '-l',type=str, help='The boost version label',required=True)
     parser_insert_boost_version.add_argument('--since', '-s',type=int, help='The since validity (run number)',required=True)
+    parser_insert_boost_version.add_argument('--min_ts', '-t',type=str, help='The since validity (Time timetype)', required=False)
     parser_insert_boost_version.set_defaults(func=tool.insert_boost_run,accessType='w')
-    parser_list_boost_versions = parser_subparsers.add_parser('list_boost_versions', description='list the boost versions in the run map')
+    parser_list_boost_versions = parser_subparsers.add_parser('list', description='list the boost versions in the run map')
     parser_list_boost_versions.set_defaults(func=tool.list_boost_run,accessType='r') 
-    parser_show_version = parser_subparsers.add_parser('show_boost_version', description='Display the minimum boost version for the specified tag (the value stored, by default)')
+    parser_show_version = parser_subparsers.add_parser('show_tag', description='Display the minimum boost version for the specified tag (the value stored, by default)')
     parser_show_version.add_argument('tag_name',help='The name of the tag')
     parser_show_version.add_argument('--rebuild','-r',action='store_true',default=False,help='Re-calculate the minimum boost versio ')
     parser_show_version.add_argument('--full',action='store_true',default=False,help='Recalulate the minimum boost version, listing the versions in the iov sequence')

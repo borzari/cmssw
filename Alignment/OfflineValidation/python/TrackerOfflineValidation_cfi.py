@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 TrackerOfflineValidation = cms.EDAnalyzer("TrackerOfflineValidation",
+    compressionSettings       = cms.untracked.int32(-1),
     useInDqmMode              = cms.bool(False),  # Switch between Standalone tool (using TFileService) and DQM-based version (using DQMStore)
     moduleDirectoryInOutput   = cms.string(""),   # at present adopted only in DQM mode (TFileService attaches the ModuleName as directory automatically)
     Tracks                    = cms.InputTag("TrackRefitter"),
@@ -15,6 +16,7 @@ TrackerOfflineValidation = cms.EDAnalyzer("TrackerOfflineValidation",
     useCombinedTrajectory     = cms.bool(False),
     useOverflowForRMS         = cms.bool(False),
     maxTracks                 = cms.uint64(0),
+    chargeCut                 = cms.int32(0),
     # Normalized X Residuals, normal local coordinates (Strip)
     TH1NormXResStripModules = cms.PSet(
         Nbinx = cms.int32(100), xmin = cms.double(-5.0), xmax = cms.double(5.0)

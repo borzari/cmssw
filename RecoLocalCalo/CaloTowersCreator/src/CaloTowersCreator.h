@@ -5,6 +5,7 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESWatcher.h"
 #include "DataFormats/Common/interface/Handle.h"
+#include "FWCore/Utilities/interface/ESGetToken.h"
 
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -12,27 +13,27 @@
 #include "RecoLocalCalo/EcalRecAlgos/interface/EcalSeverityLevelAlgoRcd.h"
 #include "RecoLocalCalo/CaloTowersCreator/interface/CaloTowersCreationAlgo.h"
 #include "RecoLocalCalo/CaloTowersCreator/interface/EScales.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
 
 /** \class CaloTowersCreator
   *  
   * Original author: J. Mans - Minnesota
   */
 
-// Now we allow for the creation of towers from 
+// Now we allow for the creation of towers from
 // rejected hists as well: requested by the MET group
 // for studies of the effect of noise clean up.
 
-class CaloTowersCreator : public  edm::stream::EDProducer<> {
+class CaloTowersCreator : public edm::stream::EDProducer<> {
 public:
   explicit CaloTowersCreator(const edm::ParameterSet& ps);
-  ~CaloTowersCreator() override { }
+  ~CaloTowersCreator() override {}
   void produce(edm::Event& e, const edm::EventSetup& c) override;
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
   double EBEScale, EEEScale, HBEScale, HESEScale;
   double HEDEScale, HOEScale, HF1EScale, HF2EScale;
 
 private:
-
   static const std::vector<double>& getGridValues();
 
   CaloTowersCreationAlgo algo_;
@@ -43,30 +44,35 @@ private:
   std::vector<edm::EDGetTokenT<EcalRecHitCollection> > toks_ecal_;
   bool allowMissingInputs_;
 
+  edm::ESGetToken<CaloGeometry, CaloGeometryRecord> tok_geom_;
+  edm::ESGetToken<HcalTopology, HcalRecNumberingRecord> tok_topo_;
+  edm::ESGetToken<CaloTowerTopology, HcalRecNumberingRecord> tok_cttopo_;
+  edm::ESGetToken<CaloTowerConstituentsMap, CaloGeometryRecord> tok_ctmap_;
+  edm::ESGetToken<EcalChannelStatus, EcalChannelStatusRcd> tok_ecalChStatus_;
+  edm::ESGetToken<HcalChannelQuality, HcalChannelQualityRcd> tok_hcalChStatus_;
+  edm::ESGetToken<HcalSeverityLevelComputer, HcalSeverityLevelComputerRcd> tok_hcalSevComputer_;
+  edm::ESGetToken<EcalSeverityLevelAlgo, EcalSeverityLevelAlgoRcd> tok_ecalSevAlgo_;
 
   // more compact flags: all HCAL are combined
-  
+
   unsigned int theHcalAcceptSeverityLevel_;
   std::vector<int> theEcalSeveritiesToBeExcluded_;
-  
+
   // flag to use recovered hits
   bool theRecoveredHcalHitsAreUsed_;
   bool theRecoveredEcalHitsAreUsed_;
-
 
   // paramaters for creating towers from rejected hits
 
   bool useRejectedHitsOnly_;
   unsigned int theHcalAcceptSeverityLevelForRejectedHit_;
   //  for ECAL we have a list of problem flags
-   std::vector<int> theEcalSeveritiesToBeUsedInBadTowers_; 
-
-
+  std::vector<int> theEcalSeveritiesToBeUsedInBadTowers_;
 
   // Flags wheteher to use recovered hits for production of
-  // "bad towers". 
+  // "bad towers".
   // If the recoverd hits were already used for good towers,
-  // these flags have no effect. 
+  // these flags have no effect.
   // Note: These flags have no effect on the default tower reconstruction.
   bool useRejectedRecoveredHcalHits_;
   bool useRejectedRecoveredEcalHits_;
@@ -74,9 +80,8 @@ private:
   edm::ESWatcher<HcalSeverityLevelComputerRcd> hcalSevLevelWatcher_;
   edm::ESWatcher<HcalChannelQualityRcd> hcalChStatusWatcher_;
   edm::ESWatcher<IdealGeometryRecord> caloTowerConstituentsWatcher_;
-  edm::ESWatcher<EcalSeverityLevelAlgoRcd>  ecalSevLevelWatcher_;
+  edm::ESWatcher<EcalSeverityLevelAlgoRcd> ecalSevLevelWatcher_;
   EScales eScales_;
-
 };
 
 #endif

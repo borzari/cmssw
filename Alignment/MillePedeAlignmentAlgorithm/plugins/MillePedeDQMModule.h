@@ -11,8 +11,6 @@
  * @brief     DQM Plotter for PCL-Alignment
  */
 
-
-
 /*** system includes ***/
 #include <array>
 #include <memory>
@@ -26,9 +24,17 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
+/*** Geometry ***/
+#include "CondFormats/GeometryObjects/interface/PTrackerParameters.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeomBuilderFromGeometricDet.h"
+
+/*** Thresholds from DB ***/
+#include "CondFormats/DataRecord/interface/AlignPCLThresholdsRcd.h"
+
 /*** DQM ***/
 #include "DQMServices/Core/interface/DQMEDHarvester.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
+#include "DQMServices/Core/interface/DQMStore.h"
 
 /*** Records for ESWatcher ***/
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
@@ -38,58 +44,63 @@
 /*** MillePede ***/
 #include "Alignment/MillePedeAlignmentAlgorithm/interface/MillePedeFileReader.h"
 
-
-
-
 class MillePedeDQMModule : public DQMEDHarvester {
-
   //========================== PUBLIC METHODS ==================================
-  public: //====================================================================
+public:  //====================================================================
+  MillePedeDQMModule(const edm::ParameterSet&);
+  ~MillePedeDQMModule() override;
 
-    MillePedeDQMModule(const edm::ParameterSet&);
-    ~MillePedeDQMModule() override;
-
-    void dqmEndJob(DQMStore::IBooker &, DQMStore::IGetter &)  override;
+  void dqmEndJob(DQMStore::IBooker&, DQMStore::IGetter&) override;
 
   //========================= PRIVATE METHODS ==================================
-  private: //===================================================================
+private:  //===================================================================
+  void beginRun(const edm::Run&, const edm::EventSetup&) override;
 
-    void beginRun(const edm::Run&, const edm::EventSetup&) override;
+  void bookHistograms(DQMStore::IBooker&);
 
-    void bookHistograms(DQMStore::IBooker&);
+  void fillStatusHisto(MonitorElement* statusHisto);
 
-    void fillExpertHistos();
+  void fillExpertHistos();
 
-    void fillExpertHisto(MonitorElement* histo,
-			 const std::array<double,6>& cut, 
-			 const std::array<double,6>& sigCut, 
-			 const std::array<double,6>& maxMoveCut, 
-			 const std::array<double,6>& maxErrorCut,
-                         const std::array<double,6>& obs,
-                         const std::array<double,6>& obsErr);
+  void fillExpertHisto(MonitorElement* histo,
+                       const std::array<double, 6>& cut,
+                       const std::array<double, 6>& sigCut,
+                       const std::array<double, 6>& maxMoveCut,
+                       const std::array<double, 6>& maxErrorCut,
+                       const std::array<double, 6>& obs,
+                       const std::array<double, 6>& obsErr);
 
-    bool setupChanged(const edm::EventSetup&);
-    int getIndexFromString(const std::string& alignableId);
+  bool setupChanged(const edm::EventSetup&);
+  int getIndexFromString(const std::string& alignableId);
 
-    //========================== PRIVATE DATA ====================================
-    //============================================================================
+  //========================== PRIVATE DATA ====================================
+  //============================================================================
 
-    const edm::ParameterSet mpReaderConfig_;
-    std::unique_ptr<AlignableTracker> tracker_;
-    std::unique_ptr<MillePedeFileReader> mpReader_;
+  // esConsumes
+  const edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> tTopoToken_;
+  const edm::ESGetToken<GeometricDet, IdealGeometryRecord> gDetToken_;
+  const edm::ESGetToken<PTrackerParameters, PTrackerParametersRcd> ptpToken_;
+  const edm::ESGetToken<AlignPCLThresholds, AlignPCLThresholdsRcd> aliThrToken_;
 
-    edm::ESWatcher<TrackerTopologyRcd> watchTrackerTopologyRcd_;
-    edm::ESWatcher<IdealGeometryRecord> watchIdealGeometryRcd_;
-    edm::ESWatcher<PTrackerParametersRcd> watchPTrackerParametersRcd_;
+  const edm::ParameterSet mpReaderConfig_;
+  std::unique_ptr<AlignableTracker> tracker_;
+  std::unique_ptr<MillePedeFileReader> mpReader_;
 
-    // Histograms
-    MonitorElement* h_xPos;
-    MonitorElement* h_xRot;
-    MonitorElement* h_yPos;
-    MonitorElement* h_yRot;
-    MonitorElement* h_zPos;
-    MonitorElement* h_zRot;
+  edm::ESWatcher<TrackerTopologyRcd> watchTrackerTopologyRcd_;
+  edm::ESWatcher<IdealGeometryRecord> watchIdealGeometryRcd_;
+  edm::ESWatcher<PTrackerParametersRcd> watchPTrackerParametersRcd_;
 
+  // Histograms
+  MonitorElement* h_xPos;
+  MonitorElement* h_xRot;
+  MonitorElement* h_yPos;
+  MonitorElement* h_yRot;
+  MonitorElement* h_zPos;
+  MonitorElement* h_zRot;
+
+  MonitorElement* statusResults;
+  MonitorElement* binariesAvalaible;
+  MonitorElement* exitCode;
 };
 
 // define this as a plug-in

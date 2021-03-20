@@ -15,16 +15,14 @@ def getMVASelectors(postfix):
             seq = getattr(_iterativeTk_cff, seqName)
 
             # Ignore iteration if the MVA selector module is not in the sequence
-            try:
-                seq.index(mod)
-            except:
+            if not seq.contains(mod):
                 continue
 
             typeName = mod._TypedParameterizable__type
             classifiers = []
             if typeName == "ClassifierMerger":
                 classifiers = mod.inputClassifiers.value()
-            elif "TrackMVAClassifier" in typeName:
+            elif "TrackMVAClassifier" in typeName or "TrackLwtnnClassifier" or "TrackTfClassifier" in typeName:
                 classifiers = [iterName]
             if len(classifiers) > 0:
                 ret[iterName] = (iterName+"Tracks", classifiers)

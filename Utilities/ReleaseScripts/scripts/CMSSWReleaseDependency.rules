@@ -129,11 +129,10 @@ TauAnalysis/MCEmbeddingTools/.* : GeneratorInterface/.*
 
 #f77compiler exception
 Generator.*                      : f77compiler
-ElectroWeakAnalysis/Utilities/.* : f77compiler
 
 #FastSim exception
 FastSimulation/.*                : FastSimulation/.*
-GeneratorInterface/GenFilters/.* : FastSimulation/BaseParticlePropagator,FastSimulation/Particle
+GeneratorInterface/GenFilters/.* : FastSimulation/Particle
 RecoParticleFlow/PF.*            : FastSimulation/.*,GeneratorInterface/.*
 
 ####################################################

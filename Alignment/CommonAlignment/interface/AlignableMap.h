@@ -22,29 +22,25 @@
 #include <map>
 #include <sstream>
 
-#include "Alignment/CommonAlignment/interface/Alignable.h"
+#include "Alignment/CommonAlignment/interface/Utilities.h"
 
-
-
-class AlignableMap
-{
-  typedef typename std::map<std::string, Alignables> Container;
+class AlignableMap {
+  using Container = std::map<std::string, align::Alignables>;
 
 public:
-
-  AlignableMap() {};
-  virtual ~AlignableMap() {};
+  AlignableMap(){};
+  virtual ~AlignableMap(){};
 
   /// Get an object from map using its name.
   /// A new object is default-constructed if the name does not exist.
-  Alignables& get( const std::string& name = "" );
+  align::Alignables& get(const std::string& name = "");
 
   /// Find and return an object from map using its name.
   /// Throw an exception if the name does not exist.
-  Alignables& find( const std::string& name = "" );
+  align::Alignables& find(const std::string& name = "");
 
   /// Print the name of all stored data
-  void dump( void ) const;
+  void dump(void) const;
 
 private:
   Container theStore;

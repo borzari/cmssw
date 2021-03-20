@@ -11,9 +11,8 @@ hcalRecHitsValidationSequence = cms.Sequence(NoiseRatesValidation*RecHitsValidat
 
 # fastsim hasn't got the right noise collection for the moment => no noise validation
 from Configuration.Eras.Modifier_fastSim_cff import fastSim
-if fastSim.isChosen():
-    hcalRecHitsValidationSequence.remove(NoiseRatesValidation)
+fastSim.toReplaceWith(hcalRecHitsValidationSequence, hcalRecHitsValidationSequence.copyAndExclude([NoiseRatesValidation]))
 
-from Configuration.Eras.Modifier_phase2_hcal_cff import phase2_hcal
-_phase2_hcalRecHitsValidationSequence = hcalRecHitsValidationSequence.copyAndExclude([NoiseRatesValidation])
-phase2_hcal.toReplaceWith(hcalRecHitsValidationSequence, _phase2_hcalRecHitsValidationSequence)
+_run3_hcalRecHitsValidationSequence = hcalRecHitsValidationSequence.copyAndExclude([NoiseRatesValidation])
+from Configuration.Eras.Modifier_run3_HB_cff import run3_HB
+run3_HB.toReplaceWith(hcalRecHitsValidationSequence, _run3_hcalRecHitsValidationSequence)

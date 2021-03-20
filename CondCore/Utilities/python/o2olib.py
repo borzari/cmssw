@@ -1,3 +1,4 @@
+from __future__ import print_function
 __author__ = 'Giacomo Govi'
 
 import sqlalchemy
@@ -13,13 +14,12 @@ import json
 import CondCore.Utilities.credentials as auth
 
 prod_db_service = ['cms_orcon_prod','cms_orcon_prod/cms_cond_general_w']
-dev_db_service = ['cms_orcoff_prep','cms_orcoff_prep/cms_test_conditions']
+dev_db_service = ['cms_orcoff_prep','cms_orcoff_prep/cms_cond_general_w']
 schema_name = 'CMS_CONDITIONS'
 sqlalchemy_tpl = 'oracle://%s:%s@%s'
 coral_tpl = 'oracle://%s/%s'
 private_db = 'sqlite:///o2o_jobs.db'
 startStatus = -1
-authPathEnvVar = 'COND_AUTH_PATH'
 messageLevelEnvVar = 'O2O_LOG_LEVEL'
 logFolderEnvVar = 'O2O_LOG_FOLDER'
 
@@ -61,8 +61,8 @@ class O2ORun(_Base):
 
     job                = sqlalchemy.orm.relationship('O2OJob', primaryjoin="O2OJob.name==O2ORun.job_name")
 
-def get_db_credentials( db_service, authFile ):
-    (username, account, pwd) = auth.get_credentials( authPathEnvVar, db_service[1], authFile )
+def get_db_credentials( db_service, authPath):
+    (username, account, pwd) = auth.get_credentials( db_service[1], authPath )
     return username,pwd
 
 def print_table( headers, table ):
@@ -85,13 +85,13 @@ def print_table( headers, table ):
             if ind<len(ws):
                 line += (fmt.format( row[ind] )+' ') 
             ind += 1
-        print line
+        print(line)
     printf( headers )
     hsep = ''
     for w in ws:
         fmt = '{:-<%s}' %w
         hsep += (fmt.format('')+' ')
-    print hsep
+    print(hsep)
     for row in table:
         printf( row )
 
@@ -284,10 +284,10 @@ class O2OJobMgr(O2OMgr):
             configs.append((str(r[0]),r[1]))
         ind = len(configs)
         if ind:
-            print "Configurations for job '%s'" %jname
+            print("Configurations for job '%s'" %jname)
             for cf in reversed(configs):
-                print '#%2d  since: %s' %(ind,cf[1])
-                print cf[0]
+                print('#%2d  since: %s' %(ind,cf[1]))
+                print(cf[0])
                 ind -= 1
         else:
             O2OMgr.logger( self ).info("No configuration found for job '%s'" %jname )
@@ -309,10 +309,10 @@ class O2OJobMgr(O2OMgr):
         if versionIndex>ind or versionIndex==0:
             O2OMgr.logger( self ).error("Configuration for job %s with index %s has not been found." %(jname,versionIndex))
             return
-        print "Configuration #%2d for job '%s'" %(versionIndex,jname)
+        print("Configuration #%2d for job '%s'" %(versionIndex,jname))
         config = configs[versionIndex-1]
-        print '#%2d  since %s' %(versionIndex,config[1])
-        print config[0]
+        print('#%2d  since %s' %(versionIndex,config[1]))
+        print(config[0])
         if configFile is None or configFile == '':
             configFile = '%s_%s.json' %(jname,versionIndex)
         with open(configFile,'w') as json_file:

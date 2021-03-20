@@ -9,7 +9,8 @@ EDMtoMEConvertSiStripGainsAAG.runInputTag = cms.InputTag("MEtoEDMConvertSiStripG
 
 DQMStore = cms.Service("DQMStore")
 
-dqmEnvSiStripGainsAAG = cms.EDAnalyzer("DQMEventInfo",
+from DQMServices.Core.DQMEDHarvester import DQMEDHarvester
+dqmEnvSiStripGainsAAG = DQMEDHarvester('DQMHarvestingMetadata',
                                        subSystemFolder = cms.untracked.string('AlCaReco'),  
                                        )
 

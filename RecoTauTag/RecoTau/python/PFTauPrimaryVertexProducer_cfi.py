@@ -6,7 +6,6 @@ PFTauPrimaryVertexProducer = cms.EDProducer("PFTauPrimaryVertexProducer",
                                             MuonTag = cms.InputTag("MyMuons"),
                                             PVTag = cms.InputTag("offlinePrimaryVertices"),
                                             beamSpot = cms.InputTag("offlineBeamSpot"),
-                                            TrackCollectionTag = cms.InputTag("generalTracks"),
                                             #Algorithm: 0 - use tau-jet vertex, 1 - use vertex[0]
                                             Algorithm = cms.int32(0),
                                             qualityCuts = PFTauQualityCuts,
@@ -14,7 +13,8 @@ PFTauPrimaryVertexProducer = cms.EDProducer("PFTauPrimaryVertexProducer",
                                             RemoveMuonTracks = cms.bool(False),
                                             RemoveElectronTracks = cms.bool(False),
                                             useSelectedTaus = cms.bool(False),
-                                            discriminators = cms.VPSet(cms.PSet(discriminator = cms.InputTag('hpsPFTauDiscriminationByDecayModeFinding'),selectionCut = cms.double(0.5))),
+                                            discriminators = cms.VPSet(cms.PSet(discriminator = cms.InputTag('hpsPFTauDiscriminationByDecayModeFinding'),
+                                            selectionCut = cms.double(0.5))),
                                             cut = cms.string("pt > 18.0 & abs(eta)<2.3")
                                             )
 

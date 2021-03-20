@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 
 import FWCore.ParameterSet.Config as cms
@@ -24,8 +25,8 @@ if( hasattr(sys, "argv") ):
             if(len(val)==2):
                 setattr(options,val[0], val[1])
 
-print "Input sample: ", options.sample
-print "Test run: ", options.isTest
+print("Input sample: ", options.sample)
+print("Test run: ", options.isTest)
 
 
 
@@ -40,8 +41,8 @@ process = cms.Process("ApeEstimatorSummary")
 ## Message Logger
 ##
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.MessageLogger.categories.append('CalculateAPE')
-#process.MessageLogger.categories.append('ApeEstimatorSummary')
+process.MessageLogger.CalculateAPE=dict()
+#process.MessageLogger.ApeEstimatorSummary=dict()
 process.MessageLogger.cerr.INFO.limit = 0
 process.MessageLogger.cerr.default.limit = -1
 process.MessageLogger.cerr.CalculateAPE = cms.untracked.PSet(limit = cms.untracked.int32(-1))
@@ -96,7 +97,7 @@ elif options.sample == 'zmumu20':
     isZmumu20 = True
     isMc = True
 else:
-    print 'ERROR --- incorrect data sammple: ', options.sample
+    print('ERROR --- incorrect data sammple: ', options.sample)
     exit(8888)
 
 

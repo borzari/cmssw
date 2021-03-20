@@ -30,6 +30,9 @@ DEFINE_FWK_MODULE(DTNoiseTask);
 #include "DQM/DTMonitorModule/interface/DTCalibValidation.h"
 DEFINE_FWK_MODULE(DTCalibValidation);
 
+#include "DQM/DTMonitorModule/interface/DTCalibValidationFromMuons.h"
+DEFINE_FWK_MODULE(DTCalibValidationFromMuons);
+
 #include <DQM/DTMonitorModule/src/DTTriggerEfficiencyTask.h>
 DEFINE_FWK_MODULE(DTTriggerEfficiencyTask);
 
@@ -48,9 +51,17 @@ DEFINE_FWK_MODULE(DTScalerInfoTask);
 #include <DQM/DTMonitorModule/src/DTDCSByLumiTask.h>
 DEFINE_FWK_MODULE(DTDCSByLumiTask);
 
-
 #include <DQM/DTMonitorModule/interface/DTDataIntegrityTask.h>
 DEFINE_FWK_MODULE(DTDataIntegrityTask);
+
+#include <DQM/DTMonitorModule/interface/DTDataIntegrityUrosOffline.h>
+DEFINE_FWK_MODULE(DTDataIntegrityUrosOffline);
+
+#include <DQM/DTMonitorModule/interface/DTDataIntegrityROSOffline.h>
+DEFINE_FWK_MODULE(DTDataIntegrityROSOffline);
+
+#include <DQM/DTMonitorModule/src/DTOccupancyEfficiency.h>
+DEFINE_FWK_MODULE(DTOccupancyEfficiency);
 
 // Local Variables:
 // show-trailing-whitespace: t

@@ -6,7 +6,8 @@ from SimTracker.TrackAssociation.LhcParametersDefinerForTP_cfi import *
 from SimTracker.TrackAssociation.CosmicParametersDefinerForTP_cfi import *
 from Validation.RecoTrack.MTVHistoProducerAlgoForTrackerBlock_cfi import *
 
-multiTrackValidatorGenPs = cms.EDAnalyzer(
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+multiTrackValidatorGenPs = DQMEDAnalyzer(
     "MultiTrackValidatorGenPs",
 
     ### general settings ###
@@ -67,4 +68,9 @@ multiTrackValidatorGenPs = cms.EDAnalyzer(
     doSimTrackPlots = cms.untracked.bool(True),
     doRecoTrackPlots = cms.untracked.bool(True),
     dodEdxPlots = cms.untracked.bool(False),
+)
+
+from Configuration.ProcessModifiers.premix_stage2_cff import premix_stage2
+premix_stage2.toModify(multiTrackValidator,
+    label_tv = "mixData:MergedTrackTruth",
 )

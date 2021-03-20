@@ -8,21 +8,15 @@ from DQMOffline.Muon.muonRecoTest_cfi import *
 from DQMOffline.Muon.muonTestSummary_cfi import *
 from DQMOffline.Muon.muonTestSummaryCosmics_cfi import *
 from DQMOffline.Muon.EfficencyPlotter_cfi import *
+from DQMOffline.Muon.TriggerMatchEfficencyPlotter_cfi import *
 
-muonSourcesQualityTests = cms.EDAnalyzer("QualityTester",
+from DQMServices.Core.DQMQualityTester import DQMQualityTester
+muonSourcesQualityTests = DQMQualityTester(
     prescaleFactor = cms.untracked.int32(1),
     qtList = cms.untracked.FileInPath('DQMOffline/Muon/data/QualityTests1.xml')
 )
-muonComp2RefQualityTests = cms.EDAnalyzer("QualityTester",
-    prescaleFactor = cms.untracked.int32(1),
-    qtList = cms.untracked.FileInPath('DQMOffline/Muon/data/Mu_Comp2RefChi2.xml')
-)
 
-muonComp2RefKolmoQualityTests = cms.EDAnalyzer("QualityTester",
-    prescaleFactor = cms.untracked.int32(1),
-    qtList = cms.untracked.FileInPath('DQMOffline/Muon/data/Mu_Comp2RefKolmogorov.xml')
-)
-muonClientsQualityTests = cms.EDAnalyzer("QualityTester",
+muonClientsQualityTests = DQMQualityTester(
     prescaleFactor = cms.untracked.int32(1),
     qtList = cms.untracked.FileInPath('DQMOffline/Muon/data/QualityTests2.xml')
 )
@@ -33,8 +27,6 @@ cosmicMuonQualityTests = cms.Sequence(ClientTrackEfficiencyTkTracks*
                                       muTrackResidualsTest*
                                       muRecoTest*
                                       muonClientsQualityTests*
-                                      muonComp2RefQualityTests*
-                                      muonComp2RefKolmoQualityTests*
                                       muonCosmicTestSummary)
 
 muonQualityTests = cms.Sequence(muonSourcesQualityTests*
@@ -44,8 +36,6 @@ muonQualityTests = cms.Sequence(muonSourcesQualityTests*
                                 effPlotterTight*
                                 muRecoTest*
                                 muonClientsQualityTests*
-                                muonComp2RefQualityTests*
-                                muonComp2RefKolmoQualityTests*
                                 muonTestSummary)
 
 muonQualityTests_miniAOD = cms.Sequence(muonSourcesQualityTests*
@@ -55,8 +45,5 @@ muonQualityTests_miniAOD = cms.Sequence(muonSourcesQualityTests*
                                         effPlotterTightMiniAOD*
                                         muRecoTest*
                                         muonClientsQualityTests*
-                                        muonComp2RefQualityTests*
-                                        muonComp2RefKolmoQualityTests*
-                                        muonTestSummary)
-
-
+                                        muonTestSummary*
+                                        triggerMatchEffPlotterTightMiniAOD)

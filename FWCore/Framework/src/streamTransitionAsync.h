@@ -4,7 +4,7 @@
 //
 // Package:     FWCore/Framework
 // Function:    streamTransitionAsync
-// 
+//
 /**\function streamTransitionAsync streamTransitionAsync.h "streamTransitionAsync.h"
 
  Description: Helper functions for handling asynchronous stream transitions
@@ -18,142 +18,137 @@
 //         Created:  Tue, 06 Sep 2016 16:04:26 GMT
 //
 
-// system include files
 #include "FWCore/Framework/interface/Schedule.h"
-#include "FWCore/Framework/interface/SubProcess.h"
+#include "FWCore/Framework/src/SubProcess.h"
+#include "FWCore/Framework/src/TransitionInfoTypes.h"
 #include "FWCore/Concurrency/interface/WaitingTask.h"
 #include "FWCore/Concurrency/interface/WaitingTaskHolder.h"
 
-// user include files
-
-// forward declarations
+#include <vector>
 
 namespace edm {
-  class IOVSyncValue;
-  class EventSetup;
-  class LuminosityBlockPrincipal;
-  class RunPrincipal;
-  
+
   //This is code in common between beginStreamRun and beginStreamLuminosityBlock
-  inline void subProcessDoStreamBeginTransitionAsync(WaitingTaskHolder iHolder,SubProcess& iSubProcess, unsigned int i, LuminosityBlockPrincipal& iPrincipal, IOVSyncValue const& iTS) {
-    iSubProcess.doStreamBeginLuminosityBlockAsync(std::move(iHolder),i,iPrincipal, iTS);
-  }
-  
-  inline void subProcessDoStreamBeginTransitionAsync(WaitingTaskHolder iHolder, SubProcess& iSubProcess, unsigned int i, RunPrincipal& iPrincipal, IOVSyncValue const& iTS) {
-    iSubProcess.doStreamBeginRunAsync(std::move(iHolder),i,iPrincipal, iTS);
-  }
-  
-  inline void subProcessDoStreamEndTransitionAsync(WaitingTaskHolder iHolder, SubProcess& iSubProcess, unsigned int i, LuminosityBlockPrincipal& iPrincipal, IOVSyncValue const& iTS, bool cleaningUpAfterException) {
-    iSubProcess.doStreamEndLuminosityBlockAsync(std::move(iHolder),i,iPrincipal, iTS,cleaningUpAfterException);
-  }
-  
-  inline void subProcessDoStreamEndTransitionAsync(WaitingTaskHolder iHolder, SubProcess& iSubProcess, unsigned int i, RunPrincipal& iPrincipal, IOVSyncValue const& iTS, bool cleaningUpAfterException) {
-    iSubProcess.doStreamEndRunAsync(std::move(iHolder), i ,iPrincipal, iTS, cleaningUpAfterException);
+  inline void subProcessDoStreamBeginTransitionAsync(WaitingTaskHolder iHolder,
+                                                     SubProcess& iSubProcess,
+                                                     unsigned int i,
+                                                     LumiTransitionInfo const& iTransitionInfo) {
+    iSubProcess.doStreamBeginLuminosityBlockAsync(std::move(iHolder), i, iTransitionInfo);
   }
 
+  inline void subProcessDoStreamBeginTransitionAsync(WaitingTaskHolder iHolder,
+                                                     SubProcess& iSubProcess,
+                                                     unsigned int i,
+                                                     RunTransitionInfo const& iTransitionInfo) {
+    iSubProcess.doStreamBeginRunAsync(std::move(iHolder), i, iTransitionInfo);
+  }
 
-  template<typename Traits, typename P, typename SC >
+  inline void subProcessDoStreamEndTransitionAsync(WaitingTaskHolder iHolder,
+                                                   SubProcess& iSubProcess,
+                                                   unsigned int i,
+                                                   LumiTransitionInfo const& iTransitionInfo,
+                                                   bool cleaningUpAfterException) {
+    iSubProcess.doStreamEndLuminosityBlockAsync(std::move(iHolder), i, iTransitionInfo, cleaningUpAfterException);
+  }
+
+  inline void subProcessDoStreamEndTransitionAsync(WaitingTaskHolder iHolder,
+                                                   SubProcess& iSubProcess,
+                                                   unsigned int i,
+                                                   RunTransitionInfo const& iTransitionInfo,
+                                                   bool cleaningUpAfterException) {
+    iSubProcess.doStreamEndRunAsync(std::move(iHolder), i, iTransitionInfo, cleaningUpAfterException);
+  }
+
+  template <typename Traits>
   void beginStreamTransitionAsync(WaitingTaskHolder iWait,
                                   Schedule& iSchedule,
                                   unsigned int iStreamIndex,
-                                  P& iPrincipal,
-                                  IOVSyncValue const & iTS,
-                                  EventSetup const& iES,
-                                  SC& iSubProcesses) {
-    ServiceToken token = ServiceRegistry::instance().presentToken();
-
+                                  typename Traits::TransitionInfoType& transitionInfo,
+                                  ServiceToken const& token,
+                                  std::vector<SubProcess>& iSubProcesses) {
     //When we are done processing the stream for this process,
     // we need to run the stream for all SubProcesses
-    auto subs = make_waiting_task(tbb::task::allocate_root(), [&iSubProcesses, iWait,iStreamIndex,&iPrincipal,iTS,token](std::exception_ptr const* iPtr) mutable {
-      ServiceRegistry::Operate op(token);
-      if(iPtr) {
-        auto excpt = *iPtr;
-        auto delayError = make_waiting_task(tbb::task::allocate_root(), [iWait,token,excpt](std::exception_ptr const* ) mutable {
-          ServiceRegistry::Operate op(token);
-          iWait.doneWaiting(excpt);
+    //NOTE: The subprocesses set their own service tokens
+    auto subs = make_waiting_task(
+        [&iSubProcesses, iWait, iStreamIndex, info = transitionInfo](std::exception_ptr const* iPtr) mutable {
+          if (iPtr) {
+            auto excpt = *iPtr;
+            auto delayError =
+                make_waiting_task([iWait, excpt](std::exception_ptr const*) mutable { iWait.doneWaiting(excpt); });
+            WaitingTaskHolder h(*iWait.group(), delayError);
+            for (auto& subProcess : iSubProcesses) {
+              subProcessDoStreamBeginTransitionAsync(h, subProcess, iStreamIndex, info);
+            };
+          } else {
+            for (auto& subProcess : iSubProcesses) {
+              subProcessDoStreamBeginTransitionAsync(iWait, subProcess, iStreamIndex, info);
+            };
+          }
         });
-        WaitingTaskHolder h(delayError);
-        for_all(iSubProcesses, [&h,iStreamIndex, &iPrincipal, iTS](auto& subProcess){ subProcessDoStreamBeginTransitionAsync(h,subProcess,iStreamIndex,iPrincipal, iTS); });
-      } else {
-        for_all(iSubProcesses, [&iWait,iStreamIndex, &iPrincipal, iTS](auto& subProcess){ subProcessDoStreamBeginTransitionAsync(iWait,subProcess,iStreamIndex,iPrincipal, iTS); });
-      }
-    });
-    
-    WaitingTaskHolder h(subs);
-    iSchedule.processOneStreamAsync<Traits>(std::move(h), iStreamIndex,iPrincipal, iES);
+
+    WaitingTaskHolder h(*iWait.group(), subs);
+    iSchedule.processOneStreamAsync<Traits>(std::move(h), iStreamIndex, transitionInfo, token);
   }
 
-  
-  template<typename Traits, typename P, typename SC >
-  void beginStreamsTransitionAsync(WaitingTask* iWait,
-                                  Schedule& iSchedule,
-                                  unsigned int iNStreams,
-                                  P& iPrincipal,
-                                  IOVSyncValue const & iTS,
-                                  EventSetup const& iES,
-                                  SC& iSubProcesses)
-  {
-    WaitingTaskHolder holdUntilAllStreamsCalled(iWait);
-    for(unsigned int i=0; i<iNStreams;++i) {
-      beginStreamTransitionAsync<Traits>(WaitingTaskHolder(iWait), iSchedule,i,iPrincipal,iTS,iES,iSubProcesses);
+  template <typename Traits>
+  void beginStreamsTransitionAsync(WaitingTaskHolder iWait,
+                                   Schedule& iSchedule,
+                                   unsigned int iNStreams,
+                                   typename Traits::TransitionInfoType& transitionInfo,
+                                   ServiceToken const& token,
+                                   std::vector<SubProcess>& iSubProcesses) {
+    for (unsigned int i = 0; i < iNStreams; ++i) {
+      beginStreamTransitionAsync<Traits>(iWait, iSchedule, i, transitionInfo, token, iSubProcesses);
     }
   }
-  
-  template<typename Traits, typename P, typename SC >
+
+  template <typename Traits>
   void endStreamTransitionAsync(WaitingTaskHolder iWait,
                                 Schedule& iSchedule,
                                 unsigned int iStreamIndex,
-                                P& iPrincipal,
-                                IOVSyncValue const & iTS,
-                                EventSetup const& iES,
-                                SC& iSubProcesses,
-                                bool cleaningUpAfterException)
-  {
-    ServiceToken token = ServiceRegistry::instance().presentToken();
-    
+                                typename Traits::TransitionInfoType& transitionInfo,
+                                ServiceToken const& token,
+                                std::vector<SubProcess>& iSubProcesses,
+                                bool cleaningUpAfterException) {
     //When we are done processing the stream for this process,
     // we need to run the stream for all SubProcesses
-    auto subs = make_waiting_task(tbb::task::allocate_root(), [&iSubProcesses, iWait,iStreamIndex,&iPrincipal,iTS,token,cleaningUpAfterException](std::exception_ptr const* iPtr) mutable {
-      ServiceRegistry::Operate op(token);
-      if(iPtr) {
-        auto excpt = *iPtr;
-        auto delayError = make_waiting_task(tbb::task::allocate_root(), [iWait,token,excpt](std::exception_ptr const* ) mutable {
-          ServiceRegistry::Operate op(token);
-          iWait.doneWaiting(excpt);
+    //NOTE: The subprocesses set their own service tokens
+
+    auto subs =
+        make_waiting_task([&iSubProcesses, iWait, iStreamIndex, info = transitionInfo, cleaningUpAfterException](
+                              std::exception_ptr const* iPtr) mutable {
+          if (iPtr) {
+            auto excpt = *iPtr;
+            auto delayError =
+                make_waiting_task([iWait, excpt](std::exception_ptr const*) mutable { iWait.doneWaiting(excpt); });
+            WaitingTaskHolder h(*iWait.group(), delayError);
+            for (auto& subProcess : iSubProcesses) {
+              subProcessDoStreamEndTransitionAsync(h, subProcess, iStreamIndex, info, cleaningUpAfterException);
+            }
+          } else {
+            for (auto& subProcess : iSubProcesses) {
+              subProcessDoStreamEndTransitionAsync(iWait, subProcess, iStreamIndex, info, cleaningUpAfterException);
+            }
+          }
         });
-        WaitingTaskHolder h(delayError);
-        for_all(iSubProcesses, [&h,iStreamIndex, &iPrincipal, iTS,cleaningUpAfterException](auto& subProcess){
-          subProcessDoStreamEndTransitionAsync(h,subProcess,iStreamIndex,iPrincipal, iTS,cleaningUpAfterException); });
-      } else {
-        for_all(iSubProcesses, [&iWait,iStreamIndex, &iPrincipal, iTS,cleaningUpAfterException](auto& subProcess){
-          subProcessDoStreamEndTransitionAsync(iWait,subProcess,iStreamIndex,iPrincipal, iTS,cleaningUpAfterException); });
-      }
-    });
-    
-    WaitingTaskHolder h(subs);
-    iSchedule.processOneStreamAsync<Traits>(std::move(h), iStreamIndex,iPrincipal, iES,cleaningUpAfterException);
-      
-    
+
+    iSchedule.processOneStreamAsync<Traits>(
+        WaitingTaskHolder(*iWait.group(), subs), iStreamIndex, transitionInfo, token, cleaningUpAfterException);
   }
 
-  template<typename Traits, typename P, typename SC >
-  void endStreamsTransitionAsync(WaitingTask* iWait,
-                                Schedule& iSchedule,
-                                unsigned int iNStreams,
-                                P& iPrincipal,
-                                IOVSyncValue const & iTS,
-                                EventSetup const& iES,
-                                SC& iSubProcesses,
-                                bool cleaningUpAfterException)
-  {
-    WaitingTaskHolder holdUntilAllStreamsCalled(iWait);
-    for(unsigned int i=0; i<iNStreams;++i) {
-      endStreamTransitionAsync<Traits>(WaitingTaskHolder(iWait),
-                                       iSchedule,i,
-                                       iPrincipal,iTS,iES,
-                                       iSubProcesses,cleaningUpAfterException);
+  template <typename Traits>
+  void endStreamsTransitionAsync(WaitingTaskHolder iWait,
+                                 Schedule& iSchedule,
+                                 unsigned int iNStreams,
+                                 typename Traits::TransitionInfoType& transitionInfo,
+                                 ServiceToken const& iToken,
+                                 std::vector<SubProcess>& iSubProcesses,
+                                 bool cleaningUpAfterException) {
+    for (unsigned int i = 0; i < iNStreams; ++i) {
+      endStreamTransitionAsync<Traits>(
+          iWait, iSchedule, i, transitionInfo, iToken, iSubProcesses, cleaningUpAfterException);
     }
   }
-};
+};  // namespace edm
 
 #endif

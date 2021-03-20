@@ -7,14 +7,16 @@
 #include "TrackingTools/RecoGeometry/interface/GlobalDetLayerGeometry.h"
 #include <memory>
 
-class  GlobalDetLayerGeometryESProducer: public edm::ESProducer{
- public:
-  GlobalDetLayerGeometryESProducer(const edm::ParameterSet & p);
-  ~GlobalDetLayerGeometryESProducer() override; 
-  std::shared_ptr<DetLayerGeometry> produce(const RecoGeometryRecord &);
- private:
-  std::shared_ptr<DetLayerGeometry> geometry_;
-};
+class GlobalDetLayerGeometryESProducer : public edm::ESProducer {
+public:
+  GlobalDetLayerGeometryESProducer(const edm::ParameterSet &p);
+  ~GlobalDetLayerGeometryESProducer() override;
+  std::unique_ptr<DetLayerGeometry> produce(const RecoGeometryRecord &);
 
+private:
+  edm::ESGetToken<GeometricSearchTracker, TrackerRecoGeometryRecord> trackerToken_;
+  edm::ESGetToken<MuonDetLayerGeometry, MuonRecoGeometryRecord> muonToken_;
+  edm::ESGetToken<MTDDetLayerGeometry, MTDRecoGeometryRecord> mtdToken_;
+};
 
 #endif

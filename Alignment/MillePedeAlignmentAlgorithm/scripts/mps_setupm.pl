@@ -22,7 +22,7 @@ my $ignoredisabledjobs = -1;
 ## parse the arguments
 my $i = 0;
 while (@ARGV) {
-  $arg = shift(ARGV);
+  $arg = shift(@ARGV);
   if ($arg =~ /\A-/) {  # check for option 
     if ($arg =~ "h") {
       $helpwanted = 1;
@@ -91,7 +91,7 @@ my $nMerge = @JOBDIR - $nJobs; # 'index' of this merge job to achieve jobm, jobm
 # add a new merge job entry. 
 $theJobDir = "jobm".$nMerge;
 push @JOBDIR,$theJobDir;
-push @JOBID,0;
+push @JOBID,"";
 push @JOBSTATUS,"SETUP";
 push @JOBNTRY,0;
 push @JOBRUNTIME,0;

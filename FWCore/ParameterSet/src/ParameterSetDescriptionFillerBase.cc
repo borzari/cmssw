@@ -2,7 +2,7 @@
 //
 // Package:     ParameterSet
 // Class  :     ParameterSetDescriptionFillerBase
-// 
+//
 // Implementation:
 //     <Notes on implementation>
 //
@@ -15,7 +15,6 @@
 // user include files
 #include "FWCore/ParameterSet/interface/ParameterSetDescriptionFillerBase.h"
 
-
 //
 // constants, enums and typedefs
 //
@@ -26,7 +25,6 @@ const std::string edm::ParameterSetDescriptionFillerBase::kBaseForESProducer("ES
 const std::string edm::ParameterSetDescriptionFillerBase::kExtendedBaseForEDAnalyzer("EDAnalyzer");
 const std::string edm::ParameterSetDescriptionFillerBase::kExtendedBaseForEDProducer("EDProducer");
 const std::string edm::ParameterSetDescriptionFillerBase::kExtendedBaseForEDFilter("EDFilter");
-const std::string edm::ParameterSetDescriptionFillerBase::kExtendedBaseForOutputModule("OutputModule");
 const std::string edm::ParameterSetDescriptionFillerBase::kExtendedBaseForOneEDAnalyzer("one::EDAnalyzer");
 const std::string edm::ParameterSetDescriptionFillerBase::kExtendedBaseForOneEDProducer("one::EDProducer");
 const std::string edm::ParameterSetDescriptionFillerBase::kExtendedBaseForOneEDFilter("one::EDFilter");
@@ -59,10 +57,8 @@ const std::string edm::ParameterSetDescriptionFillerBase::kExtendedBaseForLimite
 //    // do actual copying here;
 // }
 namespace edm {
-ParameterSetDescriptionFillerBase::~ParameterSetDescriptionFillerBase()
-{
-}
-}
+  ParameterSetDescriptionFillerBase::~ParameterSetDescriptionFillerBase() {}
+}  // namespace edm
 //
 // assignment operators
 //

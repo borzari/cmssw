@@ -5,9 +5,8 @@ process = cms.Process("TEST")
 ## add message logger
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = 'INFO'
-process.MessageLogger.categories.append('TopHitFit')
-process.MessageLogger.categories.append('TtSemiLepKinFitter')
-process.MessageLogger.categories.append('TtSemiLeptonicEvent')
+process.MessageLogger.TopHitFit=dict()
+process.MessageLogger.TtSemiLepKinFitter=dict()
 process.MessageLogger.cerr.TtSemiLeptonicEvent = cms.untracked.PSet(
     limit = cms.untracked.int32(-1)
 )
@@ -40,6 +39,8 @@ process.task = cms.Task()
 ## std sequence for PAT
 process.load("PhysicsTools.PatAlgos.producersLayer1.patCandidates_cff")
 process.task.add(process.patCandidatesTask)
+#Temporary customize to the unit tests that fail due to old input samples
+process.patTaus.skipMissingTauID = True
 process.load("PhysicsTools.PatAlgos.selectionLayer1.selectedPatCandidates_cff")
 process.task.add(process.selectedPatCandidatesTask)
 

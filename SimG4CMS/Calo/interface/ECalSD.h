@@ -12,11 +12,10 @@
 #include "SimG4CMS/Calo/interface/CaloSD.h"
 #include "SimG4CMS/Calo/interface/EnergyResolutionVsLumi.h"
 #include "Geometry/EcalCommonData/interface/EcalNumberingScheme.h"
-#include "DetectorDescription/Core/interface/DDsvalues.h"
+#include "CondFormats/GeometryObjects/interface/EcalSimulationParameters.h"
 #include "DataFormats/DetId/interface/DetId.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
-#include "G4String.hh"
 #ifdef plotDebug
 #include <TH2F.h>
 #endif
@@ -28,47 +27,54 @@ class G4LogicalVolume;
 class EnergyResolutionVsLumi;
 
 class ECalSD : public CaloSD {
-
-public:    
-
-  ECalSD(G4String, const DDCompactView &, const SensitiveDetectorCatalog &,
-	 edm::ParameterSet const & p, const SimTrackManager*);
+public:
+  ECalSD(const std::string &,
+         const edm::EventSetup &,
+         const SensitiveDetectorCatalog &,
+         edm::ParameterSet const &p,
+         const SimTrackManager *);
   ~ECalSD() override;
-  double                    getEnergyDeposit(G4Step*) override;
-  virtual uint16_t                  getRadiationLength(G4Step *);
-  virtual uint16_t                  getLayerIDForTimeSim(G4Step *);
-  uint32_t                  setDetUnitId(G4Step*) override;
-  void                              setNumberingScheme(EcalNumberingScheme*);
-  int                       getTrackID(G4Track*) override;
-  uint16_t                  getDepth(G4Step*) override;
+  uint32_t setDetUnitId(const G4Step *) override;
+  void setNumberingScheme(EcalNumberingScheme *);
 
-private:    
-  void                              initMap(G4String, const DDCompactView &);
-  double                            curve_LY(G4Step*); 
-  double                            crystalLength(G4LogicalVolume*);
-  double                            crystalDepth(G4LogicalVolume*, const G4ThreeVector&);
-  void                              getBaseNumber(const G4Step*); 
-  double                            getBirkL3(G4Step*);
-  std::vector<double>               getDDDArray(const std::string&,
-						const DDsvalues_type&);
-  std::vector<std::string>          getStringArray(const std::string&,
-						   const DDsvalues_type&);
-  bool                              isEB;
-  bool                              isEE;
-  EcalNumberingScheme *             numberingScheme;
-  bool                              useWeight, storeTrack, storeRL, storeLayerTimeSim;
-  bool                              useBirk, useBirkL3;
-  double                            birk1, birk2, birk3, birkSlope, birkCut;
-  double                            slopeLY, scaleRL;
-  std::string                       crystalMat, depth1Name, depth2Name;
-  std::map<G4LogicalVolume*,double> xtalLMap;
-  std::vector<G4LogicalVolume*>     useDepth1, useDepth2, noWeight;
-  EcalBaseNumber                    theBaseNumber;
-  EnergyResolutionVsLumi            ageing;
-  bool                              ageingWithSlopeLY;
+protected:
+  double getEnergyDeposit(const G4Step *) override;
+  int getTrackID(const G4Track *) override;
+  uint16_t getDepth(const G4Step *) override;
+  double EnergyCorrected(const G4Step &, const G4Track *) override;
+
+private:
+  void initMap();
+  uint16_t getRadiationLength(const G4StepPoint *hitPoint, const G4LogicalVolume *lv);
+  uint16_t getLayerIDForTimeSim();
+  double curve_LY(const G4LogicalVolume *);
+
+  void getBaseNumber(const G4Step *);
+  double getBirkL3(const G4Step *);
+  bool isXtal(const G4LogicalVolume *);
+
+  // initialised before run
+  const EcalSimulationParameters *ecalSimParameters_;
+  EcalNumberingScheme *numberingScheme_;
+  bool useWeight, storeTrack, storeRL, storeLayerTimeSim;
+  bool useBirk, useBirkL3;
+  double birk1, birk2, birk3, birkSlope, birkCut;
+  double slopeLY, scaleRL;
+  std::string crystalMat, depth1Name, depth2Name;
+  std::map<const G4LogicalVolume *, double> xtalLMap;
+  std::vector<const G4LogicalVolume *> useDepth1, useDepth2, noWeight;
+  EcalBaseNumber theBaseNumber;
+  EnergyResolutionVsLumi ageing;
+  bool ageingWithSlopeLY;
+
+  // run time cache
+  G4ThreeVector currentLocalPoint;
+  double crystalLength;
+  double crystalDepth;
+  uint16_t depth;
 #ifdef plotDebug
-  TH2F                             *g2L_[4];
+  TH2F *g2L_[4];
 #endif
 };
 
-#endif // ECalSD_h
+#endif  // ECalSD_h

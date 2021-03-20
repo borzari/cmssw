@@ -4,103 +4,105 @@
 #include "CalibFormats/CaloObjects/interface/CaloTSamples.h"
 #include "SimCalorimetry/EcalSimAlgos/interface/EcalHitResponse.h"
 #include "CondFormats/EcalObjects/interface/EcalIntercalibConstantsMC.h"
+#include "DataFormats/EcalDigi/interface/EcalConstants.h"
 
-class APDSimParameters ;
+class APDSimParameters;
 
 namespace CLHEP {
-   class HepRandomEngine;
+  class HepRandomEngine;
 }
 
-class EBHitResponse : public EcalHitResponse
-{
-   public:
+template <class constset>
+class EBHitResponseImpl : public EcalHitResponse {
+public:
+  typedef CaloTSamples<float, constset::sampleSize> EBSamples;
 
-      typedef CaloTSamples<float,10> EBSamples ;
+  typedef std::vector<double> VecD;
 
-      typedef std::vector<double> VecD ;
+  static constexpr size_t kNOffsets = constset::kNOffsets;
 
-      enum { kNOffsets = 2000 } ;
+  static constexpr double kSamplePeriod = constset::Samp_Period;
 
-      EBHitResponse( const CaloVSimParameterMap* parameterMap , 
-		     const CaloVShape*           shape        ,
-		     bool                        apdOnly      ,
-		     const APDSimParameters*     apdPars      , 
-		     const CaloVShape*           apdShape       ) ;
+  EBHitResponseImpl(const CaloVSimParameterMap* parameterMap,
+                    const CaloVShape* shape,
+                    bool apdOnly,
+                    const APDSimParameters* apdPars = nullptr,
+                    const CaloVShape* apdShape = nullptr);
 
-      ~EBHitResponse() override ;
+  ~EBHitResponseImpl() override;
 
-      void initialize(CLHEP::HepRandomEngine*);
+  void initialize(CLHEP::HepRandomEngine*);
 
-      virtual bool keepBlank() const { return false ; }
+  virtual bool keepBlank() const { return false; }
 
-      void setIntercal( const EcalIntercalibConstantsMC* ical ) ;
+  void setIntercal(const EcalIntercalibConstantsMC* ical);
 
+  void add(const PCaloHit& hit, CLHEP::HepRandomEngine*) override;
 
-      void add( const PCaloHit&  hit, CLHEP::HepRandomEngine* ) override;
+  void initializeHits() override;
 
-      void initializeHits() override;
+  void finalizeHits() override;
 
-      void finalizeHits() override;
+  void run(MixCollection<PCaloHit>& hits, CLHEP::HepRandomEngine*) override;
 
-      void run( MixCollection<PCaloHit>& hits, CLHEP::HepRandomEngine* ) override;
+  unsigned int samplesSize() const override;
 
-      unsigned int samplesSize() const override;
+  EcalSamples* operator[](unsigned int i) override;
 
-      EcalSamples* operator[]( unsigned int i ) override;
+  const EcalSamples* operator[](unsigned int i) const override;
 
-      const EcalSamples* operator[]( unsigned int i ) const override;
+protected:
+  unsigned int samplesSizeAll() const override;
 
-   protected:
+  EcalSamples* vSamAll(unsigned int i) override;
 
-      unsigned int samplesSizeAll() const override;
+  const EcalSamples* vSamAll(unsigned int i) const override;
 
-      EcalSamples* vSamAll( unsigned int i ) override;
+  EcalSamples* vSam(unsigned int i) override;
 
-      const EcalSamples* vSamAll( unsigned int i ) const override;
+  void putAPDSignal(const DetId& detId, double npe, double time);
 
-      EcalSamples* vSam( unsigned int i ) override ;
+  void putAnalogSignal(const PCaloHit& inputHit, CLHEP::HepRandomEngine*) override;
 
-      void putAPDSignal( const DetId& detId, double npe, double time ) ;
+private:
+  const VecD& offsets() const { return m_timeOffVec; }
 
-   private:
+  const double nonlFunc(double enr) const {
+    return (pelo > enr ? pext : (pehi > enr ? nonlFunc1(enr) : pfac * atan(log10(enr - pehi + 0.00001)) + poff));
+  }
 
-      const VecD& offsets() const { return m_timeOffVec ; }
+  const double nonlFunc1(double energy) const {
+    const double enr(log10(energy));
+    const double enr2(enr * enr);
+    const double enr3(enr2 * enr);
+    return (pcub * enr3 + pqua * enr2 + plin * enr + pcon);
+  }
 
-      const double nonlFunc( double enr ) const {
-	 return ( pelo > enr ? pext :
-		  ( pehi > enr ? nonlFunc1( enr ) : 
-		    pfac*atan( log10( enr - pehi + 0.00001 ) ) + poff ) ) ; }
+  const APDSimParameters* apdParameters() const;
+  const CaloVShape* apdShape() const;
 
-      const double nonlFunc1( double energy ) const {
-	 const double enr ( log10(energy) ) ;
-	 const double enr2 ( enr*enr ) ;
-	 const double enr3 ( enr2*enr ) ;
-	 return ( pcub*enr3 + pqua*enr2 + plin*enr + pcon ) ; }
+  double apdSignalAmplitude(const PCaloHit& hit, CLHEP::HepRandomEngine*) const;
 
-      const APDSimParameters* apdParameters() const ;
-      const CaloVShape*       apdShape()      const ;
+  void findIntercalibConstant(const DetId& detId, double& icalconst) const;
 
-      double apdSignalAmplitude( const PCaloHit& hit, CLHEP::HepRandomEngine* ) const ;
+  const bool m_apdOnly;
+  const APDSimParameters* m_apdPars;
+  const CaloVShape* m_apdShape;
+  const EcalIntercalibConstantsMC* m_intercal;
 
-      void findIntercalibConstant( const DetId& detId, 
-				   double&      icalconst ) const ;
+  std::vector<double> m_timeOffVec;
 
-      const bool                       m_apdOnly  ;
-      const APDSimParameters*          m_apdPars  ;
-      const CaloVShape*                m_apdShape ;
-      const EcalIntercalibConstantsMC* m_intercal ;
+  std::vector<double> m_apdNpeVec;
+  std::vector<double> m_apdTimeVec;
 
-      std::vector<double> m_timeOffVec ;
+  const double pcub, pqua, plin, pcon, pelo, pehi, pasy, pext, poff, pfac;
 
-      std::vector<double> m_apdNpeVec ;
-      std::vector<double> m_apdTimeVec ;
+  std::vector<EBSamples> m_vSam;
 
-      const double pcub, pqua, plin, pcon, pelo, pehi, pasy, pext, poff, pfac ;
-
-      std::vector<EBSamples> m_vSam ;
-
-      bool m_isInitialized;
+  bool m_isInitialized;
 };
+
+typedef EBHitResponseImpl<ecalPh1> EBHitResponse;
+typedef EBHitResponseImpl<ecalPh2> EBHitResponse_Ph2;
+#include "EBHitResponse.icc"
 #endif
-
-

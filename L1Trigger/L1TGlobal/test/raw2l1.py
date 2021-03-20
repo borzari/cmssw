@@ -42,9 +42,9 @@ for arg in argv:
     (k, v) = map(str.strip, arg.split('='))
     if k not in globals():
         raise "Unknown argument '%s'!" % (k,)
-    if type(globals()[k]) == bool:
+    if isinstance(globals()[k], bool):
         globals()[k] = v.lower() in ('y', 'yes', 'true', 't', '1')
-    elif type(globals()[k]) == int:
+    elif isinstance(globals()[k], int):
         globals()[k] = int(v)
     else:
         globals()[k] = v
@@ -61,7 +61,7 @@ if do_reco:
     process.MessageLogger.cerr.FwkReport.reportEvery = 1
 else:
     process.MessageLogger.cerr.FwkReport.reportEvery = 100
-process.MessageLogger.categories.append('L1GtTrigReport')
+process.MessageLogger.L1GtTrigReport=dict()
 
 process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(n))
 

@@ -3,14 +3,21 @@ import FWCore.ParameterSet.Config as cms
 process = cms.Process("CALIB")
 
 process.MessageLogger = cms.Service("MessageLogger",
-    debugModules = cms.untracked.vstring(''),
     QualityReader = cms.untracked.PSet(
         threshold = cms.untracked.string('INFO')
+    ),
+    cerr = cms.untracked.PSet(
+        enable = cms.untracked.bool(False)
     ),
     cout = cms.untracked.PSet(
         threshold = cms.untracked.string('INFO')
     ),
-    destinations = cms.untracked.vstring('QualityReader.log')
+    debugModules = cms.untracked.vstring(''),
+    files = cms.untracked.PSet(
+        QualityReader = cms.untracked.PSet(
+
+        )
+    )
 )
 
 process.source = cms.Source("EmptyIOVSource",
@@ -31,10 +38,11 @@ process.siStripQualityESProducer.ListOfRecordToMerge = cms.VPSet(
      cms.PSet( record = cms.string("SiStripBadModuleRcd"),  tag    = cms.string("") )
      )
 
-process.reader = cms.EDAnalyzer("SiStripQualityStatistics",
-                              dataLabel = cms.untracked.string(""),
-                              TkMapFileName = cms.untracked.string("")
-                              )
+from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
+process.reader = DQMEDAnalyzer("SiStripQualityStatistics",
+                               dataLabel = cms.untracked.string(""),
+                               TkMapFileName = cms.untracked.string("")
+                               )
 
 process.p = cms.Path(process.reader)
 

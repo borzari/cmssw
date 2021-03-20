@@ -9,13 +9,28 @@ from SimCalorimetry.EcalSelectiveReadoutProducers.ecalDigis_cfi import *
 # Preshower Zero suppression producer
 from SimCalorimetry.EcalZeroSuppressionProducers.ecalPreshowerDigis_cfi import *
 # simEcalUnsuppressedDigis is now done inside mixing module
-ecalDigiSequence = cms.Sequence(simEcalTriggerPrimitiveDigis*simEcalDigis*simEcalPreshowerDigis)
+ecalDigiTask = cms.Task(simEcalTriggerPrimitiveDigis, simEcalDigis, simEcalPreshowerDigis)
+ecalDigiSequence = cms.Sequence(ecalDigiTask)
+
+
+# This is extra, since the configuration skips it anyway.  Belts and suspenders.
+from Configuration.ProcessModifiers.premix_stage1_cff import premix_stage1
+premix_stage1.toReplaceWith(ecalDigiTask, ecalDigiTask.copyAndExclude([simEcalPreshowerDigis]))
 
 from SimCalorimetry.EcalEBTrigPrimProducers.ecalEBTriggerPrimitiveDigis_cff import *
-_phase2_ecalDigiSequence = ecalDigiSequence.copy()
-_phase2_ecalDigiSequence.insert(0,simEcalEBTriggerPrimitiveDigis)
+_phase2_ecalDigiTask = ecalDigiTask.copy()
+_phase2_ecalDigiTask.add(simEcalEBTriggerPrimitiveDigis)
 
 from Configuration.Eras.Modifier_phase2_common_cff import phase2_common
-phase2_common.toReplaceWith(ecalDigiSequence,_phase2_ecalDigiSequence)
+phase2_common.toReplaceWith(ecalDigiTask,_phase2_ecalDigiTask)
 
+from Configuration.Eras.Modifier_phase2_ecal_devel_cff import phase2_ecal_devel
+_phase2_ecalDigiTask_devel = cms.Task()
+phase2_ecal_devel.toReplaceWith(ecalDigiTask,_phase2_ecalDigiTask_devel)
 
+#phase 2 ecal                                                                                                                                                                                                                                                                   
+def _modifyEcalForPh2( process ):
+    process.load("SimCalorimetry.EcalSimProducers.esEcalLiteDTUPedestalsProducer_cfi")
+    process.load("SimCalorimetry.EcalSimProducers.esCATIAGainProducer_cfi")
+
+modifyDigi_Phase2EcalPed = phase2_ecal_devel.makeProcessModifier(_modifyEcalForPh2)

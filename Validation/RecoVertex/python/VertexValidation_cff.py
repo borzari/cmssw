@@ -8,14 +8,19 @@ vertexValidation = cms.Sequence(v0Validator
                                 * vertexAnalysisSequence)
 
 
-from Validation.RecoTrack.TrackValidation_cff import tracksValidationTruth
+from Validation.RecoTrack.TrackValidation_cff import tracksValidationTruth, tracksValidationTruthPixelTrackingOnly
 vertexValidationStandalone = cms.Sequence(
+    vertexValidation,
     tracksValidationTruth
-    * vertexValidation
 )
 
 vertexValidationTrackingOnly = cms.Sequence(
+    v0Validator
+    + vertexAnalysisSequenceTrackingOnly,
     tracksValidationTruth
-    + v0Validator
-    + vertexAnalysisSequenceTrackingOnly
+)
+
+vertexValidationPixelTrackingOnly = cms.Sequence(
+    vertexAnalysisSequencePixelTrackingOnly,
+    tracksValidationTruthPixelTrackingOnly
 )

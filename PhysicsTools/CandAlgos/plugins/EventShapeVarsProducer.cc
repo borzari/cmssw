@@ -4,10 +4,13 @@
 
 #include "PhysicsTools/CandUtils/interface/Thrust.h"
 
-EventShapeVarsProducer::EventShapeVarsProducer(const edm::ParameterSet& cfg)
-{
-  srcToken_ = consumes<edm::View<reco::Candidate> >(cfg.getParameter<edm::InputTag>("src"));
+#include <vector>
+#include <memory>
+
+EventShapeVarsProducer::EventShapeVarsProducer(const edm::ParameterSet& cfg) {
+  srcToken_ = consumes<edm::View<reco::Candidate>>(cfg.getParameter<edm::InputTag>("src"));
   r_ = cfg.exists("r") ? cfg.getParameter<double>("r") : 2.;
+  fwmax_ = cfg.exists("fwmax") ? cfg.getParameter<unsigned>("fwmax") : 0;
 
   produces<double>("thrust");
   //produces<double>("oblateness");
@@ -17,19 +20,16 @@ EventShapeVarsProducer::EventShapeVarsProducer(const edm::ParameterSet& cfg)
   produces<double>("aplanarity");
   produces<double>("C");
   produces<double>("D");
-
+  if (fwmax_ > 0)
+    produces<std::vector<double>>("FWmoments");
 }
 
-void put(edm::Event& evt, double value, const char* instanceName)
-{
+void put(edm::Event& evt, double value, const char* instanceName) {
   evt.put(std::make_unique<double>(value), instanceName);
 }
 
-void EventShapeVarsProducer::produce(edm::Event& evt, const edm::EventSetup&)
-{
-  //std::cout << "<EventShapeVarsProducer::produce>:" << std::endl;
-
-  edm::Handle<edm::View<reco::Candidate> > objects;
+void EventShapeVarsProducer::produce(edm::Event& evt, const edm::EventSetup&) {
+  edm::Handle<edm::View<reco::Candidate>> objects;
   evt.getByToken(srcToken_, objects);
 
   Thrust thrustAlgo(objects->begin(), objects->end());
@@ -37,12 +37,18 @@ void EventShapeVarsProducer::produce(edm::Event& evt, const edm::EventSetup&)
   //put(evt, thrustAlgo.oblateness(), "oblateness");
 
   EventShapeVariables eventShapeVarsAlgo(*objects);
+  eventShapeVarsAlgo.set_r(r_);
   put(evt, eventShapeVarsAlgo.isotropy(), "isotropy");
   put(evt, eventShapeVarsAlgo.circularity(), "circularity");
-  put(evt, eventShapeVarsAlgo.sphericity(r_), "sphericity");
-  put(evt, eventShapeVarsAlgo.aplanarity(r_), "aplanarity");
-  put(evt, eventShapeVarsAlgo.C(r_), "C");
-  put(evt, eventShapeVarsAlgo.D(r_), "D");
+  put(evt, eventShapeVarsAlgo.sphericity(), "sphericity");
+  put(evt, eventShapeVarsAlgo.aplanarity(), "aplanarity");
+  put(evt, eventShapeVarsAlgo.C(), "C");
+  put(evt, eventShapeVarsAlgo.D(), "D");
+  if (fwmax_ > 0) {
+    eventShapeVarsAlgo.setFWmax(fwmax_);
+    auto vfw = std::make_unique<std::vector<double>>(eventShapeVarsAlgo.getFWmoments());
+    evt.put(std::move(vfw), "FWmoments");
+  }
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
