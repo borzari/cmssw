@@ -16,17 +16,13 @@ CSCGEMMotherboard::CSCGEMMotherboard(unsigned endcap,
   // super chamber has layer=0!
   gemId = GEMDetId(theRegion, 1, theStation, 0, theChamber, 0).rawId();
 
-  const edm::ParameterSet coPadParams(station == 1 ? conf.getParameter<edm::ParameterSet>("copadParamGE11")
-                                                   : conf.getParameter<edm::ParameterSet>("copadParamGE21"));
-  coPadProcessor = std::make_unique<GEMCoPadProcessor>(theRegion, theStation, theChamber, coPadParams);
+  coPadProcessor = std::make_unique<GEMCoPadProcessor>(theRegion, theStation, theChamber, conf);
 
   maxDeltaPadL1_ = (theParity ? tmbParams_.getParameter<int>("maxDeltaPadL1Even")
                               : tmbParams_.getParameter<int>("maxDeltaPadL1Odd"));
   maxDeltaPadL2_ = (theParity ? tmbParams_.getParameter<int>("maxDeltaPadL2Even")
                               : tmbParams_.getParameter<int>("maxDeltaPadL2Odd"));
 }
-
-CSCGEMMotherboard::CSCGEMMotherboard() : CSCUpgradeMotherboard() {}
 
 CSCGEMMotherboard::~CSCGEMMotherboard() {}
 
@@ -132,9 +128,9 @@ CSCCorrelatedLCTDigi CSCGEMMotherboard::constructLCTsGEM(const CSCALCTDigi& alct
   if (alct.isValid() and clct.isValid() and gem1.isValid() and not gem2.isValid()) {
     pattern = encodePattern(clct.getPattern());
     if (runCCLUT_) {
-      quality = static_cast<unsigned int>(findQualityGEMv2(alct, clct, 1));
+      quality = qualityAssignment_->findQualityGEMv2(alct, clct, 1);
     } else {
-      quality = static_cast<unsigned int>(findQualityGEMv1(alct, clct, 1));
+      quality = qualityAssignment_->findQualityGEMv1(alct, clct, 1);
     }
     bx = alct.getBX();
     keyStrip = clct.getKeyStrip();
@@ -149,16 +145,16 @@ CSCCorrelatedLCTDigi CSCGEMMotherboard::constructLCTsGEM(const CSCALCTDigi& alct
       thisLCT.setRun3(true);
       // 4-bit slope value derived with the CCLUT algorithm
       thisLCT.setSlope(clct.getSlope());
-      thisLCT.setQuartStrip(clct.getQuartStrip());
-      thisLCT.setEightStrip(clct.getEightStrip());
+      thisLCT.setQuartStripBit(clct.getQuartStripBit());
+      thisLCT.setEighthStripBit(clct.getEighthStripBit());
       thisLCT.setRun3Pattern(clct.getRun3Pattern());
     }
   } else if (alct.isValid() and clct.isValid() and not gem1.isValid() and gem2.isValid()) {
     pattern = encodePattern(clct.getPattern());
     if (runCCLUT_) {
-      quality = static_cast<unsigned int>(findQualityGEMv2(alct, clct, 2));
+      quality = qualityAssignment_->findQualityGEMv2(alct, clct, 2);
     } else {
-      quality = static_cast<unsigned int>(findQualityGEMv1(alct, clct, 2));
+      quality = qualityAssignment_->findQualityGEMv1(alct, clct, 2);
     }
     bx = alct.getBX();
     keyStrip = clct.getKeyStrip();
@@ -174,8 +170,8 @@ CSCCorrelatedLCTDigi CSCGEMMotherboard::constructLCTsGEM(const CSCALCTDigi& alct
       thisLCT.setRun3(true);
       // 4-bit slope value derived with the CCLUT algorithm
       thisLCT.setSlope(clct.getSlope());
-      thisLCT.setQuartStrip(clct.getQuartStrip());
-      thisLCT.setEightStrip(clct.getEightStrip());
+      thisLCT.setQuartStripBit(clct.getQuartStripBit());
+      thisLCT.setEighthStripBit(clct.getEighthStripBit());
       thisLCT.setRun3Pattern(clct.getRun3Pattern());
     }
   } else if (alct.isValid() and gem2.isValid() and not clct.isValid()) {
@@ -248,8 +244,8 @@ CSCCorrelatedLCTDigi CSCGEMMotherboard::constructLCTsGEM(const CSCALCTDigi& alct
       thisLCT.setRun3(true);
       // 4-bit slope value derived with the CCLUT algorithm
       thisLCT.setSlope(clct.getSlope());
-      thisLCT.setQuartStrip(clct.getQuartStrip());
-      thisLCT.setEightStrip(clct.getEightStrip());
+      thisLCT.setQuartStripBit(clct.getQuartStripBit());
+      thisLCT.setEighthStripBit(clct.getEighthStripBit());
       thisLCT.setRun3Pattern(clct.getRun3Pattern());
     }
   }
@@ -273,9 +269,6 @@ CSCCorrelatedLCTDigi CSCGEMMotherboard::constructLCTsGEM(const CSCALCTDigi& alct
   // Not used in Run-2. Will not be assigned in Run-3
   thisLCT.setSyncErr(0);
   thisLCT.setCSCID(theTrigChamber);
-  // in Run-3 we plan to denote the presence of exotic signatures in the chamber
-  if (useHighMultiplicityBits_)
-    thisLCT.setHMT(highMultiplicityBits_);
 
   // future work: add a section that produces LCTs according
   // to the new LCT dataformat (not yet defined)
@@ -374,119 +367,6 @@ void CSCGEMMotherboard::printGEMTriggerCoPads(int bx_start, int bx_stop, enum CS
         LogTrace("CSCGEMMotherboard") << std::endl;
     }
   }
-}
-
-CSCMotherboard::LCT_Quality CSCGEMMotherboard::findQualityGEMv1(const CSCALCTDigi& aLCT,
-                                                                const CSCCLCTDigi& cLCT,
-                                                                int gemlayers) const {
-  // Either ALCT or CLCT is invalid
-  if (!(aLCT.isValid()) || !(cLCT.isValid())) {
-    // No CLCT
-    if (aLCT.isValid() && !(cLCT.isValid()))
-      return LCT_Quality::NO_CLCT;
-
-    // No ALCT
-    else if (!(aLCT.isValid()) && cLCT.isValid())
-      return LCT_Quality::NO_ALCT;
-
-    // No ALCT and no CLCT
-    else
-      return LCT_Quality::INVALID;
-  }
-  // Both ALCT and CLCT are valid
-  else {
-    const int pattern(cLCT.getPattern());
-
-    // Layer-trigger in CLCT
-    if (pattern == 1)
-      return LCT_Quality::CLCT_LAYER_TRIGGER;
-
-    // Multi-layer pattern in CLCT
-    else {
-      // ALCT quality is the number of layers hit minus 3.
-      bool a4 = false;
-
-      // Case of ME11 with GEMs: require 4 layers for ALCT
-      if (theStation == 1)
-        a4 = aLCT.getQuality() >= 1;
-
-      // Case of ME21 with GEMs: require 4 layers for ALCT+GEM
-      if (theStation == 2)
-        a4 = aLCT.getQuality() + gemlayers >= 1;
-
-      // CLCT quality is the number of layers hit.
-      const bool c4((cLCT.getQuality() >= 4) or (cLCT.getQuality() >= 3 and gemlayers >= 1));
-
-      // quality = 4; "reserved for low-quality muons in future"
-
-      // marginal anode and cathode
-      if (!a4 && !c4)
-        return LCT_Quality::MARGINAL_ANODE_CATHODE;
-
-      // HQ anode, but marginal cathode
-      else if (a4 && !c4)
-        return LCT_Quality::HQ_ANODE_MARGINAL_CATHODE;
-
-      // HQ cathode, but marginal anode
-      else if (!a4 && c4)
-        return LCT_Quality::HQ_CATHODE_MARGINAL_ANODE;
-
-      // HQ muon, but accelerator ALCT
-      else if (a4 && c4) {
-        if (aLCT.getAccelerator())
-          return LCT_Quality::HQ_ACCEL_ALCT;
-
-        else {
-          // quality =  9; "reserved for HQ muons with future patterns
-          // quality = 10; "reserved for HQ muons with future patterns
-
-          // High quality muons are determined by their CLCT pattern
-          if (pattern == 2 || pattern == 3)
-            return LCT_Quality::HQ_PATTERN_2_3;
-
-          else if (pattern == 4 || pattern == 5)
-            return LCT_Quality::HQ_PATTERN_4_5;
-
-          else if (pattern == 6 || pattern == 7)
-            return LCT_Quality::HQ_PATTERN_6_7;
-
-          else if (pattern == 8 || pattern == 9)
-            return LCT_Quality::HQ_PATTERN_8_9;
-
-          else if (pattern == 10)
-            return LCT_Quality::HQ_PATTERN_10;
-
-          else {
-            edm::LogWarning("CSCGEMMotherboard")
-                << "findQualityGEMv1: Unexpected CLCT pattern id = " << pattern << " in " << theCSCName_;
-            return LCT_Quality::INVALID;
-          }
-        }
-      }
-    }
-  }
-  return LCT_Quality::INVALID;
-}
-
-CSCGEMMotherboard::LCT_QualityRun3 CSCGEMMotherboard::findQualityGEMv2(const CSCALCTDigi& aLCT,
-                                                                       const CSCCLCTDigi& cLCT,
-                                                                       int gemlayers) const {
-  // ALCT and CLCT invalid
-  if (!(aLCT.isValid()) and !(cLCT.isValid())) {
-    return LCT_QualityRun3::INVALID;
-  } else if (!aLCT.isValid() && cLCT.isValid() and gemlayers == 2) {
-    return LCT_QualityRun3::CLCT_2GEM;
-  } else if (aLCT.isValid() && !cLCT.isValid() and gemlayers == 2) {
-    return LCT_QualityRun3::ALCT_2GEM;
-  } else if (aLCT.isValid() && cLCT.isValid()) {
-    if (gemlayers == 0)
-      return LCT_QualityRun3::ALCTCLCT;
-    else if (gemlayers == 1)
-      return LCT_QualityRun3::ALCTCLCT_1GEM;
-    else if (gemlayers == 2)
-      return LCT_QualityRun3::ALCTCLCT_2GEM;
-  }
-  return LCT_QualityRun3::INVALID;
 }
 
 template <>

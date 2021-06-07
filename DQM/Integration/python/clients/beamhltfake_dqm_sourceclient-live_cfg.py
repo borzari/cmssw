@@ -6,6 +6,8 @@ import FWCore.ParameterSet.Config as cms
 BSOnlineRecordName = 'BeamSpotOnlineHLTObjectsRcd'
 BSOnlineTag = 'BeamSpotOnlineTestHLT'
 BSOnlineJobName = 'BeamSpotOnlineTestHLT'
+BSOnlineOmsServiceUrl = 'http://cmsoms-services.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'
+useLockRecords = True
 
 import sys
 from Configuration.Eras.Era_Run2_2018_cff import Run2_2018
@@ -15,6 +17,8 @@ process = cms.Process("FakeBeamMonitor", Run2_2018)
 if "dqm_cmssw/playback" in str(sys.argv[1]):
   BSOnlineTag = BSOnlineTag + 'Playback'
   BSOnlineJobName = BSOnlineJobName + 'Playback'
+  BSOnlineOmsServiceUrl = ''
+  useLockRecords = False
 
 # switch
 live = True # FIXME
@@ -23,7 +27,7 @@ unitTest = False
 if 'unitTest=True' in sys.argv:
   live=False
   unitTest=True
-
+  useLockRecords = False
 
 # Common part for PP and H.I Running
 #-----------------------------
@@ -79,7 +83,6 @@ else:
 #-----------------------------
 process.load("DQM.BeamMonitor.FakeBeamMonitor_cff")
 process.dqmBeamMonitor = process.dqmFakeBeamMonitor.clone()
-
 #---------------
 # Calibration
 #---------------
@@ -104,7 +107,7 @@ else:
 process.dqmBeamMonitor.monitorName = 'FakeBeamMonitor'
 process.dqmBeamMonitor.OnlineMode = True              
 process.dqmBeamMonitor.recordName = BSOnlineRecordName
-
+process.dqmBeamMonitor.useLockRecords = cms.untracked.bool(useLockRecords)
 process.dqmBeamMonitor.resetEveryNLumi   = 5
 process.dqmBeamMonitor.resetPVEveryNLumi = 5
 
@@ -122,9 +125,7 @@ if unitTest == False:
       connect = cms.string('oracle://cms_orcon_prod/CMS_CONDITIONS'),
       preLoadConnectionString = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS'),
       runNumber = cms.untracked.uint64(options.runNumber),
-      #lastLumiFile = cms.untracked.string('last_lumi.txt'),
-      #lastLumiUrl = cms.untracked.string('http://ru-c2e14-11-01.cms:11100/urn:xdaq-application:lid=52/getLatestLumiSection'),
-      omsServiceUrl = cms.untracked.string('http://cmsoms-services.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'),
+      omsServiceUrl = cms.untracked.string(BSOnlineOmsServiceUrl),
       writeTransactionDelay = cms.untracked.uint32(options.transDelay),
       latency = cms.untracked.uint32(2),
       autoCommit = cms.untracked.bool(True),
@@ -135,7 +136,8 @@ if unitTest == False:
           tag = cms.string(BSOnlineTag),
           timetype = cms.untracked.string('Lumi'),
           onlyAppendUpdatePolicy = cms.untracked.bool(True)
-      ))
+      )),
+      frontierKey = cms.untracked.string(options.runUniqueKey)
   )
 
 else:
@@ -151,7 +153,6 @@ else:
 
     runNumber = cms.untracked.uint64(options.runNumber),
     lastLumiFile = cms.untracked.string('last_lumi.txt'),
-    #lastLumiUrl = cms.untracked.string('http://ru-c2e14-11-01.cms:11100/urn:xdaq-application:lid=52/getLatestLumiSection'),
     writeTransactionDelay = cms.untracked.uint32(options.transDelay),
     latency = cms.untracked.uint32(2),
     autoCommit = cms.untracked.bool(True),
@@ -160,8 +161,10 @@ else:
         tag = cms.string(BSOnlineTag),
         timetype = cms.untracked.string('Lumi'),
         onlyAppendUpdatePolicy = cms.untracked.bool(True)
-    ))
+    )),
+    frontierKey = cms.untracked.string(options.runUniqueKey)
 )
+print("Configured frontierKey", options.runUniqueKey)
 
 process.p = cms.Path(process.dqmcommon
                     * process.monitor )

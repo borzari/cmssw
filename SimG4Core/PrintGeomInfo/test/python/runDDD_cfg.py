@@ -11,10 +11,10 @@ process.load('Configuration.Geometry.GeometryExtended2021_cff')
 
 #from Configuration.Eras.Era_Phase2C11_cff import Phase2C11
 #process = cms.Process('G4PrintGeometry',Phase2C11)
-#process.load('Configuration.Geometry.GeometryExtended2026D76_cff')
+#process.load('Configuration.Geometry.GeometryExtended2026D77_cff')
+#process.load('Configuration.Geometry.GeometryExtended2026D83_cff')
 
 process.load('FWCore.MessageService.MessageLogger_cfi')
-
 
 from SimG4Core.PrintGeomInfo.g4PrintGeomInfo_cfi import *
 
@@ -24,9 +24,6 @@ if hasattr(process,'MessageLogger'):
     process.MessageLogger.G4cerr=dict()
     process.MessageLogger.G4cout=dict()
 
-
-
-process.g4SimHits.g4GeometryDD4hepSource = cms.bool(False)
 process.g4SimHits.Watchers = cms.VPSet(cms.PSet(
     DumpSummary      = cms.untracked.bool(True),
     DumpLVTree       = cms.untracked.bool(False),
@@ -48,5 +45,6 @@ process.g4SimHits.Watchers = cms.VPSet(cms.PSet(
     LVFileName       = cms.untracked.string('lvfileDDD.txt'),
     PVFileName       = cms.untracked.string('pvfileDDD.txt'),
     TouchFileName    = cms.untracked.string('touchfileDDD.txt'),
+    FileDetail       = cms.untracked.bool(True),
     type             = cms.string('PrintGeomInfoAction')
 ))

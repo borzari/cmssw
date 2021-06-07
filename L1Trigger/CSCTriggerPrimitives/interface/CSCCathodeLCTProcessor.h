@@ -34,7 +34,7 @@
 #include "DataFormats/CSCDigi/interface/CSCCLCTDigi.h"
 #include "DataFormats/CSCDigi/interface/CSCCLCTPreTriggerDigi.h"
 #include "L1Trigger/CSCTriggerPrimitives/interface/CSCBaseboard.h"
-#include "L1Trigger/CSCTriggerPrimitives/interface/CSCComparatorCodeLUT.h"
+#include "L1Trigger/CSCTriggerPrimitives/interface/CSCLUTReader.h"
 #include "L1Trigger/CSCTriggerPrimitives/interface/LCTQualityControl.h"
 
 #include <vector>
@@ -51,9 +51,6 @@ public:
                          unsigned chamber,
                          const edm::ParameterSet& conf);
 
-  /** Default constructor. Used for testing. */
-  CSCCathodeLCTProcessor();
-
   /** Default destructor. */
   ~CSCCathodeLCTProcessor() override = default;
 
@@ -69,7 +66,7 @@ public:
 
   /** Called in test mode and by the run(compdc) function; does the actual LCT
       finding. */
-  void run(const std::vector<int> halfstrip[CSCConstants::NUM_LAYERS][CSCConstants::NUM_HALF_STRIPS_7CFEBS]);
+  void run(const std::vector<int> halfstrip[CSCConstants::NUM_LAYERS][CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER]);
 
   /** Returns vector of CLCTs in the read-out time window, if any. */
   std::vector<CSCCLCTDigi> readoutCLCTs(int nMaxCLCTs = CSCConstants::MAX_CLCTS_READOUT) const;
@@ -91,6 +88,10 @@ public:
   std::vector<CSCCLCTPreTriggerDigi> preTriggerDigisME1a() const;
   std::vector<CSCCLCTPreTriggerDigi> preTriggerDigisME1b() const;
 
+  /* get special bits for high multiplicity triggers */
+  unsigned getInTimeHMT() const { return inTimeHMT_; }
+  unsigned getOutTimeHMT() const { return outTimeHMT_; }
+
 protected:
   /** Best LCT in this chamber, as found by the processor. */
   CSCCLCTDigi bestCLCT[CSCConstants::MAX_CLCT_TBINS];
@@ -99,9 +100,9 @@ protected:
   CSCCLCTDigi secondCLCT[CSCConstants::MAX_CLCT_TBINS];
 
   // unique pointers to the luts
-  std::array<std::unique_ptr<CSCComparatorCodeLUT>, 5> lutpos_;
-  std::array<std::unique_ptr<CSCComparatorCodeLUT>, 5> lutslope_;
-  std::array<std::unique_ptr<CSCComparatorCodeLUT>, 5> lutpatconv_;
+  std::array<std::unique_ptr<CSCLUTReader>, 5> lutpos_;
+  std::array<std::unique_ptr<CSCLUTReader>, 5> lutslope_;
+  std::array<std::unique_ptr<CSCLUTReader>, 5> lutpatconv_;
 
   /** Access routines to comparator digis. */
   bool getDigis(const CSCComparatorDigiCollection* compdc);
@@ -113,27 +114,27 @@ protected:
   /** Make sure that the parameter values are within the allowed range. */
   void checkConfigParameters();
 
-  typedef unsigned int PulseArray[CSCConstants::NUM_LAYERS][CSCConstants::NUM_HALF_STRIPS_7CFEBS];
+  typedef unsigned int PulseArray[CSCConstants::NUM_LAYERS][CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER];
 
   //---------------- Methods common to all firmware versions ------------------
   // Single-argument version for TMB07 (halfstrip-only) firmware.
   // Takes the comparator & time info and stuffs it into halfstrip vector.
   // Multiple hits on the same strip are allowed.
-  void readComparatorDigis(std::vector<int> halfstrip[CSCConstants::NUM_LAYERS][CSCConstants::NUM_HALF_STRIPS_7CFEBS]);
-  void pulseExtension(const std::vector<int> time[CSCConstants::NUM_LAYERS][CSCConstants::NUM_HALF_STRIPS_7CFEBS],
-                      const int nStrips,
-                      PulseArray pulse);
+  void readComparatorDigis(
+      std::vector<int> halfstrip[CSCConstants::NUM_LAYERS][CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER]);
+  void pulseExtension(
+      const std::vector<int> time[CSCConstants::NUM_LAYERS][CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER],
+      PulseArray pulse);
 
   //--------------- Functions for post-2007 version of the firmware -----------
   virtual std::vector<CSCCLCTDigi> findLCTs(
-      const std::vector<int> halfstrip[CSCConstants::NUM_LAYERS][CSCConstants::NUM_HALF_STRIPS_7CFEBS]);
+      const std::vector<int> halfstrip[CSCConstants::NUM_LAYERS][CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER]);
 
   /* Check all half-strip pattern envelopes simultaneously, on every clock cycle, for a matching pattern */
   virtual bool preTrigger(const PulseArray pulse, const int start_bx, int& first_bx);
 
   /* For a given clock cycle, check each half-strip if a pattern matches */
   bool patternFinding(const PulseArray pulse,
-                      const int nStrips,
                       const unsigned int bx_time,
                       std::map<int, std::map<int, CSCCLCTDigi::ComparatorContainer> >& hits_in_patterns);
 
@@ -143,22 +144,24 @@ protected:
   void cleanComparatorContainer(CSCCLCTDigi& lct) const;
 
   /* Mark the half-strips around the best half-strip as busy */
-  void markBusyKeys(const int best_hstrip, const int best_patid, int quality[CSCConstants::NUM_HALF_STRIPS_7CFEBS]);
+  void markBusyKeys(const int best_hstrip,
+                    const int best_patid,
+                    int quality[CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER]);
 
   //--------------------------- Auxiliary methods -----------------------------
   /** Dump CLCT configuration parameters. */
   void dumpConfigParams() const;
 
   /** Dump half-strip digis */
-  void dumpDigis(const std::vector<int> strip[CSCConstants::NUM_LAYERS][CSCConstants::NUM_HALF_STRIPS_7CFEBS],
-                 const int nStrips) const;
+  void dumpDigis(
+      const std::vector<int> strip[CSCConstants::NUM_LAYERS][CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER]) const;
 
   // --------Functions for the comparator code algorith for Run-3 ---------//
   //calculates the id based on location of hits
   int calculateComparatorCode(const std::array<std::array<int, 3>, 6>& halfStripPattern) const;
 
   // sets the 1/4 and 1/8 strip bits given a floating point position offset
-  void assignPositionCC(const unsigned offset, std::tuple<uint16_t, bool, bool>& returnValue) const;
+  void assignPositionCC(const unsigned offset, std::tuple<int16_t, bool, bool>& returnValue) const;
 
   // runs the CCLUT procedure
   void runCCLUT(CSCCLCTDigi& digi) const;
@@ -167,15 +170,15 @@ protected:
   //--------------------------- Member variables -----------------------------
 
   /* best pattern Id for a given half-strip */
-  unsigned int best_pid[CSCConstants::NUM_HALF_STRIPS_7CFEBS];
+  unsigned int best_pid[CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER];
 
   /* number of layers hit on a given half-strip */
-  unsigned int nhits[CSCConstants::NUM_HALF_STRIPS_7CFEBS];
+  unsigned int nhits[CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER];
 
-  int first_bx_corrected[CSCConstants::NUM_HALF_STRIPS_7CFEBS];
+  int first_bx_corrected[CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER];
 
   /* does a given half-strip have a pre-trigger? */
-  bool ispretrig[CSCConstants::NUM_HALF_STRIPS_7CFEBS];
+  bool ispretrig[CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER];
 
   // actual LUT used
   CSCPatternBank::LCTPatterns clct_pattern_ = {};
@@ -194,7 +197,9 @@ protected:
   };
 
   /* number of strips used in this processor */
-  int numStrips;
+  int numStrips_;
+  int numCFEBs_;
+  int numHalfStrips_;
 
   /* Is the layer in the chamber staggered? */
   int stagger[CSCConstants::NUM_LAYERS];
@@ -202,6 +207,17 @@ protected:
   std::vector<CSCComparatorDigi> digiV[CSCConstants::NUM_LAYERS];
   std::vector<int> thePreTriggerBXs;
   std::vector<CSCCLCTPreTriggerDigi> thePreTriggerDigis;
+
+  /* data members for high multiplicity triggers */
+  void encodeHighMultiplicityBits(
+      const std::vector<int> halfstrip[CSCConstants::NUM_LAYERS][CSCConstants::MAX_NUM_HALF_STRIPS_RUN2_TRIGGER]);
+  unsigned inTimeHMT_;
+  unsigned outTimeHMT_;
+  std::vector<unsigned> thresholds_;
+  unsigned showerMinInTBin_;
+  unsigned showerMaxInTBin_;
+  unsigned showerMinOutTBin_;
+  unsigned showerMaxOutTBin_;
 
   /** Configuration parameters. */
   unsigned int fifo_tbins, fifo_pretrig;  // only for test beam mode.

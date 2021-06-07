@@ -33,7 +33,7 @@
 #include "DataFormats/EcalDetId/interface/EcalSubdetector.h"
 #include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
 #include "CommonTools/Egamma/interface/ConversionTools.h"
-#include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
+#include "Geometry/Records/interface/CaloTopologyRecord.h"
 #include "Geometry/CaloTopology/interface/CaloTopology.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 
@@ -450,7 +450,7 @@ void PATElectronProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 
           if (addMVAVariables_) {
             // add missing mva variables
-            std::vector<float> vCov = lazyTools.localCovariances(*(itElectron->superCluster()->seed()));
+            const auto& vCov = lazyTools.localCovariances(*(itElectron->superCluster()->seed()));
             anElectron.setMvaVariables(vCov[1], ip3d);
           }
           // PFClusterIso
@@ -681,7 +681,7 @@ void PATElectronProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 
       if (addMVAVariables_) {
         // add mva variables
-        std::vector<float> vCov = lazyTools.localCovariances(*(itElectron->superCluster()->seed()));
+        const auto& vCov = lazyTools.localCovariances(*(itElectron->superCluster()->seed()));
         anElectron.setMvaVariables(vCov[1], ip3d);
       }
 

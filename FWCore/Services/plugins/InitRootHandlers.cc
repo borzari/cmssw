@@ -76,7 +76,7 @@ namespace edm {
       public:
         typedef tbb::concurrent_unordered_set<pthread_t> Container_type;
 
-        ThreadTracker() : tbb::task_scheduler_observer(true) { observe(true); }
+        ThreadTracker() : tbb::task_scheduler_observer() { observe(); }
         ~ThreadTracker() override = default;
 
         void on_scheduler_entry(bool) override {
@@ -771,6 +771,11 @@ namespace edm {
 
       if (not threadTracker_) {
         threadTracker_ = std::make_unique<ThreadTracker>();
+        iReg.watchPostEndJob([]() {
+          if (threadTracker_) {
+            threadTracker_->observe(false);
+          }
+        });
       }
 
       if (unloadSigHandler_) {

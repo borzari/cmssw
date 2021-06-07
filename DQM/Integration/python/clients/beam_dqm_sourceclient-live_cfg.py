@@ -6,6 +6,8 @@ import FWCore.ParameterSet.Config as cms
 BSOnlineRecordName = 'BeamSpotOnlineLegacyObjectsRcd'
 BSOnlineTag = 'BeamSpotOnlineTestLegacy'
 BSOnlineJobName = 'BeamSpotOnlineTestLegacy'
+BSOnlineOmsServiceUrl = 'http://cmsoms-services.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'
+useLockRecords = True
 
 #from Configuration.Eras.Era_Run2_2018_cff import Run2_2018
 #process = cms.Process("BeamMonitor", Run2_2018) FIXME
@@ -17,7 +19,8 @@ process = cms.Process("BeamMonitor", Run2_2018_pp_on_AA)
 if "dqm_cmssw/playback" in str(sys.argv[1]):
     BSOnlineTag = BSOnlineTag + 'Playback'
     BSOnlineJobName = BSOnlineJobName + 'Playback'
-
+    BSOnlineOmsServiceUrl = ''
+    useLockRecords = False
 #
 process.MessageLogger = cms.Service("MessageLogger",
     debugModules = cms.untracked.vstring('*'),
@@ -34,6 +37,7 @@ unitTest = False
 if 'unitTest=True' in sys.argv:
     live=False
     unitTest=True
+    useLockRecords = False
 
 #---------------
 # Input sources
@@ -285,7 +289,7 @@ else:
 process.castorDigis.InputLabel           = rawDataInputTag
 process.csctfDigis.producer              = rawDataInputTag 
 process.dttfDigis.DTTF_FED_Source        = rawDataInputTag
-process.ecalDigis.InputLabel             = rawDataInputTag
+process.ecalDigis.cpu.InputLabel         = rawDataInputTag
 process.ecalPreshowerDigis.sourceTag     = rawDataInputTag
 process.gctDigis.inputLabel              = rawDataInputTag
 process.gtDigis.DaqGtInputTag            = rawDataInputTag
@@ -301,6 +305,7 @@ process.load("RecoVertex.BeamSpotProducer.BeamSpot_cfi")
 
 process.dqmBeamMonitor.OnlineMode = True
 process.dqmBeamMonitor.recordName = BSOnlineRecordName
+process.dqmBeamMonitor.useLockRecords = cms.untracked.bool(useLockRecords)
 
 process.dqmBeamMonitor.resetEveryNLumi   = 5 # was 10 for HI
 process.dqmBeamMonitor.resetPVEveryNLumi = 5 # was 10 for HI
@@ -312,6 +317,8 @@ process.dqmBeamMonitor.PVFitter.errorScale = 1.22
 #----------------------------
 # Pixel tracks/vertices reco
 process.load("RecoPixelVertexing.Configuration.RecoPixelVertexing_cff")
+from RecoVertex.PrimaryVertexProducer.OfflinePixel3DPrimaryVertices_cfi import *
+process.pixelVertices = pixelVertices.clone()
 process.pixelTracksTrackingRegions.RegionPSet.originRadius = 0.4
 process.pixelTracksTrackingRegions.RegionPSet.originHalfLength = 12
 process.pixelTracksTrackingRegions.RegionPSet.originXPos =  0.08
@@ -368,9 +375,7 @@ if unitTest == False:
         preLoadConnectionString = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS'),
 
         runNumber = cms.untracked.uint64(options.runNumber),
-        #lastLumiFile = cms.untracked.string('last_lumi.txt'),
-        #lastLumiUrl = cms.untracked.string('http://ru-c2e14-11-01.cms:11100/urn:xdaq-application:lid=52/getLatestLumiSection'),
-        omsServiceUrl = cms.untracked.string('http://cmsoms-services.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'),
+        omsServiceUrl = cms.untracked.string(BSOnlineOmsServiceUrl),
         writeTransactionDelay = cms.untracked.uint32(options.transDelay),
         latency = cms.untracked.uint32(2),
         autoCommit = cms.untracked.bool(True),
@@ -381,8 +386,10 @@ if unitTest == False:
             tag = cms.string(BSOnlineTag),
             timetype = cms.untracked.string('Lumi'),
             onlyAppendUpdatePolicy = cms.untracked.bool(True)
-        ))
+        )),
+        frontierKey = cms.untracked.string(options.runUniqueKey)
     )
+
 else:
     process.OnlineDBOutputService = cms.Service("OnlineDBOutputService",
 
@@ -396,7 +403,6 @@ else:
         preLoadConnectionString = cms.untracked.string('sqlite_file:BeamSpotOnlineLegacy.db'),
         runNumber = cms.untracked.uint64(options.runNumber),
         lastLumiFile = cms.untracked.string('last_lumi.txt'),
-        #lastLumiUrl = cms.untracked.string('http://ru-c2e14-11-01.cms:11100/urn:xdaq-application:lid=52/getLatestLumiSection'),
         writeTransactionDelay = cms.untracked.uint32(options.transDelay),
         latency = cms.untracked.uint32(2),
         autoCommit = cms.untracked.bool(True),
@@ -405,8 +411,10 @@ else:
             tag = cms.string(BSOnlineTag),
             timetype = cms.untracked.string('Lumi'),
             onlyAppendUpdatePolicy = cms.untracked.bool(True)
-        ))
+        )),
+        frontierKey = cms.untracked.string(options.runUniqueKey)
     )
+print("Configured frontierKey", options.runUniqueKey)
 
 #---------
 # Final path

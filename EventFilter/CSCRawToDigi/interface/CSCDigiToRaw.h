@@ -1,5 +1,5 @@
-#ifndef EventFilter_CSCDigiToRaw_h
-#define EventFilter_CSCDigiToRaw_h
+#ifndef EventFilter_CSCRawToDigi_CSCDigiToRaw_h
+#define EventFilter_CSCRawToDigi_CSCDigiToRaw_h
 
 /** \class CSCDigiToRaw
  *
@@ -13,13 +13,14 @@
 #include "DataFormats/CSCDigi/interface/CSCALCTDigiCollection.h"
 #include "DataFormats/CSCDigi/interface/CSCCLCTDigiCollection.h"
 #include "DataFormats/CSCDigi/interface/CSCCLCTPreTriggerCollection.h"
+#include "DataFormats/CSCDigi/interface/CSCCLCTPreTriggerDigiCollection.h"
 #include "DataFormats/CSCDigi/interface/CSCCorrelatedLCTDigiCollection.h"
+#include "DataFormats/CSCDigi/interface/CSCShowerDigiCollection.h"
 #include "DataFormats/GEMDigi/interface/GEMPadDigiClusterCollection.h"
 #include "EventFilter/CSCRawToDigi/interface/CSCEventData.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 class FEDRawDataCollection;
-class CSCReadoutMappingFromFile;
 class CSCChamberMap;
 
 class CSCDigiToRaw {
@@ -34,7 +35,9 @@ public:
                         const CSCALCTDigiCollection& alctDigis,
                         const CSCCLCTDigiCollection& clctDigis,
                         const CSCCLCTPreTriggerCollection* preTriggers,
+                        const CSCCLCTPreTriggerDigiCollection* preTriggerDigis,
                         const CSCCorrelatedLCTDigiCollection& correlatedLCTDigis,
+                        const CSCShowerDigiCollection* showerDigis,
                         const GEMPadDigiClusterCollection* padDigiClusters,
                         FEDRawDataCollection& fed_buffers,
                         const CSCChamberMap* theMapping,
@@ -55,6 +58,7 @@ private:
   // specialized because it reverses strip direction
   void add(const CSCStripDigiCollection& stripDigis,
            const CSCCLCTPreTriggerCollection* preTriggers,
+           const CSCCLCTPreTriggerDigiCollection* preTriggerDigis,
            FindEventDataInfo&,
            bool packEverything) const;
   void add(const CSCWireDigiCollection& wireDigis,
@@ -69,6 +73,7 @@ private:
   void add(const CSCALCTDigiCollection& alctDigis, FindEventDataInfo&) const;
   void add(const CSCCLCTDigiCollection& clctDigis, FindEventDataInfo&) const;
   void add(const CSCCorrelatedLCTDigiCollection& corrLCTDigis, FindEventDataInfo&) const;
+  void add(const CSCShowerDigiCollection& cscShowerDigis, FindEventDataInfo&) const;
   void add(const GEMPadDigiClusterCollection& gemPadClusters, FindEventDataInfo&) const;
   /// pick out the correct data object for this chamber
   CSCEventData& findEventData(const CSCDetId& cscDetId, FindEventDataInfo&) const;

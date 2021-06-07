@@ -47,8 +47,10 @@ for _eraName, _postfix, _era in _cfg.allEras():
 
 _removeForFastSimSeedProducers =["initialStepSeedsPreSplitting",
                                  "jetCoreRegionalStepSeeds",
+                                 "jetCoreRegionalStepSeedsBarrel","jetCoreRegionalStepSeedsEndcap",
                                  "muonSeededSeedsInOut",
                                  "muonSeededSeedsOutIn"]
+
 _seedProducers_fastSim = [ x for x in _seedProducers if x not in _removeForFastSimSeedProducers]
 
 _removeForFastTrackProducers = ["initialStepTracksPreSplitting",
@@ -298,6 +300,11 @@ trackingParticlesSignal = _trackingParticleRefSelector.clone(
     minRapidity = -10,
     maxRapidity = 10,
     ptMin = 0,
+)
+## Select in-time TrackingParticles, and do the corresponding associations
+trackingParticlesInTime = trackingParticlesSignal.clone(
+    signalOnly = False,
+    intimeOnly = True,
 )
 
 # select tracks with pT > 0.9 GeV (for upgrade fake rates)
@@ -606,6 +613,10 @@ trackValidatorJetCore = trackValidator.clone(#equivalent to trackBuilding case
     associators= ["trackAssociatorByChi2"],#cms.untracked.VInputTag('MTVTrackAssociationByChi2'),
     UseAssociators = True,
     doPVAssociationPlots = True,
+    label_tp_effic = "trackingParticlesInTime",
+    label_tp_fake = "trackingParticlesInTime",
+    label_tp_effic_refvector = True,
+    label_tp_fake_refvector = True,
 )
 for _eraName, _postfix, _era in _relevantEras:
     if 'jetCoreRegionalStep' in _cfg.iterationAlgos(_postfix) :
@@ -711,6 +722,7 @@ tracksPreValidation = cms.Task(
     tracksValidationSelectorsFromPVPt09,
     tracksValidationTruth,
     trackingParticlesSignal,
+    trackingParticlesInTime,
     trackingParticlesElectron,
     trackingParticlesConversion
 )
@@ -882,8 +894,10 @@ trackValidatorSeedingTrackingOnly = _trackValidatorSeedingBuilding.clone(
     dirName = "Tracking/TrackSeeding/",
     label = _seedSelectors,
     doSeedPlots = True,
-    doResolutionPlotsForLabels = [ "seedTracksjetCoreRegionalStepSeeds",]
+    doResolutionPlotsForLabels = [ "seedTracksjetCoreRegionalStepSeeds" ]
 )
+seedingDeepCore.toModify(trackValidatorSeedingTrackingOnly, doResolutionPlotsForLabels = ["seedTracksjetCoreRegionalStepSeedsBarrel","seedTracksjetCoreRegionalStepSeedsEndcap"] )
+
 trackValidatorSeedingPreSplittingTrackingOnly = trackValidatorSeedingTrackingOnly.clone(
     associators = ["quickTrackAssociatorByHitsPreSplitting"],
     label = _seedSelectorsPreSplitting,
@@ -901,8 +915,8 @@ trackValidatorJetCoreSeedingTrackingOnly = trackValidatorSeedingTrackingOnly.clo
 for _eraName, _postfix, _era in _relevantEras:
     if 'jetCoreRegionalStep' in _cfg.iterationAlgos(_postfix) :
       _setForEra(trackValidatorJetCoreSeedingTrackingOnly, _eraName, _era,
-            label = [ "seedTracksjetCoreRegionalStepSeeds",],
-            doResolutionPlotsForLabels = [ "seedTracksjetCoreRegionalStepSeeds",]
+                 label = [ "seedTracksjetCoreRegionalStepSeedsBarrel","seedTracksjetCoreRegionalStepSeedsEndcap" ],
+                 doResolutionPlotsForLabels = [ "seedTracksjetCoreRegionalStepSeedsBarrel","seedTracksjetCoreRegionalStepSeedsEndcap" ]
       )
     
 for _eraName, _postfix, _era in _relevantErasAndFastSim:
@@ -974,9 +988,17 @@ PixelVertexAssociatorByPositionAndTracks = VertexAssociatorByPositionAndTracks.c
     trackAssociation = "trackingParticlePixelTrackAsssociation"
 )
 
+_pixelTracksCustom = dict(
+    src = "pixelTracks",
+    vertexTag = "pixelVertices",
+)
+pixelTracksPt09 = generalTracksPt09.clone(quality = ["undefQuality"], **_pixelTracksCustom)
+pixelTracksFromPV = generalTracksFromPV.clone(quality = "undefQuality", **_pixelTracksCustom)
+pixelTracksFromPVPt09 = pixelTracksPt09.clone(src = "pixelTracksFromPV")
+
 trackValidatorPixelTrackingOnly = trackValidator.clone(
     dirName = "Tracking/PixelTrack/",
-    label = ["pixelTracks"],
+    label = ["pixelTracks", "pixelTracksPt09"],
     doResolutionPlotsForLabels = [],
     trackCollectionForDrCalculation = "pixelTracks",
     associators = ["trackingParticlePixelTrackAsssociation"],
@@ -985,13 +1007,54 @@ trackValidatorPixelTrackingOnly = trackValidator.clone(
     dodEdxPlots = False,
     cores = cms.InputTag(""),
 )
+trackValidatorFromPVPixelTrackingOnly = trackValidatorPixelTrackingOnly.clone(
+    dirName = "Tracking/PixelTrackFromPV/",
+    label = ["pixelTracksFromPV", "pixelTracksFromPVPt09"],
+    label_tp_effic = "trackingParticlesSignal",
+    label_tp_fake = "trackingParticlesSignal",
+    label_tp_effic_refvector = True,
+    label_tp_fake_refvector = True,
+    trackCollectionForDrCalculation = "pixelTracksFromPV",
+    doPlotsOnlyForTruePV = True,
+    doPVAssociationPlots = False,
+    doResolutionPlotsForLabels = ["disabled"],
+)
+trackValidatorFromPVAllTPPixelTrackingOnly = trackValidatorFromPVPixelTrackingOnly.clone(
+    dirName = "Tracking/PixelTrackFromPVAllTP/",
+    label_tp_effic = trackValidatorPixelTrackingOnly.label_tp_effic.value(),
+    label_tp_fake = trackValidatorPixelTrackingOnly.label_tp_fake.value(),
+    label_tp_effic_refvector = False,
+    label_tp_fake_refvector = False,
+    doSimPlots = False,
+    doSimTrackPlots = False,
+)
+trackValidatorBHadronPixelTrackingOnly = trackValidatorPixelTrackingOnly.clone(
+    dirName = "Tracking/PixelTrackBHadron/",
+    label_tp_effic = "trackingParticlesBHadron",
+    label_tp_effic_refvector = True,
+    doSimPlots = True,
+    doRecoTrackPlots = False, # Fake rate is defined wrt. all TPs, and that is already included in trackValidator
+    dodEdxPlots = False,
+)
 
 tracksValidationTruthPixelTrackingOnly = tracksValidationTruth.copy()
 tracksValidationTruthPixelTrackingOnly.replace(trackingParticleRecoTrackAsssociation, trackingParticlePixelTrackAsssociation)
 tracksValidationTruthPixelTrackingOnly.replace(VertexAssociatorByPositionAndTracks, PixelVertexAssociatorByPositionAndTracks)
+tracksValidationTruthPixelTrackingOnly.add(trackingParticlesBHadron)
+
+tracksPreValidationPixelTrackingOnly = cms.Task(
+    tracksValidationTruthPixelTrackingOnly,
+    trackingParticlesSignal,
+    pixelTracksPt09,
+    pixelTracksFromPV,
+    pixelTracksFromPVPt09,
+)
 tracksValidationPixelTrackingOnly = cms.Sequence(
-    trackValidatorPixelTrackingOnly,
-    tracksValidationTruthPixelTrackingOnly
+    trackValidatorPixelTrackingOnly +
+    trackValidatorFromPVPixelTrackingOnly +
+    trackValidatorFromPVAllTPPixelTrackingOnly +
+    trackValidatorBHadronPixelTrackingOnly,
+    tracksPreValidationPixelTrackingOnly
 )
 
 
