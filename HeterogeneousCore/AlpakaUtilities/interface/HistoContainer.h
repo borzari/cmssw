@@ -1,34 +1,20 @@
 #ifndef AlpakaCore_HistoContainer_h
 #define AlpakaCore_HistoContainer_h
 
+#include <alpaka/alpaka.hpp>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
 
-#include "AtomicPairCounter.h"
-#include "alpakastdAlgorithm.h"
-#include "prefixScan.h"
-#include "FlexiStorage.h"
+#include "HeterogeneousCore/AlpakaUtilities/interface/AtomicPairCounter.h"
+#include "HeterogeneousCore/AlpakaUtilities/interface/alpakastdAlgorithm.h"
+#include "HeterogeneousCore/AlpakaUtilities/interface/prefixScan.h"
 
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
-#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
-
 namespace cms {
   namespace alpakatools {
-
-    template <typename Assoc>
-    struct HistoContainerView {
-      using Counter = typename Assoc::Counter;
-      using index_type = typename Assoc::index_type;
-
-      Assoc *assoc = nullptr;
-      Counter *offStorage = nullptr;
-      index_type *contentStorage = nullptr;
-      int32_t offSize = -1;
-      int32_t contentSize = -1;
-    };
 
     struct countFromVector {
       template <typename TAcc, typename Histo, typename T>
@@ -69,15 +55,13 @@ namespace cms {
     };
 
     template <typename TAcc, typename Histo, typename TQueue>
-    ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchZero(Histo *__restrict__ h,
-                                                                                   TQueue &queue) {
+    inline __attribute__((always_inline)) void launchZero(Histo *__restrict__ h, TQueue &queue) {
       auto histoOffView = make_device_view(alpaka::getDev(queue), h->off, Histo::totbins());
       alpaka::memset(queue, histoOffView, 0);
     }
 
     template <typename TAcc, typename Histo, typename TQueue>
-    ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h,
-                                                                                       TQueue &queue) {
+    inline __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h, TQueue &queue) {
       uint32_t *poff = h->off;
 
       const int num_items = Histo::totbins();
@@ -85,35 +69,31 @@ namespace cms {
       const auto threadsPerBlockOrElementsPerThread = 1024u;
       const auto blocksPerGrid = divide_up_by(num_items, threadsPerBlockOrElementsPerThread);
       const auto workDiv = make_workdiv<TAcc>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
-      alpaka::enqueue(
-          queue,
-          alpaka::createTaskKernel<TAcc>(workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
+      alpaka::exec<TAcc>(queue, workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items);
 
       const auto workDivWith1Block = make_workdiv<TAcc>(1, threadsPerBlockOrElementsPerThread);
-      alpaka::enqueue(
-          queue,
-          alpaka::createTaskKernel<TAcc>(
-              workDivWith1Block, multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, num_items, blocksPerGrid));
+      alpaka::exec<TAcc>(
+          queue, workDivWith1Block, multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, num_items, blocksPerGrid);
     }
 
     template <typename TAcc, typename Histo, typename T, typename TQueue>
-    ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void fillManyFromVector(Histo *__restrict__ h,
-                                                                                           uint32_t nh,
-                                                                                           T const *v,
-                                                                                           uint32_t const *offsets,
-                                                                                           uint32_t totSize,
-                                                                                           uint32_t nthreads,
-                                                                                           TQueue &queue) {
+    inline __attribute__((always_inline)) void fillManyFromVector(Histo *__restrict__ h,
+                                                                  uint32_t nh,
+                                                                  T const *v,
+                                                                  uint32_t const *offsets,
+                                                                  uint32_t totSize,
+                                                                  uint32_t nthreads,
+                                                                  TQueue &queue) {
       launchZero<TAcc>(h, queue);
 
       const auto threadsPerBlockOrElementsPerThread = nthreads;
       const auto blocksPerGrid = divide_up_by(totSize, nthreads);
       const auto workDiv = make_workdiv<TAcc>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
-      alpaka::enqueue(queue, alpaka::createTaskKernel<TAcc>(workDiv, countFromVector(), h, nh, v, offsets));
+      alpaka::exec<TAcc>(queue, workDiv, countFromVector(), h, nh, v, offsets);
       launchFinalize<TAcc>(h, queue);
 
-      alpaka::enqueue(queue, alpaka::createTaskKernel<TAcc>(workDiv, fillFromVector(), h, nh, v, offsets));
+      alpaka::exec<TAcc>(queue, workDiv, fillFromVector(), h, nh, v, offsets);
     }
 
     struct finalizeBulk {
@@ -125,7 +105,7 @@ namespace cms {
 
     // iteratate over N bins left and right of the one containing "v"
     template <typename Hist, typename V, typename Func>
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void forEachInBins(Hist const &hist, V value, int n, Func func) {
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE void forEachInBins(Hist const &hist, V value, int n, Func func) {
       int bs = Hist::bin(value);
       int be = std::min(int(Hist::nbins() - 1), bs + n);
       bs = std::max(0, bs - n);
@@ -137,7 +117,7 @@ namespace cms {
 
     // iteratate over bins containing all values in window wmin, wmax
     template <typename Hist, typename V, typename Func>
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void forEachInWindow(Hist const &hist, V wmin, V wmax, Func const &func) {
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE void forEachInWindow(Hist const &hist, V wmin, V wmax, Func const &func) {
       auto bs = Hist::bin(wmin);
       auto be = Hist::bin(wmax);
       ALPAKA_ASSERT_OFFLOAD(be >= bs);
@@ -147,7 +127,7 @@ namespace cms {
     }
 
     template <typename T,                  // the type of the discretized input values
-              int32_t NBINS,               // number of bins //TODO: WTPM is going on here!?!
+              uint32_t NBINS,              // number of bins //TODO: WTPM is going on here!?!
               int32_t SIZE,                // max number of element
               uint32_t S = sizeof(T) * 8,  // number of significant bits in T
               typename I = uint32_t,  // type stored in the container (usually an index in a vector of the input values)
@@ -155,7 +135,6 @@ namespace cms {
               >
     class HistoContainer {
     public:
-      using View = HistoContainerView<HistoContainer<int32_t, NBINS, SIZE>>;
       using Counter = uint32_t;
 
       using CountersOnly = HistoContainer<T, NBINS, 0, S, I, NHISTS>;
@@ -177,16 +156,11 @@ namespace cms {
       }
 
       static constexpr uint32_t sizeT() { return S; }
-      static constexpr int32_t nbins() { return NBINS; }
+      static constexpr uint32_t nbins() { return NBINS; }
       static constexpr int32_t nhists() { return NHISTS; }
       static constexpr uint32_t totbins() { return NHISTS * NBINS + 1; }
       static constexpr uint32_t nbits() { return ilog2(NBINS - 1) + 1; }
       static constexpr int32_t capacity() { return SIZE; }
-      // HistoContainer<int32_t, NBINS, SIZE> *assoc { return nullptr; }
-      // Counter *offStorage() { return nullptr; }
-      // index_type *contentStorage() { return nullptr; }
-      // int32_t offSize() { return -1; }
-      // int32_t contentSize() { return -1; }
 
       static constexpr auto histOff(uint32_t nh) { return NBINS * nh; }
 
@@ -196,7 +170,7 @@ namespace cms {
         return (t >> shift) & mask;
       }
 
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void zero() {
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void zero() {
         for (auto &i : off)
           i = 0;
       }
@@ -209,12 +183,12 @@ namespace cms {
       }
 
       template <typename TAcc>
-      static ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t atomicIncrement(const TAcc &acc, Counter &x) {
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE static uint32_t atomicIncrement(const TAcc &acc, Counter &x) {
         return alpaka::atomicAdd(acc, &x, 1u, alpaka::hierarchy::Blocks{});
       }
 
       template <typename TAcc>
-      static ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE uint32_t atomicDecrement(const TAcc &acc, Counter &x) {
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE static uint32_t atomicDecrement(const TAcc &acc, Counter &x) {
         return alpaka::atomicSub(acc, &x, 1u, alpaka::hierarchy::Blocks{});
       }
 
@@ -230,25 +204,6 @@ namespace cms {
         auto w = atomicDecrement(acc, off[b]);
         ALPAKA_ASSERT_OFFLOAD(w > 0);
         bins[w - 1] = j;
-      }
-
-      FlexiStorage<index_type, SIZE> content;
-      FlexiStorage<Counter, SIZE> offer;
-      FlexiStorage<Counter, SIZE> offest;  // unused!
-
-      template <typename TAcc>
-      ALPAKA_FN_ACC void initStorage(View view) {
-        assert(view.assoc == this);
-        if constexpr (capacity() < 0) {
-          assert(view.contentStorage);
-          assert(view.contentSize > 0);
-          content.init(view.contentStorage, view.contentSize);
-        }
-        if constexpr (nbins() < 0) {
-          assert(view.offStorage);
-          assert(view.offSize > 0);
-          offer.init(view.offStorage, view.offSize);
-        }
       }
 
       template <typename TAcc>
