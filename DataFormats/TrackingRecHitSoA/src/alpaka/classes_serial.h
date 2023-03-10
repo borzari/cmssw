@@ -5,5 +5,6 @@
 #include "DataFormats/Portable/interface/Product.h"
 #include "DataFormats/TrackingRecHitSoA/interface/TrackingRecHitsLayout.h"
 #include "DataFormats/TrackingRecHitSoA/interface/TrackingRecHitSoAHost.h"
+#include "DataFormats/TrackerCommon/interface/SimplePixelTopology.h"
 
 #endif  // DataFormats_TrackingRecHitSoA_Alpaka_src_Classes_serial_h

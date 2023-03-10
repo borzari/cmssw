@@ -7,11 +7,20 @@
 <use name="EventFilter/SiPixelRawToDigi"/>
 <use name="FWCore/ParameterSet"/>
 <use name="FWCore/Utilities"/>
-<use name="HeterogeneousCore/CUDACore"/>
 <use name="RecoTracker/Record"/>
-<library file="alpaka/*.cc" name="RecoLocalTrackerSiPixelClusterizerPlugins">
+<library file="*.cc" name="RecoLocalTrackerSiPixelClusterizerPlugins">
   <use name="alpaka"/>
   <use name="DataFormats/Portable"/>
   <flags EDM_PLUGIN="1"/>
+</library>
+
+<!-- alpaka-based portable plugins -->
+<library file="alpaka/*.cc" name="RecoLocalTrackerSiPixelClusterizerAlpakaPlugins">
+  <use name="alpaka"/>
+
+  <use name="FWCore/Framework"/>
+  <use name="HeterogeneousCore/AlpakaCore"/>
+  <use name="HeterogeneousCore/AlpakaInterface"/>
   <flags ALPAKA_BACKENDS="1"/>
+  <flags EDM_PLUGIN="1"/>
 </library>

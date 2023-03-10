@@ -303,27 +303,6 @@ namespace cms::alpakatools {
     const Vec extent_;
   };
 
-  /*
-   * Computes the range of the elements indexes, local to the block.
-   * Truncated by the max number of elements of interest.
-   */
-  // template <typename TAcc>
-  // ALPAKA_FN_ACC std::pair<Idx, Idx> element_index_range_in_block_truncated(const TAcc& acc,
-  //                                                                          const Idx maxNumberOfElements,
-  //                                                                          const Idx elementIdxShift,
-  //                                                                          const unsigned int dimIndex = 0u) {
-  //   // Check dimension
-  //   //static_assert(alpaka::Dim<TAcc>::value == Dim1D::value,
-  //   //              "Accelerator and maxNumberOfElements need to have same dimension.");
-  //   auto [firstElementIdxLocal, endElementIdxLocal] = element_index_range_in_block(acc, elementIdxShift, dimIndex);
-
-  //   // Truncate
-  //   endElementIdxLocal = std::min(endElementIdxLocal, maxNumberOfElements);
-
-  //   // Return element indexes, shifted by elementIdxShift, and truncated by maxNumberOfElements.
-  //   return {firstElementIdxLocal, endElementIdxLocal};
-  // }
-
   /*********************************************
      *           RANGE COMPUTATION
      ********************************************/

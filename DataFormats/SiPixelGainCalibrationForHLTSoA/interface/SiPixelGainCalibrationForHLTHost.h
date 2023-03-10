@@ -6,7 +6,9 @@
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 #include "SiPixelGainCalibrationForHLTLayout.h"
 
-using SiPixelGainCalibrationForHLTHost = PortableHostCollection<SiPixelGainCalibrationForHLTLayout<>>;
+namespace siPixelGains {
+  using SiPixelGainCalibrationForHLTHost = PortableHostCollection<SiPixelGainCalibrationForHLTLayout<>>;
+}
 // class SiPixelFedCablingMap;
 
 // class SiPixelGainCalibrationForHLTHost : public PortableHostCollection<SiPixelGainCalibrationForHLTLayout<>> {

@@ -17,8 +17,11 @@ public:
   SiPixelDigiErrorsHost(SiPixelDigiErrorsHost &&) = default;
   SiPixelDigiErrorsHost &operator=(SiPixelDigiErrorsHost &&) = default;
 
+  int nErrorWords() const { return nErrorWords_; }
+
 private:
-  PixelFormatterErrors formatterErrors_h;
+  SiPixelFormatterErrors formatterErrors_h;
+  int nErrorWords_ = 0;
 };
 
 #endif  // AlpakaDataFormats_alpaka_SiPixelDigiErrorsAlpaka_h

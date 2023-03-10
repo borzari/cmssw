@@ -3,7 +3,6 @@
 
 #include <array>
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
-#include "DataFormats/TrackerCommon/interface/SimplePixelTopology.h"
 
 namespace siPixelGainsSoA {
   struct DecodingStructure {
@@ -12,13 +11,14 @@ namespace siPixelGainsSoA {
   };
 
   using Range = std::pair<uint32_t, uint32_t>;
-  using RangeAndCols = std::array<std::pair<Range, int>, phase1PixelTopology::numberOfModules>;
+  using RangeAndCols = std::pair<Range, int>;  //std::array<,phase1PixelTopology::numberOfModules>;
 
 }  // namespace siPixelGainsSoA
 
 GENERATE_SOA_LAYOUT(SiPixelGainCalibrationForHLTLayout,
+                    SOA_COLUMN(siPixelGainsSoA::RangeAndCols, rangeAndCols),
+
                     SOA_COLUMN(siPixelGainsSoA::DecodingStructure, v_pedestals),
-                    SOA_SCALAR(siPixelGainsSoA::RangeAndCols, rangeAndCols),
 
                     SOA_SCALAR(float, minPed),
                     SOA_SCALAR(float, maxPed),

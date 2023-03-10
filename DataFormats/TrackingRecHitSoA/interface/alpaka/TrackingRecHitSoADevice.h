@@ -47,7 +47,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       auto start_h = alpaka::createView(host, hitsModuleStart, TrackerTraits::numberOfModules + 1);
       auto start_d = alpaka::createView(device, view().hitsModuleStart().data(), TrackerTraits::numberOfModules + 1);
-      alpaka::memcpy(queue, start_d, start_h, TrackerTraits::numberOfModules + 1);
+      alpaka::memcpy(queue, start_d, start_h, 1);
 
       // auto nHits_d = alpaka::createView(device, &(view().nHits()), 1);
       // alpaka::memset(queue, nHits_d, nHits);
@@ -61,29 +61,27 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::memcpy(queue, off_d, off_h, 1);
     }
 
-    // cms::alpakatools::host_buffer<float[]> localCoordToHostAsync(Queue& queue) const {
+    uint32_t nHits() const { return nHits_; }  //go to size of view
+
+    // template <typename TQueue>
+    // auto localCoordToHostAsync(TQueue queue) const {
     //   auto ret = cms::alpakatools::make_host_buffer<float[]>(4 * nHits(), queue);
-    //   // size_t rowSize = sizeof(float) * nHits();
-    //   // size_t srcPitch = ptrdiff_t(view().xGlobal()) - ptrdiff_t(view().xLocal());
-    //   auto src = cms::alpakatools::make_device_view(alpaka::getDev(queue), view().xLocal(), 4 * nHits());
-
-    //   alpaka::memcpy(ret, src, queue);  // TODO: MAYBE THIS DOESN'T WORK!!! RE-CHECK!!!
-
-    //   // cudaCheck(
-    //   //     cudaMemcpy2DAsync(ret.get(), rowSize, view().xLocal(), srcPitch, rowSize, 4, cudaMemcpyDeviceToHost, stream));
+    //   size_t rowSize = sizeof(float) * nHits();
+    //   alpaka::memcpy(queue, ret.get(), view().xLocal(), rowSize * 4);
+    //
     //   return ret;
-
     // }  //move to utilities
-
-    // cms::alpakatools::host_buffer<uint32_t[]> hitsModuleStartToHostAsync(Queue& queue) const {
+    //
+    // template <typename TQueue>
+    // auto hitsModuleStartToHostAsync(TQueue queue) const {
     //   auto ret = cms::alpakatools::make_host_buffer<uint32_t[]>(TrackerTraits::numberOfModules + 1, queue);
-
-    //   alpaka::memcpy(ret, view().hitsModuleStart(), queue);
-
+    //   alpaka::memcpy(queue, ret.get(),
+    //                             view().hitsModuleStart().data(),
+    //                             sizeof(uint32_t) * (TrackerTraits::numberOfModules + 1),
+    //                             cudaMemcpyDefault,
+    //                             queue);
     //   return ret;
     // }
-
-    uint32_t nHits() const { return nHits_; }  //go to size of view
 
     auto phiBinnerStorage() { return phiBinnerStorage_; }
     auto hitsModuleStart() const { return hitsModuleStart_; }

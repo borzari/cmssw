@@ -40,7 +40,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           printf("nbins = %d \n", soa.phiBinner().nbins());
           printf("offsetBPIX %d ->%d \n", i, soa.offsetBPIX2());
           printf("nHits %d ->%d \n", i, soa.nHits());
-          printf("hitsModuleStart %d ->%d \n", i, soa.hitsModuleStart().at(28));
+          //      printf("hitsModuleStart %d ->%d \n", i, soa.hitsModuleStart().at(28));
         }
 
         if (i < 10)  // can be increased to soa.nHits() for debugging
