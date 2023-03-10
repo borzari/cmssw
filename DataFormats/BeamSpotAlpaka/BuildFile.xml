@@ -2,7 +2,7 @@
 <use name="rootcore"/>
 <use name="DataFormats/BeamSpot"/>
 <use name="HeterogeneousCore/AlpakaInterface"/>
-<flags ALPAKA_BACKENDS="1"/>
+<flags ALPAKA_BACKENDS="serial"/>
 <export>
   <lib name="1"/>
 </export>
