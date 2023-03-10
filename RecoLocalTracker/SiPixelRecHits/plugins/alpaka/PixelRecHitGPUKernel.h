@@ -11,7 +11,7 @@
 #include "DataFormats/TrackingRecHitSoA/interface/alpaka/TrackingRecHitSoADevice.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "DataFormats/TrackerCommon/interface/SimplePixelTopology.h"
-#include "RecoLocalTracker/SiPixelRecHits/interface/pixelCPEforDevice.h"
+#include "DataFormats/PixelCPEFastParams/interface/PixelCPEFastParams.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace pixelgpudetails {

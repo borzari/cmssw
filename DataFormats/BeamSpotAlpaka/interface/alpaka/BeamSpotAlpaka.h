@@ -33,4 +33,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // CUDADataFormats_BeamSpot_interface_alpaka_BeamSpotAlpaka_h
+#endif  // DataFormats_BeamSpotAlpaka_interface_alpaka_BeamSpotAlpaka_h

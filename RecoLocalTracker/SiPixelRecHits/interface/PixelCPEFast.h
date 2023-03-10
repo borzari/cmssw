@@ -6,8 +6,6 @@
 #include "CondFormats/SiPixelTransient/interface/SiPixelGenError.h"
 #include "CondFormats/SiPixelTransient/interface/SiPixelTemplate.h"
 #include "DataFormats/PixelCPEFastParams/interface/PixelCPEFastParams.h"
-#include "HeterogeneousCore/CUDACore/interface/ESProduct.h"
-#include "HeterogeneousCore/CUDAUtilities/interface/HostAllocator.h"
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEGenericBase.h"
 // #include "RecoLocalTracker/SiPixelRecHits/interface/alpaka/pixelCPEforGPU.h"
 // #include "RecoLocalTracker/SiPixelRecHits/interface/pixelCPEforDevice.h"

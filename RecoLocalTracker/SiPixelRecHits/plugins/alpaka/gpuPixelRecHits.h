@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelRecHits_h
-#define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelRecHits_h
+#ifndef RecoLocalTracker_SiPixelRecHits_plugins_alpaka_gpuPixelRecHits_h
+#define RecoLocalTracker_SiPixelRecHits_plugins_alpaka_gpuPixelRecHits_h
 
 #include <algorithm>
 #include <cstdint>
@@ -16,6 +16,7 @@
 #include "DataFormats/TrackingRecHitSoA/interface/TrackingRecHitsLayout.h"
 #include "DataFormats/PixelCPEFastParams/interface/PixelCPEFastParams.h"
 #include "DataFormats/TrackerCommon/interface/SimplePixelTopology.h"
+#include "RecoLocalTracker/SiPixelRecHits/interface/pixelCPEforDevice.h"
 
 //#define GPU_DEBUG 1
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
