@@ -30,15 +30,20 @@ public:
   void dqmBeginRun(const edm::Run&, const edm::EventSetup&) override;
   void bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun, edm::EventSetup const& iSetup) override;
   void analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+  template <typename U, typename V>
+  void analyzeSeparate(U tokenRef, V tokenTar, const edm::Event& iEvent);
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 private:
   const edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> geomToken_;
   const edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> topoToken_;
-  const edm::EDGetTokenT<HitsAlpaka> tokenSoAHitsAlpaka_;    //these two are both on Host but originally they have been
-  const edm::EDGetTokenT<HitsCUDA> tokenSoAHitsCUDA_;  //produced on Host or on Device
+  const edm::EDGetTokenT<HitsCUDA> tokenSoAHitsReferenceCUDA_;  //produced on Host or on Device
+  const edm::EDGetTokenT<HitsCUDA> tokenSoAHitsTargetCUDA_;  //produced on Host or on Device
+  const edm::EDGetTokenT<HitsAlpaka> tokenSoAHitsReferenceAlpaka_;    //these two are both on Host but originally they have been
+  const edm::EDGetTokenT<HitsAlpaka> tokenSoAHitsTargetAlpaka_;    //these two are both on Host but originally they have been
   const std::string topFolderName_;
   const float mind2cut_;
+  const std::string case_;
   static constexpr uint32_t invalidHit_ = std::numeric_limits<uint32_t>::max();
   static constexpr float micron_ = 10000.;
   const TrackerGeometry* tkGeom_ = nullptr;
@@ -74,10 +79,15 @@ template <typename T>
 SiPixelCompareRecHits<T>::SiPixelCompareRecHits(const edm::ParameterSet& iConfig)
     : geomToken_(esConsumes<TrackerGeometry, TrackerDigiGeometryRecord, edm::Transition::BeginRun>()),
       topoToken_(esConsumes<TrackerTopology, TrackerTopologyRcd, edm::Transition::BeginRun>()),
-      tokenSoAHitsAlpaka_(consumes(iConfig.getParameter<edm::InputTag>("pixelHitsSrcAlpaka"))),
-      tokenSoAHitsCUDA_(consumes(iConfig.getParameter<edm::InputTag>("pixelHitsSrcCUDA"))),
+      tokenSoAHitsReferenceCUDA_(consumes(iConfig.getParameter<edm::InputTag>("pixelHitsReferenceCUDA"))),
+      tokenSoAHitsTargetCUDA_(consumes(iConfig.getParameter<edm::InputTag>("pixelHitsTargetCUDA"))),
+      tokenSoAHitsReferenceAlpaka_(consumes(iConfig.getParameter<edm::InputTag>("pixelHitsReferenceAlpaka"))),
+      tokenSoAHitsTargetAlpaka_(consumes(iConfig.getParameter<edm::InputTag>("pixelHitsTargetAlpaka"))),
       topFolderName_(iConfig.getParameter<std::string>("topFolderName")),
-      mind2cut_(iConfig.getParameter<double>("minD2cut")) {}
+      mind2cut_(iConfig.getParameter<double>("minD2cut")),
+      case_(iConfig.getParameter<std::string>("case")) {
+
+      }
 
 //
 // Begin Run
@@ -88,46 +98,50 @@ void SiPixelCompareRecHits<T>::dqmBeginRun(const edm::Run& iRun, const edm::Even
   tTopo_ = &iSetup.getData(topoToken_);
 }
 
-//
-// -- Analyze
-//
 template <typename T>
-void SiPixelCompareRecHits<T>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  const auto& rhsoaHandleAlpaka = iEvent.getHandle(tokenSoAHitsAlpaka_);
-  const auto& rhsoaHandleCUDA = iEvent.getHandle(tokenSoAHitsCUDA_);
-  if (not rhsoaHandleAlpaka or not rhsoaHandleCUDA) {
+template <typename U, typename V>
+void SiPixelCompareRecHits<T>::analyzeSeparate(U tokenRef, V tokenTar, const edm::Event& iEvent) {
+
+  const auto& rhsoaHandleRef = iEvent.getHandle(tokenRef);
+  const auto& rhsoaHandleTar = iEvent.getHandle(tokenTar);
+
+  if (not rhsoaHandleRef or not rhsoaHandleTar) {
     edm::LogWarning out("SiPixelCompareRecHits");
-    if (not rhsoaHandleAlpaka) {
-      out << "reference (Alpaka) rechits not found; ";
+    if (not rhsoaHandleRef) {
+      out << "reference rechits not found; ";
     }
-    if (not rhsoaHandleCUDA) {
-      out << "target (CUDA) rechits not found; ";
+    if (not rhsoaHandleTar) {
+      out << "target rechits not found; ";
     }
     out << "the comparison will not run.";
     return;
   }
 
-  auto const& rhsoaAlpaka = *rhsoaHandleAlpaka;
-  auto const& rhsoaCUDA = *rhsoaHandleCUDA;
+  auto const& rhsoaRef = *rhsoaHandleRef;
+  auto const& rhsoaTar = *rhsoaHandleTar;
 
-  auto const& soa2dAlpaka = rhsoaAlpaka.const_view();
-  auto const& soa2dCUDA = rhsoaCUDA.const_view();
+  std::cout << case_ << std::endl;
+  std::cout << "Reference: " << typeid(rhsoaRef).name() << std::endl;
+  std::cout << "Target: " << typeid(rhsoaTar).name() << std::endl;
 
-  uint32_t nHitsAlpaka = soa2dAlpaka.metadata().size();
-  uint32_t nHitsCUDA = soa2dCUDA.metadata().size();
+  auto const& soa2dRef = rhsoaRef.const_view();
+  auto const& soa2dTar = rhsoaTar.const_view();
 
-  hnHits_->Fill(nHitsAlpaka, nHitsCUDA);
+  uint32_t nHitsRef = soa2dRef.metadata().size();
+  uint32_t nHitsTar = soa2dTar.metadata().size();
+
+  hnHits_->Fill(nHitsRef, nHitsTar);
   auto detIds = tkGeom_->detUnitIds();
-  for (uint32_t i = 0; i < nHitsAlpaka; i++) {
+  for (uint32_t i = 0; i < nHitsRef; i++) {
     float minD = mind2cut_;
     uint32_t matchedHit = invalidHit_;
-    uint16_t indAlpaka = soa2dAlpaka[i].detectorIndex();
-    float xLocalAlpaka = soa2dAlpaka[i].xLocal();
-    float yLocalAlpaka = soa2dAlpaka[i].yLocal();
-    for (uint32_t j = 0; j < nHitsCUDA; j++) {
-      if (soa2dCUDA.detectorIndex(j) == indAlpaka) {
-        float dx = xLocalAlpaka - soa2dCUDA[j].xLocal();
-        float dy = yLocalAlpaka - soa2dCUDA[j].yLocal();
+    uint16_t indRef = soa2dRef[i].detectorIndex();
+    float xLocalRef = soa2dRef[i].xLocal();
+    float yLocalRef = soa2dRef[i].yLocal();
+    for (uint32_t j = 0; j < nHitsTar; j++) {
+      if (soa2dTar.detectorIndex(j) == indRef) {
+        float dx = xLocalRef - soa2dTar[j].xLocal();
+        float dy = yLocalRef - soa2dTar[j].yLocal();
         float distance = dx * dx + dy * dy;
         if (distance < minD) {
           minD = distance;
@@ -135,49 +149,62 @@ void SiPixelCompareRecHits<T>::analyze(const edm::Event& iEvent, const edm::Even
         }
       }
     }
-    DetId id = detIds[indAlpaka];
-    uint32_t chargeAlpaka = soa2dAlpaka[i].chargeAndStatus().charge;
-    int16_t sizeXAlpaka = std::ceil(float(std::abs(soa2dAlpaka[i].clusterSizeX()) / 8.));
-    int16_t sizeYAlpaka = std::ceil(float(std::abs(soa2dAlpaka[i].clusterSizeY()) / 8.));
-    uint32_t chargeCUDA = 0;
-    int16_t sizeXCUDA = -99;
-    int16_t sizeYCUDA = -99;
-    float xLocalCUDA = -999.;
-    float yLocalCUDA = -999.;
+    DetId id = detIds[indRef];
+    uint32_t chargeRef = soa2dRef[i].chargeAndStatus().charge;
+    int16_t sizeXRef = std::ceil(float(std::abs(soa2dRef[i].clusterSizeX()) / 8.));
+    int16_t sizeYRef = std::ceil(float(std::abs(soa2dRef[i].clusterSizeY()) / 8.));
+    uint32_t chargeTar = 0;
+    int16_t sizeXTar = -99;
+    int16_t sizeYTar = -99;
+    float xLocalTar = -999.;
+    float yLocalTar = -999.;
     if (matchedHit != invalidHit_) {
-      chargeCUDA = soa2dCUDA[matchedHit].chargeAndStatus().charge;
-      sizeXCUDA = std::ceil(float(std::abs(soa2dCUDA[matchedHit].clusterSizeX()) / 8.));
-      sizeYCUDA = std::ceil(float(std::abs(soa2dCUDA[matchedHit].clusterSizeY()) / 8.));
-      xLocalCUDA = soa2dCUDA[matchedHit].xLocal();
-      yLocalCUDA = soa2dCUDA[matchedHit].yLocal();
+      chargeTar = soa2dTar[matchedHit].chargeAndStatus().charge;
+      sizeXTar = std::ceil(float(std::abs(soa2dTar[matchedHit].clusterSizeX()) / 8.));
+      sizeYTar = std::ceil(float(std::abs(soa2dTar[matchedHit].clusterSizeY()) / 8.));
+      xLocalTar = soa2dTar[matchedHit].xLocal();
+      yLocalTar = soa2dTar[matchedHit].yLocal();
     }
     switch (id.subdetId()) {
       case PixelSubdetector::PixelBarrel:
-        hBchargeL_[tTopo_->pxbLayer(id) - 1]->Fill(chargeAlpaka, chargeCUDA);
-        hBsizexL_[tTopo_->pxbLayer(id) - 1]->Fill(sizeXAlpaka, sizeXCUDA);
-        hBsizeyL_[tTopo_->pxbLayer(id) - 1]->Fill(sizeYAlpaka, sizeYCUDA);
-        hBposxL_[tTopo_->pxbLayer(id) - 1]->Fill(xLocalAlpaka, xLocalCUDA);
-        hBposyL_[tTopo_->pxbLayer(id) - 1]->Fill(yLocalAlpaka, yLocalCUDA);
-        hBchargeDiff_->Fill(chargeAlpaka - chargeCUDA);
-        hBsizeXDiff_->Fill(sizeXAlpaka - sizeXCUDA);
-        hBsizeYDiff_->Fill(sizeYAlpaka - sizeYCUDA);
-        hBposXDiff_->Fill(micron_ * (xLocalAlpaka - xLocalCUDA));
-        hBposYDiff_->Fill(micron_ * (yLocalAlpaka - yLocalCUDA));
+        hBchargeL_[tTopo_->pxbLayer(id) - 1]->Fill(chargeRef, chargeTar);
+        hBsizexL_[tTopo_->pxbLayer(id) - 1]->Fill(sizeXRef, sizeXTar);
+        hBsizeyL_[tTopo_->pxbLayer(id) - 1]->Fill(sizeYRef, sizeYTar);
+        hBposxL_[tTopo_->pxbLayer(id) - 1]->Fill(xLocalRef, xLocalTar);
+        hBposyL_[tTopo_->pxbLayer(id) - 1]->Fill(yLocalRef, yLocalTar);
+        hBchargeDiff_->Fill(chargeRef - chargeTar);
+        hBsizeXDiff_->Fill(sizeXRef - sizeXTar);
+        hBsizeYDiff_->Fill(sizeYRef - sizeYTar);
+        hBposXDiff_->Fill(micron_ * (xLocalRef - xLocalTar));
+        hBposYDiff_->Fill(micron_ * (yLocalRef - yLocalTar));
         break;
       case PixelSubdetector::PixelEndcap:
-        hFchargeD_[tTopo_->pxfSide(id) - 1][tTopo_->pxfDisk(id) - 1]->Fill(chargeAlpaka, chargeCUDA);
-        hFsizexD_[tTopo_->pxfSide(id) - 1][tTopo_->pxfDisk(id) - 1]->Fill(sizeXAlpaka, sizeXCUDA);
-        hFsizeyD_[tTopo_->pxfSide(id) - 1][tTopo_->pxfDisk(id) - 1]->Fill(sizeYAlpaka, sizeYCUDA);
-        hFposxD_[tTopo_->pxfSide(id) - 1][tTopo_->pxfDisk(id) - 1]->Fill(xLocalAlpaka, xLocalCUDA);
-        hFposyD_[tTopo_->pxfSide(id) - 1][tTopo_->pxfDisk(id) - 1]->Fill(yLocalAlpaka, yLocalCUDA);
-        hFchargeDiff_->Fill(chargeAlpaka - chargeCUDA);
-        hFsizeXDiff_->Fill(sizeXAlpaka - sizeXCUDA);
-        hFsizeYDiff_->Fill(sizeYAlpaka - sizeYCUDA);
-        hFposXDiff_->Fill(micron_ * (xLocalAlpaka - xLocalCUDA));
-        hFposYDiff_->Fill(micron_ * (yLocalAlpaka - yLocalCUDA));
+        hFchargeD_[tTopo_->pxfSide(id) - 1][tTopo_->pxfDisk(id) - 1]->Fill(chargeRef, chargeTar);
+        hFsizexD_[tTopo_->pxfSide(id) - 1][tTopo_->pxfDisk(id) - 1]->Fill(sizeXRef, sizeXTar);
+        hFsizeyD_[tTopo_->pxfSide(id) - 1][tTopo_->pxfDisk(id) - 1]->Fill(sizeYRef, sizeYTar);
+        hFposxD_[tTopo_->pxfSide(id) - 1][tTopo_->pxfDisk(id) - 1]->Fill(xLocalRef, xLocalTar);
+        hFposyD_[tTopo_->pxfSide(id) - 1][tTopo_->pxfDisk(id) - 1]->Fill(yLocalRef, yLocalTar);
+        hFchargeDiff_->Fill(chargeRef - chargeTar);
+        hFsizeXDiff_->Fill(sizeXRef - sizeXTar);
+        hFsizeYDiff_->Fill(sizeYRef - sizeYTar);
+        hFposXDiff_->Fill(micron_ * (xLocalRef - xLocalTar));
+        hFposYDiff_->Fill(micron_ * (yLocalRef - yLocalTar));
         break;
     }
   }
+
+}
+
+//
+// -- Analyze
+//
+template <typename T>
+void SiPixelCompareRecHits<T>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  
+  if (case_ == "CUDA") analyzeSeparate<const edm::EDGetTokenT<HitsCUDA>, const edm::EDGetTokenT<HitsCUDA>>(tokenSoAHitsReferenceCUDA_, tokenSoAHitsTargetCUDA_, iEvent);
+  if (case_ == "Alpaka") analyzeSeparate<const edm::EDGetTokenT<HitsAlpaka>, const edm::EDGetTokenT<HitsAlpaka>>(tokenSoAHitsReferenceAlpaka_, tokenSoAHitsTargetAlpaka_, iEvent);
+  if (case_ == "AlpakavsCUDA") analyzeSeparate<const edm::EDGetTokenT<HitsAlpaka>, const edm::EDGetTokenT<HitsCUDA>>(tokenSoAHitsReferenceAlpaka_, tokenSoAHitsTargetCUDA_, iEvent);
+
 }
 
 //
@@ -192,48 +219,51 @@ void SiPixelCompareRecHits<T>::bookHistograms(DQMStore::IBooker& iBook,
 
   // clang-format off
   //Global
-  hnHits_ = iBook.book2I("nHits", "AlpakavsCUDA RecHits per event;#Alpaka RecHits;#CUDA RecHits", 200, 0, 5000,200, 0, 5000);
+  hnHits_ = iBook.book2I("nHits", "ReferencevsTarget RecHits per event;#Reference RecHits;#Target RecHits", 200, 0, 5000,200, 0, 5000);
   //Barrel Layer
   for(unsigned int il=0;il<tkGeom_->numberOfLayers(PixelSubdetector::PixelBarrel);il++){
-    hBchargeL_[il] = iBook.book2I(Form("recHitsBLay%dCharge",il+1), Form("AlpakavsCUDA RecHits Charge Barrel Layer%d;Alpaka Charge;CUDA Charge",il+1), 250, 0, 100000, 250, 0, 100000);
-    hBsizexL_[il] = iBook.book2I(Form("recHitsBLay%dSizex",il+1), Form("AlpakavsCUDA RecHits SizeX Barrel Layer%d;Alpaka SizeX;CUDA SizeX",il+1), 30, 0, 30, 30, 0, 30);
-    hBsizeyL_[il] = iBook.book2I(Form("recHitsBLay%dSizey",il+1), Form("AlpakavsCUDA RecHits SizeY Barrel Layer%d;Alpaka SizeY;CUDA SizeY",il+1), 30, 0, 30, 30, 0, 30);
-    hBposxL_[il] = iBook.book2D(Form("recHitsBLay%dPosx",il+1), Form("AlpakavsCUDA RecHits x-pos in Barrel Layer%d;Alpaka pos x;CUDA pos x",il+1), 200, -5, 5, 200,-5,5);
-    hBposyL_[il] = iBook.book2D(Form("recHitsBLay%dPosy",il+1), Form("AlpakavsCUDA RecHits y-pos in Barrel Layer%d;Alpaka pos y;CUDA pos y",il+1), 200, -5, 5, 200,-5,5);
+    hBchargeL_[il] = iBook.book2I(Form("recHitsBLay%dCharge",il+1), Form("ReferencevsTarget RecHits Charge Barrel Layer%d;Reference Charge;Target Charge",il+1), 250, 0, 100000, 250, 0, 100000);
+    hBsizexL_[il] = iBook.book2I(Form("recHitsBLay%dSizex",il+1), Form("ReferencevsTarget RecHits SizeX Barrel Layer%d;Reference SizeX;Target SizeX",il+1), 30, 0, 30, 30, 0, 30);
+    hBsizeyL_[il] = iBook.book2I(Form("recHitsBLay%dSizey",il+1), Form("ReferencevsTarget RecHits SizeY Barrel Layer%d;Reference SizeY;Target SizeY",il+1), 30, 0, 30, 30, 0, 30);
+    hBposxL_[il] = iBook.book2D(Form("recHitsBLay%dPosx",il+1), Form("ReferencevsTarget RecHits x-pos in Barrel Layer%d;Reference pos x;Target pos x",il+1), 200, -5, 5, 200,-5,5);
+    hBposyL_[il] = iBook.book2D(Form("recHitsBLay%dPosy",il+1), Form("ReferencevsTarget RecHits y-pos in Barrel Layer%d;Reference pos y;Target pos y",il+1), 200, -5, 5, 200,-5,5);
   }
   //Endcaps
   //Endcaps Disk
   for(int is=0;is<2;is++){
     int sign=is==0? -1:1;
     for(unsigned int id=0;id<tkGeom_->numberOfLayers(PixelSubdetector::PixelEndcap);id++){
-      hFchargeD_[is][id] = iBook.book2I(Form("recHitsFDisk%+dCharge",id*sign+sign), Form("AlpakavsCUDA RecHits Charge Endcaps Disk%+d;Alpaka Charge;CUDA Charge",id*sign+sign), 250, 0, 100000, 250, 0, 100000);
-      hFsizexD_[is][id] = iBook.book2I(Form("recHitsFDisk%+dSizex",id*sign+sign), Form("AlpakavsCUDA RecHits SizeX Endcaps Disk%+d;Alpaka SizeX;CUDA SizeX",id*sign+sign), 30, 0, 30, 30, 0, 30);
-      hFsizeyD_[is][id] = iBook.book2I(Form("recHitsFDisk%+dSizey",id*sign+sign), Form("AlpakavsCUDA RecHits SizeY Endcaps Disk%+d;Alpaka SizeY;CUDA SizeY",id*sign+sign), 30, 0, 30, 30, 0, 30);
-      hFposxD_[is][id] = iBook.book2D(Form("recHitsFDisk%+dPosx",id*sign+sign), Form("AlpakavsCUDA RecHits x-pos Endcaps Disk%+d;Alpaka pos x;CUDA pos x",id*sign+sign), 200, -5, 5, 200, -5, 5);
-      hFposyD_[is][id] = iBook.book2D(Form("recHitsFDisk%+dPosy",id*sign+sign), Form("AlpakavsCUDA RecHits y-pos Endcaps Disk%+d;Alpaka pos y;CUDA pos y",id*sign+sign), 200, -5, 5, 200, -5, 5);
+      hFchargeD_[is][id] = iBook.book2I(Form("recHitsFDisk%+dCharge",id*sign+sign), Form("ReferencevsTarget RecHits Charge Endcaps Disk%+d;Reference Charge;Target Charge",id*sign+sign), 250, 0, 100000, 250, 0, 100000);
+      hFsizexD_[is][id] = iBook.book2I(Form("recHitsFDisk%+dSizex",id*sign+sign), Form("ReferencevsTarget RecHits SizeX Endcaps Disk%+d;Reference SizeX;Target SizeX",id*sign+sign), 30, 0, 30, 30, 0, 30);
+      hFsizeyD_[is][id] = iBook.book2I(Form("recHitsFDisk%+dSizey",id*sign+sign), Form("ReferencevsTarget RecHits SizeY Endcaps Disk%+d;Reference SizeY;Target SizeY",id*sign+sign), 30, 0, 30, 30, 0, 30);
+      hFposxD_[is][id] = iBook.book2D(Form("recHitsFDisk%+dPosx",id*sign+sign), Form("ReferencevsTarget RecHits x-pos Endcaps Disk%+d;Reference pos x;Target pos x",id*sign+sign), 200, -5, 5, 200, -5, 5);
+      hFposyD_[is][id] = iBook.book2D(Form("recHitsFDisk%+dPosy",id*sign+sign), Form("ReferencevsTarget RecHits y-pos Endcaps Disk%+d;Reference pos y;Target pos y",id*sign+sign), 200, -5, 5, 200, -5, 5);
     }
   }
   //1D differences
-  hBchargeDiff_ = iBook.book1D("rechitChargeDiffBpix","Charge differnce of rechits in BPix; rechit charge difference (Alpaka - CUDA)", 101, -50.5, 50.5);
-  hFchargeDiff_ = iBook.book1D("rechitChargeDiffFpix","Charge differnce of rechits in FPix; rechit charge difference (Alpaka - CUDA)", 101, -50.5, 50.5);
-  hBsizeXDiff_ = iBook.book1D("rechitsizeXDiffBpix","SizeX difference of rechits in BPix; rechit sizex difference (Alpaka - CUDA)", 21, -10.5, 10.5);
-  hFsizeXDiff_ = iBook.book1D("rechitsizeXDiffFpix","SizeX difference of rechits in FPix; rechit sizex difference (Alpaka - CUDA)", 21, -10.5, 10.5);
-  hBsizeYDiff_ = iBook.book1D("rechitsizeYDiffBpix","SizeY difference of rechits in BPix; rechit sizey difference (Alpaka - CUDA)", 21, -10.5, 10.5);
-  hFsizeYDiff_ = iBook.book1D("rechitsizeYDiffFpix","SizeY difference of rechits in FPix; rechit sizey difference (Alpaka - CUDA)", 21, -10.5, 10.5);
-  hBposXDiff_ = iBook.book1D("rechitsposXDiffBpix","x-position difference of rechits in BPix; rechit x-pos difference (Alpaka - CUDA)", 1000, -10, 10);
-  hFposXDiff_ = iBook.book1D("rechitsposXDiffFpix","x-position difference of rechits in FPix; rechit x-pos difference (Alpaka - CUDA)", 1000, -10, 10);
-  hBposYDiff_ = iBook.book1D("rechitsposYDiffBpix","y-position difference of rechits in BPix; rechit y-pos difference (Alpaka - CUDA)", 1000, -10, 10);
-  hFposYDiff_ = iBook.book1D("rechitsposYDiffFpix","y-position difference of rechits in FPix; rechit y-pos difference (Alpaka - CUDA)", 1000, -10, 10);
+  hBchargeDiff_ = iBook.book1D("rechitChargeDiffBpix","Charge differnce of rechits in BPix; rechit charge difference (Reference - Target)", 101, -50.5, 50.5);
+  hFchargeDiff_ = iBook.book1D("rechitChargeDiffFpix","Charge differnce of rechits in FPix; rechit charge difference (Reference - Target)", 101, -50.5, 50.5);
+  hBsizeXDiff_ = iBook.book1D("rechitsizeXDiffBpix","SizeX difference of rechits in BPix; rechit sizex difference (Reference - Target)", 21, -10.5, 10.5);
+  hFsizeXDiff_ = iBook.book1D("rechitsizeXDiffFpix","SizeX difference of rechits in FPix; rechit sizex difference (Reference - Target)", 21, -10.5, 10.5);
+  hBsizeYDiff_ = iBook.book1D("rechitsizeYDiffBpix","SizeY difference of rechits in BPix; rechit sizey difference (Reference - Target)", 21, -10.5, 10.5);
+  hFsizeYDiff_ = iBook.book1D("rechitsizeYDiffFpix","SizeY difference of rechits in FPix; rechit sizey difference (Reference - Target)", 21, -10.5, 10.5);
+  hBposXDiff_ = iBook.book1D("rechitsposXDiffBpix","x-position difference of rechits in BPix; rechit x-pos difference (Reference - Target)", 1000, -10, 10);
+  hFposXDiff_ = iBook.book1D("rechitsposXDiffFpix","x-position difference of rechits in FPix; rechit x-pos difference (Reference - Target)", 1000, -10, 10);
+  hBposYDiff_ = iBook.book1D("rechitsposYDiffBpix","y-position difference of rechits in BPix; rechit y-pos difference (Reference - Target)", 1000, -10, 10);
+  hFposYDiff_ = iBook.book1D("rechitsposYDiffFpix","y-position difference of rechits in FPix; rechit y-pos difference (Reference - Target)", 1000, -10, 10);
 }
 
 template<typename T>
 void SiPixelCompareRecHits<T>::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   // monitorpixelRecHitsSoAAlpaka
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("pixelHitsSrcAlpaka", edm::InputTag("siPixelRecHitsPreSplittingAlpakaSerial")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelHitsSrcCUDA", edm::InputTag("siPixelRecHitsPreSplittingSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<std::string>("topFolderName", "SiPixelHeterogeneous/PixelRecHitsAlpakavsCUDA"); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<edm::InputTag>("pixelHitsReferenceCUDA", edm::InputTag("siPixelRecHitsPreSplittingSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<edm::InputTag>("pixelHitsTargetCUDA", edm::InputTag("siPixelRecHitsPreSplittingSoA@cuda")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<edm::InputTag>("pixelHitsReferenceAlpaka", edm::InputTag("siPixelRecHitsPreSplittingSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<edm::InputTag>("pixelHitsTargetAlpaka", edm::InputTag("siPixelRecHitsPreSplittingSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<std::string>("topFolderName", "SiPixelHeterogeneous/PixelRecHitsCompareGPUvsCPU"); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
   desc.add<double>("minD2cut", 0.0001);
+  desc.add<std::string>("case", "CUDA");
   descriptions.addWithDefaultLabel(desc);
 }
 

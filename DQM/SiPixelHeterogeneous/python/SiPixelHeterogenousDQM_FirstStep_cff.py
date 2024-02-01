@@ -190,15 +190,17 @@ siPixelVertexSoAMonitorDevice = siPixelMonitorVertexSoAAlpaka.clone(
 )
 
 siPixelPhase1CompareRecHitsSoAAlpakavsCUDACPU = siPixelPhase1CompareRecHits.clone(
-    topFolderName = cms.string('SiPixelHeterogeneous/PixelRecHitsAlpakavsCUDACPU'),
-    pixelHitsSrcAlpaka = cms.InputTag("siPixelRecHitsPreSplittingAlpakaSerial"),
-    pixelHitsSrcCUDA = cms.InputTag("siPixelRecHitsPreSplittingSoA@cpu"),
+    topFolderName = cms.string('SiPixelHeterogeneous/PixelRecHitsCompareAlpakavsCUDASerial'),
+    pixelHitsReferenceAlpaka = cms.InputTag("siPixelRecHitsPreSplittingAlpakaSerial"),
+    pixelHitsTargetCUDA = cms.InputTag("siPixelRecHitsPreSplittingSoA@cpu"),
+    case = cms.string("AlpakavsCUDA"),
 )
 
 siPixelPhase1CompareRecHitsSoAAlpakavsCUDAGPU = siPixelPhase1CompareRecHits.clone(
-    topFolderName = cms.string('SiPixelHeterogeneous/PixelRecHitsAlpakavsCUDAGPU'),
-    pixelHitsSrcAlpaka = cms.InputTag("siPixelRecHitsPreSplittingAlpaka"),
-    pixelHitsSrcCUDA = cms.InputTag("siPixelRecHitsPreSplittingSoA@cuda"),
+    topFolderName = cms.string('SiPixelHeterogeneous/PixelRecHitsCompareAlpakavsCUDADevice'),
+    pixelHitsReferenceAlpaka = cms.InputTag("siPixelRecHitsPreSplittingAlpaka"),
+    pixelHitsTargetCUDA = cms.InputTag("siPixelRecHitsPreSplittingSoA@cuda"),
+    case = cms.string("AlpakavsCUDA"),
 )
 
 siPixelPhase1CompareTrackSoAAlpakavsCUDACPU = siPixelPhase1CompareTracks.clone(
