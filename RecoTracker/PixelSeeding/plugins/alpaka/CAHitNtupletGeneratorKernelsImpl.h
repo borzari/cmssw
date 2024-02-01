@@ -50,7 +50,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caHitNtupletGeneratorKernels {
   template <typename TrackerTraits>
   using OuterHitOfCell = caStructures::OuterHitOfCellT<TrackerTraits>;
 
-  using Quality = ::pixelTrack::Quality;
+  using Quality = ::reco::pixelTrack::Quality;
 
   template <typename TrackerTraits>
   using TkSoAView = reco::TrackSoAView<TrackerTraits>;
@@ -62,7 +62,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caHitNtupletGeneratorKernels {
   using HitsConstView = typename CACellT<TrackerTraits>::HitsConstView;
 
   template <typename TrackerTraits>
-  using QualityCuts = ::pixelTrack::QualityCutsT<TrackerTraits>;
+  using QualityCuts = ::reco::pixelTrack::QualityCutsT<TrackerTraits>;
 
   template <typename TrackerTraits>
   using CAParams = caHitNtupletGenerator::CAParamsT<TrackerTraits>;
