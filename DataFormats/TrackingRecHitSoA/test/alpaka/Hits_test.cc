@@ -17,7 +17,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace testTrackingRecHitSoA {
 
     template <typename TrackerTraits>
-    void runKernels(TrackingRecHitSoAView<TrackerTraits>& hits, Queue& queue);
+    void runKernels(reco::TrackingRecHitSoAView<TrackerTraits>& hits, Queue& queue);
 
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

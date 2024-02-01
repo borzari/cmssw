@@ -182,3 +182,23 @@ alpaka.toReplaceWith(siPixelClustersPreSplittingTask, cms.Task(
     # SwitchProducer wrapping the legacy pixel cluster producer or an alias for the pixel clusters information converted from SoA
     siPixelClustersPreSplitting)
 )
+
+### Alpaka vs CUDA validation
+
+from Configuration.ProcessModifiers.alpakaCUDAValidationPixel_cff import alpakaCUDAValidationPixel
+from RecoLocalTracker.SiPixelClusterizer.SiPixelClusterizer_cfi import siPixelClusters as _siPixelClusters
+
+siPixelClustersPreSplittingCPU = _siPixelClusters.clone(
+    payloadType = cms.string('HLT')
+)
+
+alpakaCUDAValidationPixel.toReplaceWith(siPixelClustersPreSplittingTask, cms.Task(
+                        # Reconstruct and convert the pixel clusters with alpaka on host and device
+                        siPixelClustersPreSplittingTask.copy(),
+                        # conditions used *only* by the modules running on GPU
+                        siPixelGainCalibrationForHLTGPU,
+                        siPixelROCsStatusAndMappingWrapperESProducer,
+                        # reconstruct the pixel clusters on the cpu
+                        siPixelClustersPreSplittingCPU,
+                        # reconstruct the pixel digis and clusters on the gpu
+                        siPixelClustersPreSplittingCUDA))
