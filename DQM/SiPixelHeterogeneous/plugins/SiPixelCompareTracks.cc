@@ -29,6 +29,8 @@
 #include "CUDADataFormats/Track/interface/TrackSoAHeterogeneousHost.h"
 #include "CUDADataFormats/Track/interface/TrackSoAHeterogeneousDevice.h"
 
+struct None {};
+
 namespace {
   // same logic used for the MTV:
   // cf https://github.com/cms-sw/cmssw/blob/master/Validation/RecoTrack/src/MTVHistoProducerAlgoForTracker.cc
@@ -77,15 +79,23 @@ public:
   ~SiPixelCompareTracks() override = default;
   void bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun, edm::EventSetup const& iSetup) override;
   void analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+  void analyzeCUDA(const edm::EDGetTokenT<PixelTrackSoACUDA> tokenRef, const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar, const edm::Event& iEvent);
+  void analyzeAlpaka(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef, const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenTar, const edm::Event& iEvent);
+  void analyzeAlpakavsCUDA(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef, const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar, const edm::Event& iEvent);
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 private:
-  const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenSoATrackAlpaka_;
-  const edm::EDGetTokenT<PixelTrackSoACUDA> tokenSoATrackCUDA_;
+  // const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenSoATrackAlpaka_;
+  // const edm::EDGetTokenT<PixelTrackSoACUDA> tokenSoATrackCUDA_;
+  const edm::EDGetTokenT<PixelTrackSoACUDA> tokenSoATrackReferenceCUDA_;
+  const edm::EDGetTokenT<PixelTrackSoACUDA> tokenSoATrackTargetCUDA_;
+  const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenSoATrackReferenceAlpaka_;
+  const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenSoATrackTargetAlpaka_;
   const std::string topFolderName_;
   const bool useQualityCut_;
   const reco::pixelTrack::Quality minQuality_;
   const float dr2cut_;
+  const std::string case_;
   MonitorElement* hnTracks_;
   MonitorElement* hnLooseAndAboveTracks_;
   MonitorElement* hnLooseAndAboveTracks_matched_;
@@ -115,10 +125,10 @@ private:
   MonitorElement* htipdiffMatched_;
 
   //for matching eff vs region: derive the ratio at harvesting
-  MonitorElement* hpt_eta_tkAllAlpaka_;
-  MonitorElement* hpt_eta_tkAllAlpakaMatched_;
-  MonitorElement* hphi_z_tkAllAlpaka_;
-  MonitorElement* hphi_z_tkAllAlpakaMatched_;
+  MonitorElement* hpt_eta_tkAllRef_;
+  MonitorElement* hpt_eta_tkAllRefMatched_;
+  MonitorElement* hphi_z_tkAllRef_;
+  MonitorElement* hphi_z_tkAllRefMatched_;
 };
 
 //
@@ -127,88 +137,93 @@ private:
 
 template <typename T>
 SiPixelCompareTracks<T>::SiPixelCompareTracks(const edm::ParameterSet& iConfig)
-    : tokenSoATrackAlpaka_(consumes<PixelTrackSoAAlpaka>(iConfig.getParameter<edm::InputTag>("pixelTrackSrcAlpaka"))),
-      tokenSoATrackCUDA_(consumes<PixelTrackSoACUDA>(iConfig.getParameter<edm::InputTag>("pixelTrackSrcCUDA"))),
+    : tokenSoATrackReferenceCUDA_(consumes<PixelTrackSoACUDA>(iConfig.getParameter<edm::InputTag>("pixelTrackReferenceCUDA"))),
+      tokenSoATrackTargetCUDA_(consumes<PixelTrackSoACUDA>(iConfig.getParameter<edm::InputTag>("pixelTrackTargetCUDA"))),
+      tokenSoATrackReferenceAlpaka_(consumes<PixelTrackSoAAlpaka>(iConfig.getParameter<edm::InputTag>("pixelTrackReferenceAlpaka"))),
+      tokenSoATrackTargetAlpaka_(consumes<PixelTrackSoAAlpaka>(iConfig.getParameter<edm::InputTag>("pixelTrackTargetAlpaka"))),
       topFolderName_(iConfig.getParameter<std::string>("topFolderName")),
       useQualityCut_(iConfig.getParameter<bool>("useQualityCut")),
       minQuality_(reco::pixelTrack::qualityByName(iConfig.getParameter<std::string>("minQuality"))),
-      dr2cut_(iConfig.getParameter<double>("deltaR2cut")) {}
+      dr2cut_(iConfig.getParameter<double>("deltaR2cut")),
+      case_(iConfig.getParameter<std::string>("case")) {}
 
-//
-// -- Analyze
-//
 template <typename T>
-void SiPixelCompareTracks<T>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  using helperAlpaka = reco::TracksUtilities<T>;
-  using helperCUDA = TracksUtilities<T>;
-  const auto& tsoaHandleAlpaka = iEvent.getHandle(tokenSoATrackAlpaka_);
-  const auto& tsoaHandleCUDA = iEvent.getHandle(tokenSoATrackCUDA_);
-  if (not tsoaHandleAlpaka or not tsoaHandleCUDA) {
+void SiPixelCompareTracks<T>::analyzeCUDA(const edm::EDGetTokenT<PixelTrackSoACUDA> tokenRef, const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar, const edm::Event& iEvent) {
+
+  using helper = TracksUtilities<T>;
+
+  const auto& tsoaHandleRef = iEvent.getHandle(tokenRef);
+  const auto& tsoaHandleTar = iEvent.getHandle(tokenTar);
+
+  if (not tsoaHandleRef or not tsoaHandleTar) {
     edm::LogWarning out("SiPixelCompareTracks");
-    if (not tsoaHandleAlpaka) {
-      out << "reference (Alpaka) tracks not found; ";
+    if (not tsoaHandleRef) {
+      out << "reference tracks not found; ";
     }
-    if (not tsoaHandleCUDA) {
-      out << "target (CUDA) tracks not found; ";
+    if (not tsoaHandleTar) {
+      out << "target tracks not found; ";
     }
     out << "the comparison will not run.";
     return;
   }
 
-  auto const& tsoaAlpaka = *tsoaHandleAlpaka;
-  auto const& tsoaCUDA = *tsoaHandleCUDA;
-  auto maxTracksAlpaka = tsoaAlpaka.view().metadata().size();  //this should be same for both?
-  auto maxTracksCUDA = tsoaCUDA.view().metadata().size();  //this should be same for both?
-  auto const* qualityAlpaka = tsoaAlpaka.view().quality();
-  auto const* qualityCUDA = tsoaCUDA.view().quality();
-  int32_t nTracksAlpaka = 0;
-  int32_t nTracksCUDA = 0;
-  int32_t nLooseAndAboveTracksAlpaka = 0;
-  int32_t nLooseAndAboveTracksAlpaka_matchedCUDA = 0;
-  int32_t nLooseAndAboveTracksCUDA = 0;
+  auto const& tsoaRef = *tsoaHandleRef;
+  auto const& tsoaTar = *tsoaHandleTar;
 
-  //Loop over CUDA tracks and store the indices of the loose tracks. Whats happens if useQualityCut_ is false?
-  std::vector<int32_t> looseTrkidxCUDA;
-  for (int32_t jt = 0; jt < maxTracksCUDA; ++jt) {
-    if (helperCUDA::nHits(tsoaCUDA.view(), jt) == 0)
+  auto maxTracksRef = tsoaRef.view().metadata().size();  //this should be same for both?
+  auto maxTracksTar = tsoaTar.view().metadata().size();  //this should be same for both?
+
+  auto const* qualityRef = tsoaRef.view().quality();
+  auto const* qualityTar = tsoaTar.view().quality();
+
+  int32_t nTracksRef = 0;
+  int32_t nTracksTar = 0;
+  int32_t nLooseAndAboveTracksRef = 0;
+  int32_t nLooseAndAboveTracksRef_matchedTar = 0;
+  int32_t nLooseAndAboveTracksTar = 0;
+
+  //Loop over Tar tracks and store the indices of the loose tracks. Whats happens if useQualityCut_ is false?
+  std::vector<int32_t> looseTrkidxTar;
+  for (int32_t jt = 0; jt < maxTracksTar; ++jt) {
+    if (helper::nHits(tsoaTar.view(), jt) == 0)
       break;  // this is a guard
-    if (!(tsoaCUDA.view()[jt].pt() > 0.))
+    if (!(tsoaTar.view()[jt].pt() > 0.))
       continue;
-    nTracksCUDA++;
-    if (useQualityCut_ && (reco::pixelTrack::Quality) qualityCUDA[jt] < minQuality_)
+    nTracksTar++;
+    if (useQualityCut_ && (reco::pixelTrack::Quality) qualityTar[jt] < minQuality_)
       continue;
-    nLooseAndAboveTracksCUDA++;
-    looseTrkidxCUDA.emplace_back(jt);
+    nLooseAndAboveTracksTar++;
+    looseTrkidxTar.emplace_back(jt);
   }
 
-  //Now loop over Alpaka tracks//nested loop for loose CUDA tracks
-  for (int32_t it = 0; it < maxTracksAlpaka; ++it) {
-    int nHitsAlpaka = helperAlpaka::nHits(tsoaAlpaka.view(), it);
+  //Now loop over Ref tracks//nested loop for loose gPU tracks
+  for (int32_t it = 0; it < maxTracksRef; ++it) {
+    int nHitsRef = helper::nHits(tsoaRef.view(), it);
 
-    if (nHitsAlpaka == 0)
+    if (nHitsRef == 0)
       break;  // this is a guard
 
-    float ptAlpaka = tsoaAlpaka.view()[it].pt();
-    float etaAlpaka = tsoaAlpaka.view()[it].eta();
-    float phiAlpaka = reco::phi(tsoaAlpaka.view(), it);
-    float zipAlpaka = reco::zip(tsoaAlpaka.view(), it);
-    float tipAlpaka = reco::tip(tsoaAlpaka.view(), it);
+    float ptRef = tsoaRef.view()[it].pt();
+    float etaRef = tsoaRef.view()[it].eta();
+    float phiRef = helper::phi(tsoaRef.view(), it);
+    float zipRef = helper::zip(tsoaRef.view(), it);
+    float tipRef = helper::tip(tsoaRef.view(), it);
 
-    if (!(ptAlpaka > 0.))
+    if (!(ptRef > 0.))
       continue;
-    nTracksAlpaka++;
-    if (useQualityCut_ && qualityAlpaka[it] < minQuality_)
+    nTracksRef++;
+    if (useQualityCut_ && (reco::pixelTrack::Quality) qualityRef[it] < minQuality_)
       continue;
-    nLooseAndAboveTracksAlpaka++;
-    //Now loop over loose CUDA trk and find the closest in DeltaR//do we need pt cut?
+    nLooseAndAboveTracksRef++;
+    //Now loop over loose Tar trk and find the closest in DeltaR//do we need pt cut?
     const int32_t notFound = -1;
     int32_t closestTkidx = notFound;
     float mindr2 = dr2cut_;
 
-    for (auto gid : looseTrkidxCUDA) {
-      float etaCUDA = tsoaCUDA.view()[gid].eta();
-      float phiCUDA = helperCUDA::phi(tsoaCUDA.view(), gid);
-      float dr2 = reco::deltaR2(etaAlpaka, phiAlpaka, etaCUDA, phiCUDA);
+    for (auto gid : looseTrkidxTar) {
+      float etaTar = tsoaTar.view()[gid].eta();
+      float phiTar = helper::phi(tsoaTar.view(), gid);
+      float dr2 = reco::deltaR2(etaRef, phiRef, etaTar, phiTar);
       if (dr2 > dr2cut_)
         continue;  // this is arbitrary
       if (mindr2 > dr2) {
@@ -217,35 +232,283 @@ void SiPixelCompareTracks<T>::analyze(const edm::Event& iEvent, const edm::Event
       }
     }
 
-    hpt_eta_tkAllAlpaka_->Fill(etaAlpaka, ptAlpaka);  //all Alpaka tk
-    hphi_z_tkAllAlpaka_->Fill(phiAlpaka, zipAlpaka);
+    hpt_eta_tkAllRef_->Fill(etaRef, ptRef);  //all Ref tk
+    hphi_z_tkAllRef_->Fill(phiRef, zipRef);
     if (closestTkidx == notFound)
       continue;
-    nLooseAndAboveTracksAlpaka_matchedCUDA++;
+    nLooseAndAboveTracksRef_matchedTar++;
 
-    hchi2_->Fill(tsoaAlpaka.view()[it].chi2(), tsoaCUDA.view()[closestTkidx].chi2());
-    hCharge_->Fill(reco::charge(tsoaAlpaka.view(), it), helperCUDA::charge(tsoaCUDA.view(), closestTkidx));
-    hnHits_->Fill(helperAlpaka::nHits(tsoaAlpaka.view(), it), helperCUDA::nHits(tsoaCUDA.view(), closestTkidx));
-    hnLayers_->Fill(tsoaAlpaka.view()[it].nLayers(), tsoaCUDA.view()[closestTkidx].nLayers());
-    hpt_->Fill(tsoaAlpaka.view()[it].pt(), tsoaCUDA.view()[closestTkidx].pt());
-    hptLogLog_->Fill(tsoaAlpaka.view()[it].pt(), tsoaCUDA.view()[closestTkidx].pt());
-    heta_->Fill(etaAlpaka, tsoaCUDA.view()[closestTkidx].eta());
-    hphi_->Fill(phiAlpaka, helperCUDA::phi(tsoaCUDA.view(), closestTkidx));
-    hz_->Fill(zipAlpaka, helperCUDA::zip(tsoaCUDA.view(), closestTkidx));
-    htip_->Fill(tipAlpaka, helperCUDA::tip(tsoaCUDA.view(), closestTkidx));
-    hptdiffMatched_->Fill(ptAlpaka - tsoaCUDA.view()[closestTkidx].pt());
-    hCurvdiffMatched_->Fill((reco::charge(tsoaAlpaka.view(), it) / tsoaAlpaka.view()[it].pt()) -
-                            (helperCUDA::charge(tsoaCUDA.view(), closestTkidx) / tsoaCUDA.view()[closestTkidx].pt()));
-    hetadiffMatched_->Fill(etaAlpaka - tsoaCUDA.view()[closestTkidx].eta());
-    hphidiffMatched_->Fill(reco::deltaPhi(phiAlpaka, helperCUDA::phi(tsoaCUDA.view(), closestTkidx)));
-    hzdiffMatched_->Fill(zipAlpaka - helperCUDA::zip(tsoaCUDA.view(), closestTkidx));
-    htipdiffMatched_->Fill(tipAlpaka - helperCUDA::tip(tsoaCUDA.view(), closestTkidx));
-    hpt_eta_tkAllAlpakaMatched_->Fill(etaAlpaka, tsoaAlpaka.view()[it].pt());  //matched to CUDA
-    hphi_z_tkAllAlpakaMatched_->Fill(etaAlpaka, zipAlpaka);
+    hchi2_->Fill(tsoaRef.view()[it].chi2(), tsoaTar.view()[closestTkidx].chi2());
+    hCharge_->Fill(helper::charge(tsoaRef.view(), it), helper::charge(tsoaTar.view(), closestTkidx));
+    hnHits_->Fill(helper::nHits(tsoaRef.view(), it), helper::nHits(tsoaTar.view(), closestTkidx));
+    hnLayers_->Fill(tsoaRef.view()[it].nLayers(), tsoaTar.view()[closestTkidx].nLayers());
+    hpt_->Fill(ptRef, tsoaTar.view()[closestTkidx].pt());
+    hptLogLog_->Fill(ptRef, tsoaTar.view()[closestTkidx].pt());
+    heta_->Fill(etaRef, tsoaTar.view()[closestTkidx].eta());
+    hphi_->Fill(phiRef, helper::phi(tsoaTar.view(), closestTkidx));
+    hz_->Fill(zipRef, helper::zip(tsoaTar.view(), closestTkidx));
+    htip_->Fill(tipRef, helper::tip(tsoaTar.view(), closestTkidx));
+    hptdiffMatched_->Fill(ptRef - tsoaTar.view()[closestTkidx].pt());
+    hCurvdiffMatched_->Fill((helper::charge(tsoaRef.view(), it) / tsoaRef.view()[it].pt()) -
+                            (helper::charge(tsoaTar.view(), closestTkidx) / tsoaTar.view()[closestTkidx].pt()));
+    hetadiffMatched_->Fill(etaRef - tsoaTar.view()[closestTkidx].eta());
+    hphidiffMatched_->Fill(reco::deltaPhi(phiRef, helper::phi(tsoaTar.view(), closestTkidx)));
+    hzdiffMatched_->Fill(zipRef - helper::zip(tsoaTar.view(), closestTkidx));
+    htipdiffMatched_->Fill(tipRef - helper::tip(tsoaTar.view(), closestTkidx));
+    hpt_eta_tkAllRefMatched_->Fill(etaRef, tsoaRef.view()[it].pt());  //matched to gpu
+    hphi_z_tkAllRefMatched_->Fill(etaRef, zipRef);
   }
-  hnTracks_->Fill(nTracksAlpaka, nTracksCUDA);
-  hnLooseAndAboveTracks_->Fill(nLooseAndAboveTracksAlpaka, nLooseAndAboveTracksCUDA);
-  hnLooseAndAboveTracks_matched_->Fill(nLooseAndAboveTracksAlpaka, nLooseAndAboveTracksAlpaka_matchedCUDA);
+  hnTracks_->Fill(nTracksRef, nTracksTar);
+  hnLooseAndAboveTracks_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksTar);
+  hnLooseAndAboveTracks_matched_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksRef_matchedTar);
+
+}
+
+template <typename T>
+void SiPixelCompareTracks<T>::analyzeAlpaka(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef, const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenTar, const edm::Event& iEvent) {
+
+  using helper = reco::TracksUtilities<T>;
+
+  const auto& tsoaHandleRef = iEvent.getHandle(tokenRef);
+  const auto& tsoaHandleTar = iEvent.getHandle(tokenTar);
+
+  if (not tsoaHandleRef or not tsoaHandleTar) {
+    edm::LogWarning out("SiPixelCompareTracks");
+    if (not tsoaHandleRef) {
+      out << "reference tracks not found; ";
+    }
+    if (not tsoaHandleTar) {
+      out << "target tracks not found; ";
+    }
+    out << "the comparison will not run.";
+    return;
+  }
+
+  auto const& tsoaRef = *tsoaHandleRef;
+  auto const& tsoaTar = *tsoaHandleTar;
+
+  auto maxTracksRef = tsoaRef.view().metadata().size();  //this should be same for both?
+  auto maxTracksTar = tsoaTar.view().metadata().size();  //this should be same for both?
+
+  auto const* qualityRef = tsoaRef.view().quality();
+  auto const* qualityTar = tsoaTar.view().quality();
+
+  int32_t nTracksRef = 0;
+  int32_t nTracksTar = 0;
+  int32_t nLooseAndAboveTracksRef = 0;
+  int32_t nLooseAndAboveTracksRef_matchedTar = 0;
+  int32_t nLooseAndAboveTracksTar = 0;
+
+  //Loop over Tar tracks and store the indices of the loose tracks. Whats happens if useQualityCut_ is false?
+  std::vector<int32_t> looseTrkidxTar;
+  for (int32_t jt = 0; jt < maxTracksTar; ++jt) {
+    if (helper::nHits(tsoaTar.view(), jt) == 0)
+      break;  // this is a guard
+    if (!(tsoaTar.view()[jt].pt() > 0.))
+      continue;
+    nTracksTar++;
+    if (useQualityCut_ && qualityTar[jt] < minQuality_)
+      continue;
+    nLooseAndAboveTracksTar++;
+    looseTrkidxTar.emplace_back(jt);
+  }
+
+  //Now loop over Ref tracks//nested loop for loose gPU tracks
+  for (int32_t it = 0; it < maxTracksRef; ++it) {
+    int nHitsRef = helper::nHits(tsoaRef.view(), it);
+
+    if (nHitsRef == 0)
+      break;  // this is a guard
+
+    float ptRef = tsoaRef.view()[it].pt();
+    float etaRef = tsoaRef.view()[it].eta();
+    float phiRef = reco::phi(tsoaRef.view(), it);
+    float zipRef = reco::zip(tsoaRef.view(), it);
+    float tipRef = reco::tip(tsoaRef.view(), it);
+
+    if (!(ptRef > 0.))
+      continue;
+    nTracksRef++;
+    if (useQualityCut_ && qualityRef[it] < minQuality_)
+      continue;
+    nLooseAndAboveTracksRef++;
+    //Now loop over loose Tar trk and find the closest in DeltaR//do we need pt cut?
+    const int32_t notFound = -1;
+    int32_t closestTkidx = notFound;
+    float mindr2 = dr2cut_;
+
+    for (auto gid : looseTrkidxTar) {
+      float etaTar = tsoaTar.view()[gid].eta();
+      float phiTar = reco::phi(tsoaTar.view(), gid);
+      float dr2 = reco::deltaR2(etaRef, phiRef, etaTar, phiTar);
+      if (dr2 > dr2cut_)
+        continue;  // this is arbitrary
+      if (mindr2 > dr2) {
+        mindr2 = dr2;
+        closestTkidx = gid;
+      }
+    }
+
+    hpt_eta_tkAllRef_->Fill(etaRef, ptRef);  //all Ref tk
+    hphi_z_tkAllRef_->Fill(phiRef, zipRef);
+    if (closestTkidx == notFound)
+      continue;
+    nLooseAndAboveTracksRef_matchedTar++;
+
+    hchi2_->Fill(tsoaRef.view()[it].chi2(), tsoaTar.view()[closestTkidx].chi2());
+    hCharge_->Fill(reco::charge(tsoaRef.view(), it), reco::charge(tsoaTar.view(), closestTkidx));
+    hnHits_->Fill(helper::nHits(tsoaRef.view(), it), helper::nHits(tsoaTar.view(), closestTkidx));
+    hnLayers_->Fill(tsoaRef.view()[it].nLayers(), tsoaTar.view()[closestTkidx].nLayers());
+    hpt_->Fill(ptRef, tsoaTar.view()[closestTkidx].pt());
+    hptLogLog_->Fill(ptRef, tsoaTar.view()[closestTkidx].pt());
+    heta_->Fill(etaRef, tsoaTar.view()[closestTkidx].eta());
+    hphi_->Fill(phiRef, reco::phi(tsoaTar.view(), closestTkidx));
+    hz_->Fill(zipRef, reco::zip(tsoaTar.view(), closestTkidx));
+    htip_->Fill(tipRef, reco::tip(tsoaTar.view(), closestTkidx));
+    hptdiffMatched_->Fill(ptRef - tsoaTar.view()[closestTkidx].pt());
+    hCurvdiffMatched_->Fill((reco::charge(tsoaRef.view(), it) / tsoaRef.view()[it].pt()) -
+                            (reco::charge(tsoaTar.view(), closestTkidx) / tsoaTar.view()[closestTkidx].pt()));
+    hetadiffMatched_->Fill(etaRef - tsoaTar.view()[closestTkidx].eta());
+    hphidiffMatched_->Fill(reco::deltaPhi(phiRef, reco::phi(tsoaTar.view(), closestTkidx)));
+    hzdiffMatched_->Fill(zipRef - reco::zip(tsoaTar.view(), closestTkidx));
+    htipdiffMatched_->Fill(tipRef - reco::tip(tsoaTar.view(), closestTkidx));
+    hpt_eta_tkAllRefMatched_->Fill(etaRef, tsoaRef.view()[it].pt());  //matched to gpu
+    hphi_z_tkAllRefMatched_->Fill(etaRef, zipRef);
+  }
+  hnTracks_->Fill(nTracksRef, nTracksTar);
+  hnLooseAndAboveTracks_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksTar);
+  hnLooseAndAboveTracks_matched_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksRef_matchedTar);
+
+}
+
+template <typename T>
+void SiPixelCompareTracks<T>::analyzeAlpakavsCUDA(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef, const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar, const edm::Event& iEvent) {
+
+  using helperAlpaka = reco::TracksUtilities<T>;
+  using helperCUDA = TracksUtilities<T>;
+
+  const auto& tsoaHandleRef = iEvent.getHandle(tokenRef);
+  const auto& tsoaHandleTar = iEvent.getHandle(tokenTar);
+
+  if (not tsoaHandleRef or not tsoaHandleTar) {
+    edm::LogWarning out("SiPixelCompareTracks");
+    if (not tsoaHandleRef) {
+      out << "reference tracks not found; ";
+    }
+    if (not tsoaHandleTar) {
+      out << "target tracks not found; ";
+    }
+    out << "the comparison will not run.";
+    return;
+  }
+
+  auto const& tsoaRef = *tsoaHandleRef;
+  auto const& tsoaTar = *tsoaHandleTar;
+
+  auto maxTracksRef = tsoaRef.view().metadata().size();  //this should be same for both?
+  auto maxTracksTar = tsoaTar.view().metadata().size();  //this should be same for both?
+
+  auto const* qualityRef = tsoaRef.view().quality();
+  auto const* qualityTar = tsoaTar.view().quality();
+
+  int32_t nTracksRef = 0;
+  int32_t nTracksTar = 0;
+  int32_t nLooseAndAboveTracksRef = 0;
+  int32_t nLooseAndAboveTracksRef_matchedTar = 0;
+  int32_t nLooseAndAboveTracksTar = 0;
+
+  //Loop over Tar tracks and store the indices of the loose tracks. Whats happens if useQualityCut_ is false?
+  std::vector<int32_t> looseTrkidxTar;
+  for (int32_t jt = 0; jt < maxTracksTar; ++jt) {
+    if (helperCUDA::nHits(tsoaTar.view(), jt) == 0)
+      break;  // this is a guard
+    if (!(tsoaTar.view()[jt].pt() > 0.))
+      continue;
+    nTracksTar++;
+    if (useQualityCut_ && (reco::pixelTrack::Quality) qualityTar[jt] < minQuality_)
+      continue;
+    nLooseAndAboveTracksTar++;
+    looseTrkidxTar.emplace_back(jt);
+  }
+
+  //Now loop over Ref tracks//nested loop for loose gPU tracks
+  for (int32_t it = 0; it < maxTracksRef; ++it) {
+    int nHitsRef = helperAlpaka::nHits(tsoaRef.view(), it);
+
+    if (nHitsRef == 0)
+      break;  // this is a guard
+
+    float ptRef = tsoaRef.view()[it].pt();
+    float etaRef = tsoaRef.view()[it].eta();
+    float phiRef = reco::phi(tsoaRef.view(), it);
+    float zipRef = reco::zip(tsoaRef.view(), it);
+    float tipRef = reco::tip(tsoaRef.view(), it);
+
+    if (!(ptRef > 0.))
+      continue;
+    nTracksRef++;
+    if (useQualityCut_ && qualityRef[it] < minQuality_)
+      continue;
+    nLooseAndAboveTracksRef++;
+    //Now loop over loose Tar trk and find the closest in DeltaR//do we need pt cut?
+    const int32_t notFound = -1;
+    int32_t closestTkidx = notFound;
+    float mindr2 = dr2cut_;
+
+    for (auto gid : looseTrkidxTar) {
+      float etaTar = tsoaTar.view()[gid].eta();
+      float phiTar = helperCUDA::phi(tsoaTar.view(), gid);
+      float dr2 = reco::deltaR2(etaRef, phiRef, etaTar, phiTar);
+      if (dr2 > dr2cut_)
+        continue;  // this is arbitrary
+      if (mindr2 > dr2) {
+        mindr2 = dr2;
+        closestTkidx = gid;
+      }
+    }
+
+    hpt_eta_tkAllRef_->Fill(etaRef, ptRef);  //all Ref tk
+    hphi_z_tkAllRef_->Fill(phiRef, zipRef);
+    if (closestTkidx == notFound)
+      continue;
+    nLooseAndAboveTracksRef_matchedTar++;
+
+    hchi2_->Fill(tsoaRef.view()[it].chi2(), tsoaTar.view()[closestTkidx].chi2());
+    hCharge_->Fill(reco::charge(tsoaRef.view(), it), helperCUDA::charge(tsoaTar.view(), closestTkidx));
+    hnHits_->Fill(helperAlpaka::nHits(tsoaRef.view(), it), helperCUDA::nHits(tsoaTar.view(), closestTkidx));
+    hnLayers_->Fill(tsoaRef.view()[it].nLayers(), tsoaTar.view()[closestTkidx].nLayers());
+    hpt_->Fill(ptRef, tsoaTar.view()[closestTkidx].pt());
+    hptLogLog_->Fill(ptRef, tsoaTar.view()[closestTkidx].pt());
+    heta_->Fill(etaRef, tsoaTar.view()[closestTkidx].eta());
+    hphi_->Fill(phiRef, helperCUDA::phi(tsoaTar.view(), closestTkidx));
+    hz_->Fill(zipRef, helperCUDA::zip(tsoaTar.view(), closestTkidx));
+    htip_->Fill(tipRef, helperCUDA::tip(tsoaTar.view(), closestTkidx));
+    hptdiffMatched_->Fill(ptRef - tsoaTar.view()[closestTkidx].pt());
+    hCurvdiffMatched_->Fill((reco::charge(tsoaRef.view(), it) / tsoaRef.view()[it].pt()) -
+                            (helperCUDA::charge(tsoaTar.view(), closestTkidx) / tsoaTar.view()[closestTkidx].pt()));
+    hetadiffMatched_->Fill(etaRef - tsoaTar.view()[closestTkidx].eta());
+    hphidiffMatched_->Fill(reco::deltaPhi(phiRef, helperCUDA::phi(tsoaTar.view(), closestTkidx)));
+    hzdiffMatched_->Fill(zipRef - helperCUDA::zip(tsoaTar.view(), closestTkidx));
+    htipdiffMatched_->Fill(tipRef - helperCUDA::tip(tsoaTar.view(), closestTkidx));
+    hpt_eta_tkAllRefMatched_->Fill(etaRef, tsoaRef.view()[it].pt());  //matched to gpu
+    hphi_z_tkAllRefMatched_->Fill(etaRef, zipRef);
+  }
+  hnTracks_->Fill(nTracksRef, nTracksTar);
+  hnLooseAndAboveTracks_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksTar);
+  hnLooseAndAboveTracks_matched_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksRef_matchedTar);
+
+}
+
+//
+// -- Analyze
+//
+template <typename T>
+void SiPixelCompareTracks<T>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+
+  if (case_ == "CUDA") analyzeCUDA(tokenSoATrackReferenceCUDA_, tokenSoATrackTargetCUDA_, iEvent);
+  if (case_ == "Alpaka") analyzeAlpaka(tokenSoATrackReferenceAlpaka_, tokenSoATrackTargetAlpaka_, iEvent);
+  if (case_ == "AlpakavsCUDA") analyzeAlpakavsCUDA(tokenSoATrackReferenceAlpaka_, tokenSoATrackTargetCUDA_, iEvent);
+
 }
 
 //
@@ -262,28 +525,28 @@ void SiPixelCompareTracks<T>::bookHistograms(DQMStore::IBooker& iBook,
   std::string toRep = "Number of tracks";
   // FIXME: all the 2D correlation plots are quite heavy in terms of memory consumption, so a as soon as DQM supports THnSparse
   // these should be moved to a less resource consuming format
-  hnTracks_ = iBook.book2I("nTracks", fmt::sprintf("%s per event; Alpaka; CUDA",toRep), 501, -0.5, 500.5, 501, -0.5, 500.5);
-  hnLooseAndAboveTracks_ = iBook.book2I("nLooseAndAboveTracks", fmt::sprintf("%s (quality #geq loose) per event; Alpaka; CUDA",toRep), 501, -0.5, 500.5, 501, -0.5, 500.5);
-  hnLooseAndAboveTracks_matched_ = iBook.book2I("nLooseAndAboveTracks_matched", fmt::sprintf("%s (quality #geq loose) per event; Alpaka; CUDA",toRep), 501, -0.5, 500.5, 501, -0.5, 500.5);
+  hnTracks_ = iBook.book2I("nTracks", fmt::sprintf("%s per event; Reference; Target",toRep), 501, -0.5, 500.5, 501, -0.5, 500.5);
+  hnLooseAndAboveTracks_ = iBook.book2I("nLooseAndAboveTracks", fmt::sprintf("%s (quality #geq loose) per event; Reference; Target",toRep), 501, -0.5, 500.5, 501, -0.5, 500.5);
+  hnLooseAndAboveTracks_matched_ = iBook.book2I("nLooseAndAboveTracks_matched", fmt::sprintf("%s (quality #geq loose) per event; Reference; Target",toRep), 501, -0.5, 500.5, 501, -0.5, 500.5);
 
   toRep = "Number of all RecHits per track (quality #geq loose)";
-  hnHits_ = iBook.book2I("nRecHits", fmt::sprintf("%s;Alpaka;CUDA",toRep), 15, -0.5, 14.5, 15, -0.5, 14.5);
+  hnHits_ = iBook.book2I("nRecHits", fmt::sprintf("%s;Reference;Target",toRep), 15, -0.5, 14.5, 15, -0.5, 14.5);
 
   toRep = "Number of all layers per track (quality #geq loose)";
-  hnLayers_ = iBook.book2I("nLayers", fmt::sprintf("%s;Alpaka;CUDA",toRep), 15, -0.5, 14.5, 15, -0.5, 14.5);
+  hnLayers_ = iBook.book2I("nLayers", fmt::sprintf("%s;Reference;Target",toRep), 15, -0.5, 14.5, 15, -0.5, 14.5);
 
   toRep = "Track (quality #geq loose) #chi^{2}/ndof";
-  hchi2_ = iBook.book2I("nChi2ndof", fmt::sprintf("%s;Alpaka;CUDA",toRep), 40, 0., 20., 40, 0., 20.);
+  hchi2_ = iBook.book2I("nChi2ndof", fmt::sprintf("%s;Reference;Target",toRep), 40, 0., 20., 40, 0., 20.);
 
   toRep = "Track (quality #geq loose) charge";
-  hCharge_ = iBook.book2I("charge",fmt::sprintf("%s;Alpaka;CUDA",toRep),3, -1.5, 1.5, 3, -1.5, 1.5);
+  hCharge_ = iBook.book2I("charge",fmt::sprintf("%s;Reference;Target",toRep),3, -1.5, 1.5, 3, -1.5, 1.5);
 
-  hpt_ = iBook.book2I("pt", "Track (quality #geq loose) p_{T} [GeV];Alpaka;CUDA", 200, 0., 200., 200, 0., 200.);
-  hptLogLog_ = make2DIfLog(iBook, true, true, "ptLogLog", "Track (quality #geq loose) p_{T} [GeV];Alpaka;CUDA", 200, log10(0.5), log10(200.), 200, log10(0.5), log10(200.));
-  heta_ = iBook.book2I("eta", "Track (quality #geq loose) #eta;Alpaka;CUDA", 30, -3., 3., 30, -3., 3.);
-  hphi_ = iBook.book2I("phi", "Track (quality #geq loose) #phi;Alpaka;CUDA", 30, -M_PI, M_PI, 30, -M_PI, M_PI);
-  hz_ = iBook.book2I("z", "Track (quality #geq loose) z [cm];Alpaka;CUDA", 30, -30., 30., 30, -30., 30.);
-  htip_ = iBook.book2I("tip", "Track (quality #geq loose) TIP [cm];Alpaka;CUDA", 100, -0.5, 0.5, 100, -0.5, 0.5);
+  hpt_ = iBook.book2I("pt", "Track (quality #geq loose) p_{T} [GeV];Reference;Target", 200, 0., 200., 200, 0., 200.);
+  hptLogLog_ = make2DIfLog(iBook, true, true, "ptLogLog", "Track (quality #geq loose) p_{T} [GeV];Reference;Target", 200, log10(0.5), log10(200.), 200, log10(0.5), log10(200.));
+  heta_ = iBook.book2I("eta", "Track (quality #geq loose) #eta;Reference;Target", 30, -3., 3., 30, -3., 3.);
+  hphi_ = iBook.book2I("phi", "Track (quality #geq loose) #phi;Reference;Target", 30, -M_PI, M_PI, 30, -M_PI, M_PI);
+  hz_ = iBook.book2I("z", "Track (quality #geq loose) z [cm];Reference;Target", 30, -30., 30., 30, -30., 30.);
+  htip_ = iBook.book2I("tip", "Track (quality #geq loose) TIP [cm];Reference;Target", 100, -0.5, 0.5, 100, -0.5, 0.5);
   //1D difference plots
   hptdiffMatched_ = iBook.book1D("ptdiffmatched", " p_{T} diff [GeV] between matched tracks; #Delta p_{T} [GeV]", 60, -30., 30.);
   hCurvdiffMatched_ = iBook.book1D("curvdiffmatched", "q/p_{T} diff [GeV] between matched tracks; #Delta q/p_{T} [GeV]", 60, -30., 30.);
@@ -292,11 +555,11 @@ void SiPixelCompareTracks<T>::bookHistograms(DQMStore::IBooker& iBook,
   hzdiffMatched_ = iBook.book1D("zdiffmatched", " z diff between matched tracks; #Delta z [cm]", 300, -1.5, 1.5);
   htipdiffMatched_ = iBook.book1D("tipdiffmatched", " TIP diff between matched tracks; #Delta TIP [cm]", 300, -1.5, 1.5);
   //2D plots for eff
-  hpt_eta_tkAllAlpaka_ = iBook.book2I("ptetatrkAllAlpaka", "Track (quality #geq loose) on Alpaka; #eta; p_{T} [GeV];", 30, -M_PI, M_PI, 200, 0., 200.);
-  hpt_eta_tkAllAlpakaMatched_ = iBook.book2I("ptetatrkAllAlpakamatched", "Track (quality #geq loose) on Alpaka matched to CUDA track; #eta; p_{T} [GeV];", 30, -M_PI, M_PI, 200, 0., 200.);
+  hpt_eta_tkAllRef_ = iBook.book2I("ptetatrkAllReference", "Track (quality #geq loose) on Reference; #eta; p_{T} [GeV];", 30, -M_PI, M_PI, 200, 0., 200.);
+  hpt_eta_tkAllRefMatched_ = iBook.book2I("ptetatrkAllReferencematched", "Track (quality #geq loose) on Reference matched to Target track; #eta; p_{T} [GeV];", 30, -M_PI, M_PI, 200, 0., 200.);
 
-  hphi_z_tkAllAlpaka_ = iBook.book2I("phiztrkAllAlpaka", "Track (quality #geq loose) on Alpaka; #phi; z [cm];",  30, -M_PI, M_PI, 30, -30., 30.);
-  hphi_z_tkAllAlpakaMatched_ = iBook.book2I("phiztrkAllAlpakamatched", "Track (quality #geq loose) on Alpaka; #phi; z [cm];", 30, -M_PI, M_PI, 30, -30., 30.);
+  hphi_z_tkAllRef_ = iBook.book2I("phiztrkAllReference", "Track (quality #geq loose) on Reference; #phi; z [cm];",  30, -M_PI, M_PI, 30, -30., 30.);
+  hphi_z_tkAllRefMatched_ = iBook.book2I("phiztrkAllReferencematched", "Track (quality #geq loose) on Reference; #phi; z [cm];", 30, -M_PI, M_PI, 30, -30., 30.);
 
 }
 
@@ -304,12 +567,15 @@ template<typename T>
 void SiPixelCompareTracks<T>::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   // monitorpixelTrackSoA
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("pixelTrackSrcAlpaka", edm::InputTag("pixelTracksAlpakaSerial")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelTrackSrcCUDA", edm::InputTag("pixelTracksSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<std::string>("topFolderName", "SiPixelHeterogeneous/PixelTrackCompareAlpakavsCUDACPU"); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<edm::InputTag>("pixelTrackReferenceCUDA", edm::InputTag("pixelTracksSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<edm::InputTag>("pixelTrackTargetCUDA", edm::InputTag("pixelTracksSoA@cuda")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<edm::InputTag>("pixelTrackReferenceAlpaka", edm::InputTag("pixelTracksSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<edm::InputTag>("pixelTrackTargetAlpaka", edm::InputTag("pixelTracksSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<std::string>("topFolderName", "SiPixelHeterogeneous/PixelTrackCompareGPUvsCPU"); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
   desc.add<bool>("useQualityCut", true);
   desc.add<std::string>("minQuality", "loose");
   desc.add<double>("deltaR2cut", 0.04);
+  desc.add<std::string>("case", "CUDA");
   descriptions.addWithDefaultLabel(desc);
 }
 

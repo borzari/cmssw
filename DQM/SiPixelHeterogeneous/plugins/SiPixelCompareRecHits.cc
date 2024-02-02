@@ -85,9 +85,7 @@ SiPixelCompareRecHits<T>::SiPixelCompareRecHits(const edm::ParameterSet& iConfig
       tokenSoAHitsTargetAlpaka_(consumes(iConfig.getParameter<edm::InputTag>("pixelHitsTargetAlpaka"))),
       topFolderName_(iConfig.getParameter<std::string>("topFolderName")),
       mind2cut_(iConfig.getParameter<double>("minD2cut")),
-      case_(iConfig.getParameter<std::string>("case")) {
-
-      }
+      case_(iConfig.getParameter<std::string>("case")) {}
 
 //
 // Begin Run
