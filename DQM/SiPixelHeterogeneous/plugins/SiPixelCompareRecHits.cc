@@ -118,10 +118,6 @@ void SiPixelCompareRecHits<T>::analyzeSeparate(U tokenRef, V tokenTar, const edm
   auto const& rhsoaRef = *rhsoaHandleRef;
   auto const& rhsoaTar = *rhsoaHandleTar;
 
-  std::cout << case_ << std::endl;
-  std::cout << "Reference: " << typeid(rhsoaRef).name() << std::endl;
-  std::cout << "Target: " << typeid(rhsoaTar).name() << std::endl;
-
   auto const& soa2dRef = rhsoaRef.const_view();
   auto const& soa2dTar = rhsoaTar.const_view();
 

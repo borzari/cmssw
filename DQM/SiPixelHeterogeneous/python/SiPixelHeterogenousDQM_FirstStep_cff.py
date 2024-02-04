@@ -218,15 +218,17 @@ siPixelPhase1CompareTrackSoAAlpakavsCUDAGPU = siPixelPhase1CompareTracks.clone(
 )
 
 siPixelCompareVertexSoAAlpakavsCUDACPU = siPixelCompareVertices.clone(
-    pixelVertexSrcAlpaka = cms.InputTag("pixelVerticesAlpakaSerial"),
-    pixelVertexSrcCUDA = cms.InputTag("pixelVerticesSoA@cpu"),
-    topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexCompareAlpakavsCUDACPU')
+    pixelVertexReferenceAlpaka = cms.InputTag("pixelVerticesAlpakaSerial"),
+    pixelVertexTargetCUDA = cms.InputTag("pixelVerticesSoA@cpu"),
+    topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexCompareAlpakavsCUDASerial'),
+    case = cms.string("AlpakavsCUDA")
 )
 
 siPixelCompareVertexSoAAlpakavsCUDAGPU = siPixelCompareVertices.clone(
-    pixelVertexSrcAlpaka = cms.InputTag("pixelVerticesAlpaka"),
-    pixelVertexSrcCUDA = cms.InputTag("pixelVerticesSoA@cuda"),
-    topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexCompareAlpakavsCUDAGPU')
+    pixelVertexReferenceAlpaka = cms.InputTag("pixelVerticesAlpaka"),
+    pixelVertexTargetCUDA = cms.InputTag("pixelVerticesSoA@cuda"),
+    topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexCompareAlpakavsCUDADevice'),
+    case = cms.string("AlpakavsCUDA")
 )
 
 # Run-3 sequence
