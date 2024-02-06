@@ -30,6 +30,9 @@ public:
   void dqmBeginRun(const edm::Run&, const edm::EventSetup&) override;
   void bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun, edm::EventSetup const& iSetup) override;
   void analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+  // TODO: remove analyzeSeparate function below once the CUDA code is removed from CMSSW; it was implemented
+  // to make the DQM compare modules work for every case: CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA;
+  // the content of analyzeSeparate can be copied to analyze once the CUDA code is removed
   template <typename U, typename V>
   void analyzeSeparate(U tokenRef, V tokenTar, const edm::Event& iEvent);
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
@@ -37,12 +40,17 @@ public:
 private:
   const edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> geomToken_;
   const edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> topoToken_;
+  // CUDA and Alpaka tokens are implemented to make the DQM compare modules work for every case:
+  // CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA; CUDA tokens must be removed together with rest of CUDA code
   const edm::EDGetTokenT<HitsCUDA> tokenSoAHitsReferenceCUDA_;  //produced on Host or on Device
-  const edm::EDGetTokenT<HitsCUDA> tokenSoAHitsTargetCUDA_;  //produced on Host or on Device
-  const edm::EDGetTokenT<HitsAlpaka> tokenSoAHitsReferenceAlpaka_;    //these two are both on Host but originally they have been
-  const edm::EDGetTokenT<HitsAlpaka> tokenSoAHitsTargetAlpaka_;    //these two are both on Host but originally they have been
+  const edm::EDGetTokenT<HitsCUDA> tokenSoAHitsTargetCUDA_;     //produced on Host or on Device
+  const edm::EDGetTokenT<HitsAlpaka>
+      tokenSoAHitsReferenceAlpaka_;  //these two are both on Host but originally they have been
+  const edm::EDGetTokenT<HitsAlpaka>
+      tokenSoAHitsTargetAlpaka_;  //these two are both on Host but originally they have been
   const std::string topFolderName_;
   const float mind2cut_;
+  // String case_ is used to differentiate between different comparisons; must be removed together with rest of CUDA code
   const std::string case_;
   static constexpr uint32_t invalidHit_ = std::numeric_limits<uint32_t>::max();
   static constexpr float micron_ = 10000.;
@@ -99,7 +107,6 @@ void SiPixelCompareRecHits<T>::dqmBeginRun(const edm::Run& iRun, const edm::Even
 template <typename T>
 template <typename U, typename V>
 void SiPixelCompareRecHits<T>::analyzeSeparate(U tokenRef, V tokenTar, const edm::Event& iEvent) {
-
   const auto& rhsoaHandleRef = iEvent.getHandle(tokenRef);
   const auto& rhsoaHandleTar = iEvent.getHandle(tokenTar);
 
@@ -186,7 +193,6 @@ void SiPixelCompareRecHits<T>::analyzeSeparate(U tokenRef, V tokenTar, const edm
         break;
     }
   }
-
 }
 
 //
@@ -194,11 +200,18 @@ void SiPixelCompareRecHits<T>::analyzeSeparate(U tokenRef, V tokenTar, const edm
 //
 template <typename T>
 void SiPixelCompareRecHits<T>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  
-  if (case_ == "CUDA") analyzeSeparate<const edm::EDGetTokenT<HitsCUDA>, const edm::EDGetTokenT<HitsCUDA>>(tokenSoAHitsReferenceCUDA_, tokenSoAHitsTargetCUDA_, iEvent);
-  if (case_ == "Alpaka") analyzeSeparate<const edm::EDGetTokenT<HitsAlpaka>, const edm::EDGetTokenT<HitsAlpaka>>(tokenSoAHitsReferenceAlpaka_, tokenSoAHitsTargetAlpaka_, iEvent);
-  if (case_ == "AlpakavsCUDA") analyzeSeparate<const edm::EDGetTokenT<HitsAlpaka>, const edm::EDGetTokenT<HitsCUDA>>(tokenSoAHitsReferenceAlpaka_, tokenSoAHitsTargetCUDA_, iEvent);
-
+  // TODO: remove analyzeSeparate function below once the CUDA code is removed from CMSSW; it was implemented
+  // to make the DQM compare modules work for every case: CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA;
+  // the content of analyzeSeparate can be copied to analyze once the CUDA code is removed
+  if (case_ == "CUDA")
+    analyzeSeparate<const edm::EDGetTokenT<HitsCUDA>, const edm::EDGetTokenT<HitsCUDA>>(
+        tokenSoAHitsReferenceCUDA_, tokenSoAHitsTargetCUDA_, iEvent);
+  if (case_ == "Alpaka")
+    analyzeSeparate<const edm::EDGetTokenT<HitsAlpaka>, const edm::EDGetTokenT<HitsAlpaka>>(
+        tokenSoAHitsReferenceAlpaka_, tokenSoAHitsTargetAlpaka_, iEvent);
+  if (case_ == "AlpakavsCUDA")
+    analyzeSeparate<const edm::EDGetTokenT<HitsAlpaka>, const edm::EDGetTokenT<HitsCUDA>>(
+        tokenSoAHitsReferenceAlpaka_, tokenSoAHitsTargetCUDA_, iEvent);
 }
 
 //
@@ -206,8 +219,8 @@ void SiPixelCompareRecHits<T>::analyze(const edm::Event& iEvent, const edm::Even
 //
 template <typename T>
 void SiPixelCompareRecHits<T>::bookHistograms(DQMStore::IBooker& iBook,
-                                                       edm::Run const& iRun,
-                                                       edm::EventSetup const& iSetup) {
+                                              edm::Run const& iRun,
+                                              edm::EventSetup const& iSetup) {
   iBook.cd();
   iBook.setCurrentFolder(topFolderName_);
 
@@ -251,11 +264,14 @@ template<typename T>
 void SiPixelCompareRecHits<T>::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   // monitorpixelRecHitsSoAAlpaka
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("pixelHitsReferenceCUDA", edm::InputTag("siPixelRecHitsPreSplittingSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelHitsTargetCUDA", edm::InputTag("siPixelRecHitsPreSplittingSoA@cuda")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelHitsReferenceAlpaka", edm::InputTag("siPixelRecHitsPreSplittingSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelHitsTargetAlpaka", edm::InputTag("siPixelRecHitsPreSplittingSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<std::string>("topFolderName", "SiPixelHeterogeneous/PixelRecHitsCompareGPUvsCPU"); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  // The default case for the comparison is still CUDA vs CUDA; the {Reference|Target}Alpaka
+  // input tags are set with "placeholders"; the specific tags for the other comparisons are defined
+  // in DQM/SiPixelHeterogeneous/python/SiPixelHeterogeneousDQM_FirstStep_cff.py
+  desc.add<edm::InputTag>("pixelHitsReferenceCUDA", edm::InputTag("siPixelRecHitsPreSplittingSoA@cpu"));
+  desc.add<edm::InputTag>("pixelHitsTargetCUDA", edm::InputTag("siPixelRecHitsPreSplittingSoA@cuda"));
+  desc.add<edm::InputTag>("pixelHitsReferenceAlpaka", edm::InputTag("siPixelRecHitsPreSplittingSoA@cpu"));
+  desc.add<edm::InputTag>("pixelHitsTargetAlpaka", edm::InputTag("siPixelRecHitsPreSplittingSoA@cpu"));
+  desc.add<std::string>("topFolderName", "SiPixelHeterogeneous/PixelRecHitsCompareGPUvsCPU");
   desc.add<double>("minD2cut", 0.0001);
   desc.add<std::string>("case", "CUDA");
   descriptions.addWithDefaultLabel(desc);

@@ -29,11 +29,16 @@ public:
   ~SiPixelCompareVertices() override = default;
   void bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun, edm::EventSetup const& iSetup) override;
   void analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+  // TODO: remove analyzeSeparate function below once the CUDA code is removed from CMSSW; it was implemented
+  // to make the DQM compare modules work for every case: CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA;
+  // the content of analyzeSeparate can be copied to analyze once the CUDA code is removed
   template <typename U, typename V>
   void analyzeSeparate(U tokenRef, V tokenTar, const edm::Event& iEvent);
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 private:
+  // CUDA and Alpaka tokens are implemented to make the DQM compare modules work for every case:
+  // CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA; CUDA tokens must be removed together with rest of CUDA code
   const edm::EDGetTokenT<ZVertexSoAHost> tokenSoAVertexReferenceCUDA_;
   const edm::EDGetTokenT<ZVertexSoAHost> tokenSoAVertexTargetCUDA_;
   const edm::EDGetTokenT<ZVertexHost> tokenSoAVertexReferenceAlpaka_;
@@ -41,6 +46,7 @@ private:
   const edm::EDGetTokenT<reco::BeamSpot> tokenBeamSpot_;
   const std::string topFolderName_;
   const float dzCut_;
+  // String case_ is used to differentiate between different comparisons; must be removed together with rest of CUDA code
   const std::string case_;
   MonitorElement* hnVertex_;
   MonitorElement* hx_;
@@ -60,10 +66,13 @@ private:
 //
 
 SiPixelCompareVertices::SiPixelCompareVertices(const edm::ParameterSet& iConfig)
-    : tokenSoAVertexReferenceCUDA_(consumes<ZVertexSoAHost>(iConfig.getParameter<edm::InputTag>("pixelVertexReferenceCUDA"))),
+    : tokenSoAVertexReferenceCUDA_(
+          consumes<ZVertexSoAHost>(iConfig.getParameter<edm::InputTag>("pixelVertexReferenceCUDA"))),
       tokenSoAVertexTargetCUDA_(consumes<ZVertexSoAHost>(iConfig.getParameter<edm::InputTag>("pixelVertexTargetCUDA"))),
-      tokenSoAVertexReferenceAlpaka_(consumes<ZVertexHost>(iConfig.getParameter<edm::InputTag>("pixelVertexReferenceAlpaka"))),
-      tokenSoAVertexTargetAlpaka_(consumes<ZVertexHost>(iConfig.getParameter<edm::InputTag>("pixelVertexTargetAlpaka"))),
+      tokenSoAVertexReferenceAlpaka_(
+          consumes<ZVertexHost>(iConfig.getParameter<edm::InputTag>("pixelVertexReferenceAlpaka"))),
+      tokenSoAVertexTargetAlpaka_(
+          consumes<ZVertexHost>(iConfig.getParameter<edm::InputTag>("pixelVertexTargetAlpaka"))),
       tokenBeamSpot_(consumes<reco::BeamSpot>(iConfig.getParameter<edm::InputTag>("beamSpotSrc"))),
       topFolderName_(iConfig.getParameter<std::string>("topFolderName")),
       dzCut_(iConfig.getParameter<double>("dzCut")),
@@ -71,7 +80,6 @@ SiPixelCompareVertices::SiPixelCompareVertices(const edm::ParameterSet& iConfig)
 
 template <typename U, typename V>
 void SiPixelCompareVertices::analyzeSeparate(U tokenRef, V tokenTar, const edm::Event& iEvent) {
-
   const auto& vsoaHandleRef = iEvent.getHandle(tokenRef);
   const auto& vsoaHandleTar = iEvent.getHandle(tokenTar);
 
@@ -159,99 +167,26 @@ void SiPixelCompareVertices::analyzeSeparate(U tokenRef, V tokenTar, const edm::
 // -- Analyze
 //
 void SiPixelCompareVertices::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
-
-  if (case_ == "CUDA") analyzeSeparate<const edm::EDGetTokenT<ZVertexSoAHost>, const edm::EDGetTokenT<ZVertexSoAHost>>(tokenSoAVertexReferenceCUDA_, tokenSoAVertexTargetCUDA_, iEvent);
-  if (case_ == "Alpaka") analyzeSeparate<const edm::EDGetTokenT<ZVertexHost>, const edm::EDGetTokenT<ZVertexHost>>(tokenSoAVertexReferenceAlpaka_, tokenSoAVertexTargetAlpaka_, iEvent);
-  if (case_ == "AlpakavsCUDA") analyzeSeparate<const edm::EDGetTokenT<ZVertexHost>, const edm::EDGetTokenT<ZVertexSoAHost>>(tokenSoAVertexReferenceAlpaka_, tokenSoAVertexTargetCUDA_, iEvent);
-
-  // const auto& vsoaHandleAlpaka = iEvent.getHandle(tokenSoAVertexAlpaka_);
-  // const auto& vsoaHandleCUDA = iEvent.getHandle(tokenSoAVertexCUDA_);
-  // if (not vsoaHandleAlpaka or not vsoaHandleCUDA) {
-  //   edm::LogWarning out("SiPixelCompareVertices");
-  //   if (not vsoaHandleAlpaka) {
-  //     out << "reference (Alpaka) vertices not found; ";
-  //   }
-  //   if (not vsoaHandleCUDA) {
-  //     out << "target (CUDA) vertices not found; ";
-  //   }
-  //   out << "the comparison will not run.";
-  //   return;
-  // }
-
-  // auto const& vsoaAlpaka = *vsoaHandleAlpaka;
-  // int nVerticesAlpaka = vsoaAlpaka.view().nvFinal();
-  // auto const& vsoaCUDA = *vsoaHandleCUDA;
-  // int nVerticesCUDA = vsoaCUDA.view().nvFinal();
-
-  // auto bsHandle = iEvent.getHandle(tokenBeamSpot_);
-  // float x0 = 0., y0 = 0., z0 = 0., dxdz = 0., dydz = 0.;
-  // if (!bsHandle.isValid()) {
-  //   edm::LogWarning("SiPixelCompareVertices") << "No beamspot found. returning vertexes with (0,0,Z) ";
-  // } else {
-  //   const reco::BeamSpot& bs = *bsHandle;
-  //   x0 = bs.x0();
-  //   y0 = bs.y0();
-  //   z0 = bs.z0();
-  //   dxdz = bs.dxdz();
-  //   dydz = bs.dydz();
-  // }
-
-  // for (int ivc = 0; ivc < nVerticesAlpaka; ivc++) {
-  //   auto sic = vsoaAlpaka.view()[ivc].sortInd();
-  //   auto zc = vsoaAlpaka.view()[sic].zv();
-  //   auto xc = x0 + dxdz * zc;
-  //   auto yc = y0 + dydz * zc;
-  //   zc += z0;
-
-  //   auto ndofAlpaka = vsoaAlpaka.view()[sic].ndof();
-  //   auto chi2Alpaka = vsoaAlpaka.view()[sic].chi2();
-
-  //   const int32_t notFound = -1;
-  //   int32_t closestVtxidx = notFound;
-  //   float mindz = dzCut_;
-
-  //   for (int ivg = 0; ivg < nVerticesCUDA; ivg++) {
-  //     auto sig = vsoaCUDA.view()[ivg].sortInd();
-  //     auto zgc = vsoaCUDA.view()[sig].zv() + z0;
-  //     auto zDist = std::abs(zc - zgc);
-  //     //insert some matching condition
-  //     if (zDist > dzCut_)
-  //       continue;
-  //     if (mindz > zDist) {
-  //       mindz = zDist;
-  //       closestVtxidx = sig;
-  //     }
-  //   }
-  //   if (closestVtxidx == notFound)
-  //     continue;
-
-  //   auto zg = vsoaCUDA.view()[closestVtxidx].zv();
-  //   auto xg = x0 + dxdz * zg;
-  //   auto yg = y0 + dydz * zg;
-  //   zg += z0;
-  //   auto ndofCUDA = vsoaCUDA.view()[closestVtxidx].ndof();
-  //   auto chi2CUDA = vsoaCUDA.view()[closestVtxidx].chi2();
-
-  //   hx_->Fill(xc - x0, xg - x0);
-  //   hy_->Fill(yc - y0, yg - y0);
-  //   hz_->Fill(zc, zg);
-  //   hxdiff_->Fill(xc - xg);
-  //   hydiff_->Fill(yc - yg);
-  //   hzdiff_->Fill(zc - zg);
-  //   hchi2_->Fill(chi2Alpaka, chi2CUDA);
-  //   hchi2oNdof_->Fill(chi2Alpaka / ndofAlpaka, chi2CUDA / ndofCUDA);
-  //   hptv2_->Fill(vsoaAlpaka.view()[sic].ptv2(), vsoaCUDA.view()[closestVtxidx].ptv2());
-  //   hntrks_->Fill(ndofAlpaka + 1, ndofCUDA + 1);
-  // }
-  // hnVertex_->Fill(nVerticesAlpaka, nVerticesCUDA);
+  // TODO: remove analyzeSeparate function below once the CUDA code is removed from CMSSW; it was implemented
+  // to make the DQM compare modules work for every case: CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA;
+  // the content of analyzeSeparate can be copied to analyze once the CUDA code is removed
+  if (case_ == "CUDA")
+    analyzeSeparate<const edm::EDGetTokenT<ZVertexSoAHost>, const edm::EDGetTokenT<ZVertexSoAHost>>(
+        tokenSoAVertexReferenceCUDA_, tokenSoAVertexTargetCUDA_, iEvent);
+  if (case_ == "Alpaka")
+    analyzeSeparate<const edm::EDGetTokenT<ZVertexHost>, const edm::EDGetTokenT<ZVertexHost>>(
+        tokenSoAVertexReferenceAlpaka_, tokenSoAVertexTargetAlpaka_, iEvent);
+  if (case_ == "AlpakavsCUDA")
+    analyzeSeparate<const edm::EDGetTokenT<ZVertexHost>, const edm::EDGetTokenT<ZVertexSoAHost>>(
+        tokenSoAVertexReferenceAlpaka_, tokenSoAVertexTargetCUDA_, iEvent);
 }
 
 //
 // -- Book Histograms
 //
 void SiPixelCompareVertices::bookHistograms(DQMStore::IBooker& ibooker,
-                                                   edm::Run const& iRun,
-                                                   edm::EventSetup const& iSetup) {
+                                            edm::Run const& iRun,
+                                            edm::EventSetup const& iSetup) {
   ibooker.cd();
   ibooker.setCurrentFolder(topFolderName_);
 
@@ -274,12 +209,15 @@ void SiPixelCompareVertices::bookHistograms(DQMStore::IBooker& ibooker,
 void SiPixelCompareVertices::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   // monitorpixelVertexSoA
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("pixelVertexReferenceAlpaka", edm::InputTag("pixelVerticesSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelVertexReferenceCUDA", edm::InputTag("pixelVerticesSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelVertexTargetAlpaka", edm::InputTag("pixelVerticesSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelVertexTargetCUDA", edm::InputTag("pixelVerticesSoA@cuda")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  // The default case for the comparison is still CUDA vs CUDA; the {Reference|Target}Alpaka
+  // input tags are set with "placeholders"; the specific tags for the other comparisons are defined
+  // in DQM/SiPixelHeterogeneous/python/SiPixelHeterogeneousDQM_FirstStep_cff.py
+  desc.add<edm::InputTag>("pixelVertexReferenceAlpaka", edm::InputTag("pixelVerticesSoA@cpu"));
+  desc.add<edm::InputTag>("pixelVertexReferenceCUDA", edm::InputTag("pixelVerticesSoA@cpu"));
+  desc.add<edm::InputTag>("pixelVertexTargetAlpaka", edm::InputTag("pixelVerticesSoA@cpu"));
+  desc.add<edm::InputTag>("pixelVertexTargetCUDA", edm::InputTag("pixelVerticesSoA@cuda"));
   desc.add<edm::InputTag>("beamSpotSrc", edm::InputTag("offlineBeamSpot"));
-  desc.add<std::string>("topFolderName", "SiPixelHeterogeneous/PixelVertexCompareAlpakavsCUDACPU"); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  desc.add<std::string>("topFolderName", "SiPixelHeterogeneous/PixelVertexCompareGPUvsCPU");
   desc.add<double>("dzCut", 1.);
   desc.add<std::string>("case", "CUDA");
   descriptions.addWithDefaultLabel(desc);

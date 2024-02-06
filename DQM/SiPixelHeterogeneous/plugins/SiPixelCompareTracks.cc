@@ -79,14 +79,23 @@ public:
   ~SiPixelCompareTracks() override = default;
   void bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun, edm::EventSetup const& iSetup) override;
   void analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) override;
-  void analyzeCUDA(const edm::EDGetTokenT<PixelTrackSoACUDA> tokenRef, const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar, const edm::Event& iEvent);
-  void analyzeAlpaka(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef, const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenTar, const edm::Event& iEvent);
-  void analyzeAlpakavsCUDA(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef, const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar, const edm::Event& iEvent);
+  // TODO: remove analyze* functions below once the CUDA code is removed from CMSSW; they were implemented
+  // to make the DQM compare modules work for every case: CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA;
+  // the content of analyzeAlpaka can be copied to analyze once the CUDA code is removed
+  void analyzeCUDA(const edm::EDGetTokenT<PixelTrackSoACUDA> tokenRef,
+                   const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar,
+                   const edm::Event& iEvent);
+  void analyzeAlpaka(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef,
+                     const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenTar,
+                     const edm::Event& iEvent);
+  void analyzeAlpakavsCUDA(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef,
+                           const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar,
+                           const edm::Event& iEvent);
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 private:
-  // const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenSoATrackAlpaka_;
-  // const edm::EDGetTokenT<PixelTrackSoACUDA> tokenSoATrackCUDA_;
+  // CUDA and Alpaka tokens are implemented to make the DQM compare modules work for every case:
+  // CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA; CUDA tokens must be removed together with rest of CUDA code
   const edm::EDGetTokenT<PixelTrackSoACUDA> tokenSoATrackReferenceCUDA_;
   const edm::EDGetTokenT<PixelTrackSoACUDA> tokenSoATrackTargetCUDA_;
   const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenSoATrackReferenceAlpaka_;
@@ -95,6 +104,7 @@ private:
   const bool useQualityCut_;
   const reco::pixelTrack::Quality minQuality_;
   const float dr2cut_;
+  // String case_ is used to differentiate between different comparisons; must be removed together with rest of CUDA code
   const std::string case_;
   MonitorElement* hnTracks_;
   MonitorElement* hnLooseAndAboveTracks_;
@@ -137,10 +147,14 @@ private:
 
 template <typename T>
 SiPixelCompareTracks<T>::SiPixelCompareTracks(const edm::ParameterSet& iConfig)
-    : tokenSoATrackReferenceCUDA_(consumes<PixelTrackSoACUDA>(iConfig.getParameter<edm::InputTag>("pixelTrackReferenceCUDA"))),
-      tokenSoATrackTargetCUDA_(consumes<PixelTrackSoACUDA>(iConfig.getParameter<edm::InputTag>("pixelTrackTargetCUDA"))),
-      tokenSoATrackReferenceAlpaka_(consumes<PixelTrackSoAAlpaka>(iConfig.getParameter<edm::InputTag>("pixelTrackReferenceAlpaka"))),
-      tokenSoATrackTargetAlpaka_(consumes<PixelTrackSoAAlpaka>(iConfig.getParameter<edm::InputTag>("pixelTrackTargetAlpaka"))),
+    : tokenSoATrackReferenceCUDA_(
+          consumes<PixelTrackSoACUDA>(iConfig.getParameter<edm::InputTag>("pixelTrackReferenceCUDA"))),
+      tokenSoATrackTargetCUDA_(
+          consumes<PixelTrackSoACUDA>(iConfig.getParameter<edm::InputTag>("pixelTrackTargetCUDA"))),
+      tokenSoATrackReferenceAlpaka_(
+          consumes<PixelTrackSoAAlpaka>(iConfig.getParameter<edm::InputTag>("pixelTrackReferenceAlpaka"))),
+      tokenSoATrackTargetAlpaka_(
+          consumes<PixelTrackSoAAlpaka>(iConfig.getParameter<edm::InputTag>("pixelTrackTargetAlpaka"))),
       topFolderName_(iConfig.getParameter<std::string>("topFolderName")),
       useQualityCut_(iConfig.getParameter<bool>("useQualityCut")),
       minQuality_(reco::pixelTrack::qualityByName(iConfig.getParameter<std::string>("minQuality"))),
@@ -148,8 +162,9 @@ SiPixelCompareTracks<T>::SiPixelCompareTracks(const edm::ParameterSet& iConfig)
       case_(iConfig.getParameter<std::string>("case")) {}
 
 template <typename T>
-void SiPixelCompareTracks<T>::analyzeCUDA(const edm::EDGetTokenT<PixelTrackSoACUDA> tokenRef, const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar, const edm::Event& iEvent) {
-
+void SiPixelCompareTracks<T>::analyzeCUDA(const edm::EDGetTokenT<PixelTrackSoACUDA> tokenRef,
+                                          const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar,
+                                          const edm::Event& iEvent) {
   using helper = TracksUtilities<T>;
 
   const auto& tsoaHandleRef = iEvent.getHandle(tokenRef);
@@ -190,7 +205,7 @@ void SiPixelCompareTracks<T>::analyzeCUDA(const edm::EDGetTokenT<PixelTrackSoACU
     if (!(tsoaTar.view()[jt].pt() > 0.))
       continue;
     nTracksTar++;
-    if (useQualityCut_ && (reco::pixelTrack::Quality) qualityTar[jt] < minQuality_)
+    if (useQualityCut_ && (reco::pixelTrack::Quality)qualityTar[jt] < minQuality_)
       continue;
     nLooseAndAboveTracksTar++;
     looseTrkidxTar.emplace_back(jt);
@@ -212,7 +227,7 @@ void SiPixelCompareTracks<T>::analyzeCUDA(const edm::EDGetTokenT<PixelTrackSoACU
     if (!(ptRef > 0.))
       continue;
     nTracksRef++;
-    if (useQualityCut_ && (reco::pixelTrack::Quality) qualityRef[it] < minQuality_)
+    if (useQualityCut_ && (reco::pixelTrack::Quality)qualityRef[it] < minQuality_)
       continue;
     nLooseAndAboveTracksRef++;
     //Now loop over loose Tar trk and find the closest in DeltaR//do we need pt cut?
@@ -261,12 +276,12 @@ void SiPixelCompareTracks<T>::analyzeCUDA(const edm::EDGetTokenT<PixelTrackSoACU
   hnTracks_->Fill(nTracksRef, nTracksTar);
   hnLooseAndAboveTracks_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksTar);
   hnLooseAndAboveTracks_matched_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksRef_matchedTar);
-
 }
 
 template <typename T>
-void SiPixelCompareTracks<T>::analyzeAlpaka(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef, const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenTar, const edm::Event& iEvent) {
-
+void SiPixelCompareTracks<T>::analyzeAlpaka(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef,
+                                            const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenTar,
+                                            const edm::Event& iEvent) {
   using helper = reco::TracksUtilities<T>;
 
   const auto& tsoaHandleRef = iEvent.getHandle(tokenRef);
@@ -378,12 +393,12 @@ void SiPixelCompareTracks<T>::analyzeAlpaka(const edm::EDGetTokenT<PixelTrackSoA
   hnTracks_->Fill(nTracksRef, nTracksTar);
   hnLooseAndAboveTracks_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksTar);
   hnLooseAndAboveTracks_matched_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksRef_matchedTar);
-
 }
 
 template <typename T>
-void SiPixelCompareTracks<T>::analyzeAlpakavsCUDA(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef, const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar, const edm::Event& iEvent) {
-
+void SiPixelCompareTracks<T>::analyzeAlpakavsCUDA(const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenRef,
+                                                  const edm::EDGetTokenT<PixelTrackSoACUDA> tokenTar,
+                                                  const edm::Event& iEvent) {
   using helperAlpaka = reco::TracksUtilities<T>;
   using helperCUDA = TracksUtilities<T>;
 
@@ -425,7 +440,7 @@ void SiPixelCompareTracks<T>::analyzeAlpakavsCUDA(const edm::EDGetTokenT<PixelTr
     if (!(tsoaTar.view()[jt].pt() > 0.))
       continue;
     nTracksTar++;
-    if (useQualityCut_ && (reco::pixelTrack::Quality) qualityTar[jt] < minQuality_)
+    if (useQualityCut_ && (reco::pixelTrack::Quality)qualityTar[jt] < minQuality_)
       continue;
     nLooseAndAboveTracksTar++;
     looseTrkidxTar.emplace_back(jt);
@@ -496,7 +511,6 @@ void SiPixelCompareTracks<T>::analyzeAlpakavsCUDA(const edm::EDGetTokenT<PixelTr
   hnTracks_->Fill(nTracksRef, nTracksTar);
   hnLooseAndAboveTracks_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksTar);
   hnLooseAndAboveTracks_matched_->Fill(nLooseAndAboveTracksRef, nLooseAndAboveTracksRef_matchedTar);
-
 }
 
 //
@@ -504,11 +518,15 @@ void SiPixelCompareTracks<T>::analyzeAlpakavsCUDA(const edm::EDGetTokenT<PixelTr
 //
 template <typename T>
 void SiPixelCompareTracks<T>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
-
-  if (case_ == "CUDA") analyzeCUDA(tokenSoATrackReferenceCUDA_, tokenSoATrackTargetCUDA_, iEvent);
-  if (case_ == "Alpaka") analyzeAlpaka(tokenSoATrackReferenceAlpaka_, tokenSoATrackTargetAlpaka_, iEvent);
-  if (case_ == "AlpakavsCUDA") analyzeAlpakavsCUDA(tokenSoATrackReferenceAlpaka_, tokenSoATrackTargetCUDA_, iEvent);
-
+  // TODO: remove analyze* functions below once the CUDA code is removed from CMSSW; they were implemented
+  // to make the DQM compare modules work for every case: CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA;
+  // the content of analyzeAlpaka can be copied to analyze once the CUDA code is removed
+  if (case_ == "CUDA")
+    analyzeCUDA(tokenSoATrackReferenceCUDA_, tokenSoATrackTargetCUDA_, iEvent);
+  if (case_ == "Alpaka")
+    analyzeAlpaka(tokenSoATrackReferenceAlpaka_, tokenSoATrackTargetAlpaka_, iEvent);
+  if (case_ == "AlpakavsCUDA")
+    analyzeAlpakavsCUDA(tokenSoATrackReferenceAlpaka_, tokenSoATrackTargetCUDA_, iEvent);
 }
 
 //
@@ -516,8 +534,8 @@ void SiPixelCompareTracks<T>::analyze(const edm::Event& iEvent, const edm::Event
 //
 template <typename T>
 void SiPixelCompareTracks<T>::bookHistograms(DQMStore::IBooker& iBook,
-                                                     edm::Run const& iRun,
-                                                     edm::EventSetup const& iSetup) {
+                                             edm::Run const& iRun,
+                                             edm::EventSetup const& iSetup) {
   iBook.cd();
   iBook.setCurrentFolder(topFolderName_);
 
@@ -567,11 +585,14 @@ template<typename T>
 void SiPixelCompareTracks<T>::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   // monitorpixelTrackSoA
   edm::ParameterSetDescription desc;
-  desc.add<edm::InputTag>("pixelTrackReferenceCUDA", edm::InputTag("pixelTracksSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelTrackTargetCUDA", edm::InputTag("pixelTracksSoA@cuda")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelTrackReferenceAlpaka", edm::InputTag("pixelTracksSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<edm::InputTag>("pixelTrackTargetAlpaka", edm::InputTag("pixelTracksSoA@cpu")); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
-  desc.add<std::string>("topFolderName", "SiPixelHeterogeneous/PixelTrackCompareGPUvsCPU"); // This is changed in the cfg instances to also compare AlpakavsCUDA on GPU/Device
+  // The default case for the comparison is still CUDA vs CUDA; the {Reference|Target}Alpaka
+  // input tags are set with "placeholders"; the specific tags for the other comparisons are defined
+  // in DQM/SiPixelHeterogeneous/python/SiPixelHeterogeneousDQM_FirstStep_cff.py
+  desc.add<edm::InputTag>("pixelTrackReferenceCUDA", edm::InputTag("pixelTracksSoA@cpu"));
+  desc.add<edm::InputTag>("pixelTrackTargetCUDA", edm::InputTag("pixelTracksSoA@cuda"));
+  desc.add<edm::InputTag>("pixelTrackReferenceAlpaka", edm::InputTag("pixelTracksSoA@cpu"));
+  desc.add<edm::InputTag>("pixelTrackTargetAlpaka", edm::InputTag("pixelTracksSoA@cpu"));
+  desc.add<std::string>("topFolderName", "SiPixelHeterogeneous/PixelTrackCompareGPUvsCPU");
   desc.add<bool>("useQualityCut", true);
   desc.add<std::string>("minQuality", "loose");
   desc.add<double>("deltaR2cut", 0.04);
