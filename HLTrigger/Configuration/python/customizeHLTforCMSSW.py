@@ -246,10 +246,13 @@ def customizeHLTforCMSSW(process, menuType="GRun"):
     process = customiseForOffline(process)
 
     # Alpaka HLT
-    from Configuration.ProcessModifiers.alpaka_cff import alpaka 
+    from Configuration.ProcessModifiers.alpaka_cff import alpaka
+    from Configuration.ProcessModifiers.alpakaCUDAValidationPixel_cff import alpakaCUDAValidationPixel
     from Configuration.Eras.Modifier_run3_common_cff import run3_common
     from HLTrigger.Configuration.customizeHLTforAlpaka import customizeHLTforAlpaka
-    (alpaka & run3_common).makeProcessModifier(customizeHLTforAlpaka).apply(process)
+    from HLTrigger.Configuration.customizeHLTforAlpaka import customizeHLTforAlpakavsCUDA
+    (alpaka & ~alpakaCUDAValidationPixel & run3_common).makeProcessModifier(customizeHLTforAlpaka).apply(process)
+    (alpakaCUDAValidationPixel & run3_common).makeProcessModifier(customizeHLTforAlpakavsCUDA).apply(process)
 
     # add call to action function in proper order: newest last!
     # process = customiseFor12718(process)
