@@ -250,9 +250,9 @@ def customizeHLTforCMSSW(process, menuType="GRun"):
     from Configuration.ProcessModifiers.alpakaCUDAValidationPixel_cff import alpakaCUDAValidationPixel
     from Configuration.Eras.Modifier_run3_common_cff import run3_common
     from HLTrigger.Configuration.customizeHLTforAlpaka import customizeHLTforAlpaka
-    from HLTrigger.Configuration.customizeHLTforAlpaka import customizeHLTforAlpakavsCUDA
+    from HLTrigger.Configuration.customizeHLTforAlpakavsCUDA import customizeHLTforAlpakavsCUDA
     (alpaka & ~alpakaCUDAValidationPixel & run3_common).makeProcessModifier(customizeHLTforAlpaka).apply(process)
-    (alpakaCUDAValidationPixel & run3_common).makeProcessModifier(customizeHLTforAlpakavsCUDA).apply(process)
+    (alpakaCUDAValidationPixel & run3_common).makeProcessModifier(customizeHLTforAlpakavsCUDA).apply(process) # This should work when using the alpakaCUDAValidation modifier chain
 
     # add call to action function in proper order: newest last!
     # process = customiseFor12718(process)
