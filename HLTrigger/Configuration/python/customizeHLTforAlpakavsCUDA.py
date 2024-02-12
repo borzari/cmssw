@@ -66,7 +66,6 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
             'keep *Cluster*_hltSiPixelClustersCUDA_*_*',
             'keep *Cluster*_hltSiPixelClustersLegacyFormatCUDACPUSerial_*_*',
             'keep *_hltSiPixelDigisCUDA_*_*',
-            'keep *_hltSiPixelDigiErrorsLegacyFormatCUDACPUSerial_*_*',
             'keep *RecHit*_hltSiPixelRecHitsCUDA_*_*',
             'keep *RecHit*_hltSiPixelRecHitsLegacyFormatCUDACPUSerial_*_*',
             'keep *_hltPixelTracksCUDA_*_*',
@@ -346,6 +345,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     '''Customisation to introduce the Local Pixel Reconstruction in CUDA
     '''
 
+    # Needed to produce PixelCPEFast for CUDA
     process.pixelCPEFastESProducerPhase1 = cms.ESProducer("PixelCPEFastESProducerPhase1",
         appendToDataLabel = cms.string(''),
     )
@@ -356,19 +356,18 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     # consumes
     #  - reco::BeamSpot
     # produces
-    #  - BeamSpotDevice
+    #  - BeamSpotCUDA
     process.hltOnlineBeamSpotGPU = cms.EDProducer("BeamSpotToCUDA",
         src = cms.InputTag("hltOnlineBeamSpot")
     )
 
-    # alpaka EDProducer
+    # CUDA EDProducer
     # consumes
     #  - FEDRawDataCollection
     # produces (* optional)
-    #  - SiPixelClustersSoA
-    #  - SiPixelDigisSoACollection
-    #  - SiPixelDigiErrorsSoACollection *
-    #  - SiPixelFormatterErrors *
+    #  - SiPixelDigisCUDA
+    #  - SiPixelDigiErrorsCUDA
+    #  - SiPixelClustersCUDA
     process.hltSiPixelClustersSoACUDA = cms.EDProducer("SiPixelRawToClusterCUDAPhase1",
         CablingMapLabel = cms.string(''),
         IncludeErrors = cms.bool(True),
@@ -389,14 +388,31 @@ def customizeHLTforCUDAPixelRecoLocal(process):
         mightGet = cms.optional.untracked.vstring
     )
 
+    # CUDA EDProducer
+    # consumes
+    #  - SiPixelClustersCUDA
+    # produces
+    #  - legacy::SiPixelDigisSoA
     process.hltSiPixelDigisSoACUDA = cms.EDProducer("SiPixelDigisSoAFromCUDA",
         src = cms.InputTag("hltSiPixelClustersSoACUDA")
     )
 
+    # Not sure if digi errors are needed for this comparison
+    # CUDA EDProducer
+    # consumes
+    #  - SiPixelDigiErrorsCUDA
+    # produces
+    #  - SiPixelErrorsSoA
     process.hltSiPixelDigisErrorsSoACUDA = cms.EDProducer("SiPixelDigiErrorsSoAFromCUDA",
         src = cms.InputTag("hltSiPixelClustersSoACUDA")
     )
 
+    # legacy EDProducer
+    # consumes
+    #  - legacy::SiPixelDigisSoA
+    # produces
+    #  - edm::DetSetVector<PixelDigi>
+    #  - SiPixelClusterCollectionNew
     process.hltSiPixelClustersCUDA = cms.EDProducer('SiPixelDigisClustersFromSoAPhase1',
         src = cms.InputTag('hltSiPixelDigisSoACUDA'),
         clusterThreshold_layer1 = cms.int32(4000),
@@ -405,6 +421,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
         storeDigis = cms.bool(False)
     )
 
+    # Not sure if clusters cache are needed for this comparison
     process.hltSiPixelClustersCacheCUDA = cms.EDProducer('SiPixelClusterShapeCacheProducer',
         src = cms.InputTag( 'hltSiPixelClustersCUDA' ),
         onDemand = cms.bool( False )
@@ -427,13 +444,13 @@ def customizeHLTforCUDAPixelRecoLocal(process):
         UserErrorList = cms.vint32(40)
     )
 
-    # alpaka EDProducer
+    # CUDA EDProducer
     # consumes
-    #  - BeamSpotDevice
-    #  - SiPixelClustersSoA
-    #  - SiPixelDigisSoACollection
+    #  - BeamSpotCUDA
+    #  - SiPixelClustersCUDA
+    #  - SiPixelDigisCUDA
     # produces
-    #  - TrackingRecHitsSoACollection<TrackerTraits>
+    #  - TrackingRecHitSoADevice<TrackerTraits>
     process.hltSiPixelRecHitsSoACUDA = cms.EDProducer("SiPixelRecHitCUDAPhase1",
         CPE = cms.string('PixelCPEFast'),
         beamSpot = cms.InputTag("hltOnlineBeamSpotGPU"),
@@ -441,11 +458,25 @@ def customizeHLTforCUDAPixelRecoLocal(process):
         src = cms.InputTag("hltSiPixelClustersSoACUDA")
     )
 
+    # legacy EDProducer
+    # consumes
+    #  - TrackingRecHitSoADevice<TrackerTraits>
+    #  - SiPixelClusterCollectionNew
+    # produces
+    #  - SiPixelRecHitCollection
+    #  - HMSstorage
     process.hltSiPixelRecHitsCUDA = cms.EDProducer('SiPixelRecHitFromCUDAPhase1',
         pixelRecHitSrc = cms.InputTag('hltSiPixelRecHitsSoACUDA'),
         src = cms.InputTag('hltSiPixelClustersCUDA'),
     )
 
+    # Needed to convert hits on device to hits on host for monitoring/comparisons
+    # CUDA EDProducer
+    # consumes
+    #  - TrackingRecHitSoADevice<TrackerTraits>
+    # produces
+    #  - TrackingRecHitSoAHost<TrackerTraits>
+    #  - HMSstorage
     process.hltSiPixelRecHitsSoAFromCUDA = cms.EDProducer('SiPixelRecHitSoAFromCUDAPhase1',
         pixelRecHitSrc = cms.InputTag('hltSiPixelRecHitsSoACUDA'),                                             
     )
@@ -471,8 +502,24 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     ###
     ### CPUSerial version of Pixel Local Reconstruction
     ###
+
+    # Probably not needed; can keep using hltOnlineBeamSpot
+    # CUDA EDProducer
+    # consumes
+    #  - reco::BeamSpot
+    # produces
+    #  - BeamSpotCUDA
     process.hltOnlineBeamSpotCPUSerial = process.hltOnlineBeamSpot.clone()
 
+    # legacy EDProducer
+    # consumes
+    #  - FEDRawDataCollection
+    # produces
+    #  - edm::DetSetVector<PixelDigi>
+    #  - edm::DetSetVector<SiPixelRawDataError>
+    #  - DetIdCollection
+    #  - DetIdCollection
+    #  - edmNew::DetSetVector<PixelFEDChannel>
     process.hltSiPixelDigisCUDACPUSerial = cms.EDProducer("SiPixelRawToDigi",
         IncludeErrors = cms.bool( True ),
         UseQualityInfo = cms.bool( False ),
@@ -486,6 +533,11 @@ def customizeHLTforCUDAPixelRecoLocal(process):
         SiPixelQualityLabel = cms.string( "" )
     )
 
+    # legacy EDProducer
+    # consumes
+    #  - edm::DetSetVector<PixelDigi>
+    # produces
+    #  - SiPixelClusterCollectionNew
     process.hltSiPixelClustersLegacyFormatCUDACPUSerial = cms.EDProducer("SiPixelClusterProducer",
         ChannelThreshold = cms.int32(10),
         ClusterMode = cms.string('PixelThresholdClusterizer'),
@@ -510,14 +562,13 @@ def customizeHLTforCUDAPixelRecoLocal(process):
         src = cms.InputTag("hltSiPixelDigisCUDACPUSerial")
     )
 
-    # process.hltSiPixelClustersLegacyFormatCUDACPUSerial = process.hltSiPixelClustersCUDA.clone(
-    #     src = 'hltSiPixelClustersSoACUDACPUSerial'
-    # )
-
-    # process.hltSiPixelDigiErrorsLegacyFormatCUDACPUSerial = process.hltSiPixelDigisCUDA.clone(
-    #     digiErrorSoASrc = 'hltSiPixelDigisCUDACPUSerial',
-    # )
-
+    # CUDA EDProducer
+    # consumes
+    #  - reco::BeamSpot
+    #  - SiPixelClusterCollectionNew
+    # produces
+    #  - TrackingRecHitSoAHost<TrackerTraits>
+    #  - HMSstorage
     process.hltSiPixelRecHitsSoACUDACPUSerial = cms.EDProducer("SiPixelRecHitSoAFromLegacyPhase1",
         CPE = cms.string('PixelCPEFast'),
         beamSpot = cms.InputTag("hltOnlineBeamSpotCPUSerial"),
@@ -526,6 +577,13 @@ def customizeHLTforCUDAPixelRecoLocal(process):
         src = cms.InputTag("hltSiPixelClustersLegacyFormatCUDACPUSerial")
     )
 
+    # legacy EDProducer
+    # consumes
+    #  - TrackingRecHitSoADevice<TrackerTraits>
+    #  - SiPixelClusterCollectionNew
+    # produces
+    #  - SiPixelRecHitCollection
+    #  - HMSstorage
     process.hltSiPixelRecHitsLegacyFormatCUDACPUSerial = process.hltSiPixelRecHitsCUDA.clone(
         pixelRecHitSrc = 'hltSiPixelRecHitsSoACUDA',
         src = 'hltSiPixelClustersLegacyFormatCUDACPUSerial',
@@ -534,9 +592,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     process.HLTDoLocalPixelCUDACPUSerialTask = cms.ConditionalTask(
         process.hltOnlineBeamSpotCPUSerial,
         process.hltSiPixelDigisCUDACPUSerial,
-        # process.hltSiPixelClustersSoACUDACPUSerial,
         process.hltSiPixelClustersLegacyFormatCUDACPUSerial,
-        # process.hltSiPixelDigiErrorsLegacyFormatCUDACPUSerial,
         process.hltSiPixelRecHitsSoACUDACPUSerial,
         process.hltSiPixelRecHitsLegacyFormatCUDACPUSerial,
     )
@@ -551,9 +607,9 @@ def customizeHLTforCUDAPixelRecoTracking(process):
 
     # CUDA EDProducer
     # consumes
-    #  - TrackingRecHitsSoACollection<TrackerTraits>
+    #  - TrackingRecHitSoADevice<TrackerTraits>
     # produces
-    #  - TkSoADevice
+    #  - TrackSoAHeterogeneousDevice<TrackerTraits>
     process.hltPixelTracksSoACUDA = cms.EDProducer("CAHitNtupletCUDAPhase1",
         CAThetaCutBarrel = cms.double(0.002),
         CAThetaCutForward = cms.double(0.003),
@@ -598,15 +654,37 @@ def customizeHLTforCUDAPixelRecoTracking(process):
         useSimpleTripletCleaner = cms.bool(True),
     )
 
+    # CUDA EDProducer
+    # consumes
+    #  - TrackingRecHitSoAHost<TrackerTraits>
+    # produces
+    #  - TrackSoAHeterogeneousHost<TrackerTraits>
     process.hltPixelTracksSoACUDACPUSerial = process.hltPixelTracksSoACUDA.clone(
         pixelRecHitSrc = 'hltSiPixelRecHitsSoACUDACPUSerial',
         onGPU = cms.bool(False)
     )
 
+    # Needed to convert tracks on device to tracks on host for monitoring/comparisons
+    # CUDA EDProducer
+    # consumes
+    #  - TrackSoAHeterogeneousDevice<TrackerTraits>
+    # produces
+    #  - TrackSoAHeterogeneousHost<TrackerTraits>
     process.hltPixelTracksSoAFromCUDA = cms.EDProducer( "PixelTrackSoAFromCUDAPhase1",
         src = cms.InputTag( "hltPixelTracksSoACUDA" )
     )
 
+    # legacy EDProducer
+    # consumes
+    #  - reco::BeamSpot
+    #  - TrackSoAHeterogeneousHost<TrackerTraits>
+    #  - SiPixelRecHitCollectionNew
+    #  - HMSstorage
+    # produces
+    #  - TrackingRecHitCollection
+    #  - reco::TrackExtraCollection
+    #  - reco::TrackCollection
+    #  - IndToEdm
     process.hltPixelTracksCUDA = cms.EDProducer("PixelTrackProducerFromSoAPhase1",
         beamSpot = cms.InputTag("hltOnlineBeamSpot"),
         minNumberOfHits = cms.int32(0),
@@ -615,6 +693,17 @@ def customizeHLTforCUDAPixelRecoTracking(process):
         trackSrc = cms.InputTag("hltPixelTracksSoAFromCUDA")
     )
 
+    # legacy EDProducer
+    # consumes
+    #  - reco::BeamSpot
+    #  - TrackSoAHeterogeneousHost<TrackerTraits>
+    #  - SiPixelRecHitCollectionNew
+    #  - HMSstorage
+    # produces
+    #  - TrackingRecHitCollection
+    #  - reco::TrackExtraCollection
+    #  - reco::TrackCollection
+    #  - IndToEdm
     process.hltPixelTracksLegacyFormatCUDACPUSerial = process.hltPixelTracksCUDA.clone(
         pixelRecHitLegacySrc = cms.InputTag("hltSiPixelRecHitsLegacyFormatCUDACPUSerial"),
         trackSrc = cms.InputTag("hltPixelTracksSoACUDACPUSerial")
@@ -643,9 +732,9 @@ def customizeHLTforCUDAPixelRecoVertexing(process):
 
     # CUDA EDProducer
     # consumes
-    #  - TkSoADevice
+    #  - TrackSoAHeterogeneousDevice<TrackerTraits>
     # produces
-    #  - ZVertexDevice
+    #  - ZVertexSoADevice
     process.hltPixelVerticesSoACUDA = cms.EDProducer("PixelVertexProducerCUDAPhase1",
         PtMax = cms.double(75),
         PtMin = cms.double(0.5),
@@ -661,21 +750,48 @@ def customizeHLTforCUDAPixelRecoVertexing(process):
         useIterative = cms.bool(False)
     )
 
+    # CUDA EDProducer
+    # consumes
+    #  - TrackSoAHeterogeneousHost<TrackerTraits>
+    # produces
+    #  - ZVertexSoAHost
     process.hltPixelVerticesSoACUDACPUSerial = process.hltPixelVerticesSoACUDA.clone(
         onGPU = cms.bool(False),
         pixelTrackSrc = cms.InputTag("hltPixelTracksSoACUDACPUSerial"),
     )
 
+    # Needed to convert vertices on device to vertices on host for monitoring/comparisons
+    # CUDA EDProducer
+    # consumes
+    #  - ZVertexSoADevice
+    # produces
+    #  - ZVertexSoAHost
     process.hltPixelVerticesSoAFromCUDA = cms.EDProducer( "PixelVertexSoAFromCUDA",
         src = cms.InputTag( "hltPixelVerticesSoACUDA" )
     )
 
+    # legacy EDProducer
+    # consumes
+    #  - reco::BeamSpot
+    #  - ZVertexSoAHost
+    #  - reco::TrackCollection
+    #  - IndToEdm
+    # produces
+    #  - reco::VertexCollection
     process.hltPixelVerticesCUDA = cms.EDProducer("PixelVertexProducerFromSoA",
         TrackCollection = cms.InputTag("hltPixelTracksCUDA"),
         beamSpot = cms.InputTag("hltOnlineBeamSpot"),
         src = cms.InputTag("hltPixelVerticesSoAFromCUDA")
     )
 
+    # legacy EDProducer
+    # consumes
+    #  - reco::BeamSpot
+    #  - ZVertexSoAHost
+    #  - reco::TrackCollection
+    #  - IndToEdm
+    # produces
+    #  - reco::VertexCollection
     process.hltPixelVerticesLegacyFormatCUDACPUSerial = process.hltPixelVerticesCUDA.clone(
         TrackCollection = cms.InputTag("hltPixelTracksLegacyFormatCUDACPUSerial"),
         src = cms.InputTag("hltPixelVerticesSoACUDACPUSerial")
@@ -701,7 +817,8 @@ def customizeHLTforCUDAPixelRecoVertexing(process):
 
     return process
 
-def customizeHLTforCUDAPixelRecoTheRest(process): # Not sure if this is needed for this comparison
+# Not sure if this is needed for Alpaka vs CUDA DQM
+def customizeHLTforCUDAPixelRecoTheRest(process):
     '''Customize HLT path depending on old SoA tracks
     '''
     process.hltL2TauTagNNProducerCUDA = cms.EDProducer("L2TauNNProducer",
