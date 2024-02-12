@@ -1591,8 +1591,7 @@ upgradeWFs['PatatrackPixelOnlyAlpakaProfiling'] = PatatrackWorkflow(
 
 upgradeWFs['PatatrackPixelOnlyAlpakaCUDAValidation'] = PatatrackWorkflow(
     digi = {
-        # the HLT menu is already set up for using GPUs if available and if the "gpu" modifier is enabled
-        # '--procModifiers': 'alpaka', # alpaka modifier activates customiseHLTForAlpaka
+        '--procModifiers': 'alpakaCUDAValidation', # alpakaCUDAValidation modifier activates customiseHLTForAlpakavsCUDA
     },
     reco = {
         '-s': 'RAW2DIGI:RawToDigi_pixelOnly,RECO:reconstruction_pixelTrackingOnly,VALIDATION:@pixelTrackingOnlyValidation,DQM:@pixelTrackingOnlyDQM',

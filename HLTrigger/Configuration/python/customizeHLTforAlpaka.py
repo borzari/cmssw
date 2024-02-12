@@ -60,8 +60,8 @@ def customizeHLTforDQMGPUvsCPUPixel(process):
 
     # PixelRecHits: 'GPUvsCPU' comparisons
     process.hltPixelRecHitsSoACompareGPUvsCPU = cms.EDProducer('SiPixelPhase1CompareRecHits',
-        pixelHitsAlpakaReference = cms.InputTag( 'hltSiPixelRecHitsCPUSerial' ),
-        pixelHitsAlpakaTarget = cms.InputTag( 'hltSiPixelRecHitsSoA' ),
+        pixelHitsReferenceAlpaka = cms.InputTag( 'hltSiPixelRecHitsCPUSerial' ),
+        pixelHitsTargetAlpaka = cms.InputTag( 'hltSiPixelRecHitsSoA' ),
         topFolderName = cms.string( 'SiPixelHeterogeneous/PixelRecHitsCompareGPUvsCPU' ),
         minD2cut = cms.double( 1.0E-4 ),
         case = cms.string('Alpaka')
@@ -87,8 +87,8 @@ def customizeHLTforDQMGPUvsCPUPixel(process):
         deltaR2cut = cms.double(0.04),
         mightGet = cms.optional.untracked.vstring,
         minQuality = cms.string('loose'),
-        pixelTrackAlpakaReference = cms.InputTag("hltPixelTracksCPUSerial"),
-        pixelTrackAlpakaTarget = cms.InputTag("hltPixelTracksSoA"),
+        pixelTrackReferenceAlpaka = cms.InputTag("hltPixelTracksCPUSerial"),
+        pixelTrackTargetAlpaka = cms.InputTag("hltPixelTracksSoA"),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelTrackCompareGPUvsCPU'),
         useQualityCut = cms.bool(True),
         case = cms.string('Alpaka')
@@ -112,8 +112,8 @@ def customizeHLTforDQMGPUvsCPUPixel(process):
         beamSpotSrc = cms.InputTag("hltOnlineBeamSpot"),
         dzCut = cms.double(1),
         mightGet = cms.optional.untracked.vstring,
-        pixelVertexAlpakaReference = cms.InputTag("hltPixelVerticesCPUSerial"),
-        pixelVertexAlpakaTarget = cms.InputTag("hltPixelVerticesSoA"),
+        pixelVertexReferenceAlpaka = cms.InputTag("hltPixelVerticesCPUSerial"),
+        pixelVertexTargetAlpaka = cms.InputTag("hltPixelVerticesSoA"),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexCompareGPUvsCPU'),
         case = cms.string('Alpaka')
     )
