@@ -39,13 +39,6 @@ _monitorpixelSoARecHitsSourceHIonAlpaka = cms.Sequence(siPixelHIonPhase1MonitorR
 
 #Define the sequence for GPU vs CPU validation
 #This should run:- individual monitor for the 2 collections + comparison module
-# from DQM.SiPixelHeterogeneous.siPixelPhase1CompareRecHitsSoA_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelPhase2CompareRecHitsSoA_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelHIonPhase1CompareRecHitsSoA_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelPhase1CompareTrackSoA_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelPhase2CompareTrackSoA_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelHIonPhase1CompareTrackSoA_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelCompareVertexSoA_cfi import *
 from DQM.SiPixelHeterogeneous.siPixelPhase1CompareRecHits_cfi import*
 from DQM.SiPixelHeterogeneous.siPixelPhase2CompareRecHits_cfi import*
 from DQM.SiPixelHeterogeneous.siPixelHIonPhase1CompareRecHits_cfi import*
@@ -55,17 +48,6 @@ from DQM.SiPixelHeterogeneous.siPixelHIonPhase1CompareTracks_cfi import *
 from DQM.SiPixelHeterogeneous.siPixelCompareVertices_cfi import *
 from DQM.SiPixelHeterogeneous.siPixelPhase1RawDataErrorComparator_cfi import *
 from DQM.SiPixelPhase1Common.SiPixelPhase1RawData_cfi import *
-#Alpaka
-# from DQM.SiPixelHeterogeneous.siPixelPhase1CompareRecHitsSoAAlpaka_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelPhase2CompareRecHitsSoAAlpaka_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelHIonPhase1CompareRecHitsSoAAlpaka_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelPhase1CompareTrackSoAAlpaka_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelPhase2CompareTrackSoAAlpaka_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelHIonPhase1CompareTrackSoAAlpaka_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelCompareVertexSoAAlpaka_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelPhase1CompareRecHits_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelPhase1CompareTracks_cfi import *
-# from DQM.SiPixelHeterogeneous.siPixelCompareVertices_cfi import *
 
 # digi errors
 SiPixelPhase1RawDataConfForCPU = copy.deepcopy(SiPixelPhase1RawDataConf)
@@ -310,6 +292,17 @@ _monitorpixelSoACompareSourceHIonPhase1 =  cms.Sequence(siPixelHIonPhase1Monitor
 
 # Alpaka vs CUDA
 monitorpixelSoACompareSourceAlpakaCUDA = cms.Sequence(
+                                            # CUDA objects
+                                            siPixelPhase1MonitorRecHitsSoACPU *
+                                            siPixelPhase1MonitorRecHitsSoAGPU *
+                                            siPixelPhase1CompareRecHits *
+                                            siPixelPhase1MonitorTrackSoAGPU *
+                                            siPixelPhase1MonitorTrackSoACPU *
+                                            siPixelPhase1CompareTracks *
+                                            siPixelMonitorVertexSoACPU *
+                                            siPixelMonitorVertexSoAGPU *
+                                            siPixelCompareVertices *
+                                            # Alpaka objects
                                             siPixelRecHitsSoAMonitorSerial *
                                             siPixelRecHitsSoAMonitorDevice *
                                             siPixelPhase1CompareRecHitsSoAAlpaka *
@@ -319,6 +312,7 @@ monitorpixelSoACompareSourceAlpakaCUDA = cms.Sequence(
                                             siPixelVertexSoAMonitorSerial *
                                             siPixelVertexSoAMonitorDevice *
                                             siPixelCompareVertexSoAAlpaka *
+                                            # Alpaka vs CUDA
                                             siPixelPhase1CompareRecHitsSoAAlpakavsCUDACPU *
                                             siPixelPhase1CompareRecHitsSoAAlpakavsCUDAGPU *
                                             siPixelPhase1CompareTrackSoAAlpakavsCUDACPU *
