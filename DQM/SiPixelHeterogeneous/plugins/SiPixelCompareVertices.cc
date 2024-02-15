@@ -171,14 +171,11 @@ void SiPixelCompareVertices::analyze(const edm::Event& iEvent, const edm::EventS
   // to make the DQM compare modules work for every case: CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA;
   // the content of analyzeSeparate can be copied to analyze once the CUDA code is removed
   if (case_ == "CUDA")
-    analyzeSeparate<const edm::EDGetTokenT<ZVertexSoAHost>, const edm::EDGetTokenT<ZVertexSoAHost>>(
-        tokenSoAVertexReferenceCUDA_, tokenSoAVertexTargetCUDA_, iEvent);
+    analyzeSeparate(tokenSoAVertexReferenceCUDA_, tokenSoAVertexTargetCUDA_, iEvent);
   if (case_ == "Alpaka")
-    analyzeSeparate<const edm::EDGetTokenT<ZVertexHost>, const edm::EDGetTokenT<ZVertexHost>>(
-        tokenSoAVertexReferenceAlpaka_, tokenSoAVertexTargetAlpaka_, iEvent);
+    analyzeSeparate(tokenSoAVertexReferenceAlpaka_, tokenSoAVertexTargetAlpaka_, iEvent);
   if (case_ == "AlpakavsCUDA")
-    analyzeSeparate<const edm::EDGetTokenT<ZVertexHost>, const edm::EDGetTokenT<ZVertexSoAHost>>(
-        tokenSoAVertexReferenceAlpaka_, tokenSoAVertexTargetCUDA_, iEvent);
+    analyzeSeparate(tokenSoAVertexReferenceAlpaka_, tokenSoAVertexTargetCUDA_, iEvent);
 }
 
 //

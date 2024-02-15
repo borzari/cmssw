@@ -204,14 +204,11 @@ void SiPixelCompareRecHits<T>::analyze(const edm::Event& iEvent, const edm::Even
   // to make the DQM compare modules work for every case: CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA;
   // the content of analyzeSeparate can be copied to analyze once the CUDA code is removed
   if (case_ == "CUDA")
-    analyzeSeparate<const edm::EDGetTokenT<HitsCUDA>, const edm::EDGetTokenT<HitsCUDA>>(
-        tokenSoAHitsReferenceCUDA_, tokenSoAHitsTargetCUDA_, iEvent);
+    analyzeSeparate(tokenSoAHitsReferenceCUDA_, tokenSoAHitsTargetCUDA_, iEvent);
   if (case_ == "Alpaka")
-    analyzeSeparate<const edm::EDGetTokenT<HitsAlpaka>, const edm::EDGetTokenT<HitsAlpaka>>(
-        tokenSoAHitsReferenceAlpaka_, tokenSoAHitsTargetAlpaka_, iEvent);
+    analyzeSeparate(tokenSoAHitsReferenceAlpaka_, tokenSoAHitsTargetAlpaka_, iEvent);
   if (case_ == "AlpakavsCUDA")
-    analyzeSeparate<const edm::EDGetTokenT<HitsAlpaka>, const edm::EDGetTokenT<HitsCUDA>>(
-        tokenSoAHitsReferenceAlpaka_, tokenSoAHitsTargetCUDA_, iEvent);
+    analyzeSeparate(tokenSoAHitsReferenceAlpaka_, tokenSoAHitsTargetCUDA_, iEvent);
 }
 
 //
