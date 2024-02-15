@@ -1591,7 +1591,7 @@ upgradeWFs['PatatrackPixelOnlyAlpakaProfiling'] = PatatrackWorkflow(
 
 upgradeWFs['PatatrackPixelOnlyAlpakaCUDAValidation'] = PatatrackWorkflow(
     digi = {
-        '--procModifiers': 'alpakaCUDAValidation', # alpakaCUDAValidation modifier activates customiseHLTForAlpakavsCUDA
+        '--customise': 'HLTriggerOffline/Common/customizeHLTforAlpakavsCUDA.customizeHLTforAlpakavsCUDA',
     },
     reco = {
         '-s': 'RAW2DIGI:RawToDigi_pixelOnly,RECO:reconstruction_pixelTrackingOnly,VALIDATION:@pixelTrackingOnlyValidation,DQM:@pixelTrackingOnlyDQM',
