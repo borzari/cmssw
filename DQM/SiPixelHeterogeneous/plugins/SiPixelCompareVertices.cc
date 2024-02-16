@@ -39,10 +39,12 @@ public:
 private:
   // CUDA and Alpaka tokens are implemented to make the DQM compare modules work for every case:
   // CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA; CUDA tokens must be removed together with rest of CUDA code
-  const edm::EDGetTokenT<ZVertexSoAHost> tokenSoAVertexReferenceCUDA_;
-  const edm::EDGetTokenT<ZVertexSoAHost> tokenSoAVertexTargetCUDA_;
-  const edm::EDGetTokenT<ZVertexHost> tokenSoAVertexReferenceAlpaka_;
-  const edm::EDGetTokenT<ZVertexHost> tokenSoAVertexTargetAlpaka_;
+  const edm::EDGetTokenT<ZVertexSoAHost>
+      tokenSoAVertexReferenceCUDA_;  //these two are both on CPU but originally they have been
+  const edm::EDGetTokenT<ZVertexSoAHost> tokenSoAVertexTargetCUDA_;  //produced on CPU or on GPU
+  const edm::EDGetTokenT<ZVertexHost>
+      tokenSoAVertexReferenceAlpaka_;  //these two are both on Host but originally they have been
+  const edm::EDGetTokenT<ZVertexHost> tokenSoAVertexTargetAlpaka_;  //produced on Host or on Device
   const edm::EDGetTokenT<reco::BeamSpot> tokenBeamSpot_;
   const std::string topFolderName_;
   const float dzCut_;

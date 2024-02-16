@@ -96,10 +96,12 @@ public:
 private:
   // CUDA and Alpaka tokens are implemented to make the DQM compare modules work for every case:
   // CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA; CUDA tokens must be removed together with rest of CUDA code
-  const edm::EDGetTokenT<PixelTrackSoACUDA> tokenSoATrackReferenceCUDA_;
-  const edm::EDGetTokenT<PixelTrackSoACUDA> tokenSoATrackTargetCUDA_;
-  const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenSoATrackReferenceAlpaka_;
-  const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenSoATrackTargetAlpaka_;
+  const edm::EDGetTokenT<PixelTrackSoACUDA>
+      tokenSoATrackReferenceCUDA_;  //these two are both on CPU but originally they have been
+  const edm::EDGetTokenT<PixelTrackSoACUDA> tokenSoATrackTargetCUDA_;  //produced on CPU or on GPU
+  const edm::EDGetTokenT<PixelTrackSoAAlpaka>
+      tokenSoATrackReferenceAlpaka_;  //these two are both on Host but originally they have been
+  const edm::EDGetTokenT<PixelTrackSoAAlpaka> tokenSoATrackTargetAlpaka_;  //produced on Host or on Device
   const std::string topFolderName_;
   const bool useQualityCut_;
   const reco::pixelTrack::Quality minQuality_;

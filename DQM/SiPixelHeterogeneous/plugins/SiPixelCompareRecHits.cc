@@ -42,12 +42,11 @@ private:
   const edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> topoToken_;
   // CUDA and Alpaka tokens are implemented to make the DQM compare modules work for every case:
   // CUDA vs CUDA, Alpaka vs Alpaka and Alpaka vs CUDA; CUDA tokens must be removed together with rest of CUDA code
-  const edm::EDGetTokenT<HitsCUDA> tokenSoAHitsReferenceCUDA_;  //produced on Host or on Device
-  const edm::EDGetTokenT<HitsCUDA> tokenSoAHitsTargetCUDA_;     //produced on Host or on Device
+  const edm::EDGetTokenT<HitsCUDA> tokenSoAHitsReferenceCUDA_;  //these two are both on CPU but originally they have been
+  const edm::EDGetTokenT<HitsCUDA> tokenSoAHitsTargetCUDA_;     //produced on CPU or on GPU
   const edm::EDGetTokenT<HitsAlpaka>
       tokenSoAHitsReferenceAlpaka_;  //these two are both on Host but originally they have been
-  const edm::EDGetTokenT<HitsAlpaka>
-      tokenSoAHitsTargetAlpaka_;  //these two are both on Host but originally they have been
+  const edm::EDGetTokenT<HitsAlpaka> tokenSoAHitsTargetAlpaka_;  //produced on Host or on Device
   const std::string topFolderName_;
   const float mind2cut_;
   // String case_ is used to differentiate between different comparisons; must be removed together with rest of CUDA code
