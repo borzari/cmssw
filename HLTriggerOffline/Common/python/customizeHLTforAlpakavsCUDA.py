@@ -47,7 +47,8 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
                                                   'hltSiPixelClustersLegacyFormatCPUSerial',
                                                   'hltSiPixelDigiErrorsLegacyFormatCPUSerial',
                                                   'hltSiPixelRecHitsLegacyFormatCPUSerial',
-                                                  'hltSiPixelRecHitsLegacyFormatCUDACPUSerial']
+                                                  'hltSiPixelRecHitsLegacyFormatCUDACPUSerial',
+                                                  'hltSiPixelDigisLegacyFormatCUDACPUSerial']
 
     # modify EventContent of DQMGPUvsCPU stream
     if hasattr(process, 'hltOutputDQMGPUvsCPU'):
@@ -66,6 +67,7 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
             'keep *Cluster*_hltSiPixelClustersCUDA_*_*',
             'keep *Cluster*_hltSiPixelClustersLegacyFormatCUDACPUSerial_*_*',
             'keep *_hltSiPixelDigisCUDA_*_*',
+            'keep *_hltSiPixelDigisLegacyFormatCUDACPUSerial_*_*',
             'keep *RecHit*_hltSiPixelRecHitsCUDA_*_*',
             'keep *RecHit*_hltSiPixelRecHitsLegacyFormatCUDACPUSerial_*_*',
             'keep *_hltPixelTracksCUDA_*_*',
@@ -73,6 +75,33 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
             'keep *_hltPixelVerticesCUDA_*_*',
             'keep *_hltPixelVerticesLegacyFormatCUDACPUSerial_*_*',
         ]
+
+    # PixelDigiErrors: 'Alpaka' comparison
+    process.hltPixelDigiErrorsCompareAlpaka = cms.EDProducer('SiPixelPhase1RawDataErrorComparator',
+        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrorsLegacyFormatCPUSerial' ),
+        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigis' ),
+        topFolderName = cms.string( 'SiPixelHeterogeneous/PixelDigiErrorsCompareAlpaka' )
+    )
+
+    # PixelDigiErrors: 'CUDA' comparison
+    process.hltPixelDigiErrorsCompareCUDA = cms.EDProducer('SiPixelPhase1RawDataErrorComparator',
+        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigisLegacyFormatCUDACPUSerial' ),
+        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigisCUDA' ),
+        topFolderName = cms.string( 'SiPixelHeterogeneous/PixelDigiErrorsCompareCUDA' )
+    )
+
+    # PixelDigiErrors: 'AlpakavsCUDA' comparisons
+    process.hltPixelDigiErrorsCompareAlpakavsCUDACPU = cms.EDProducer('SiPixelPhase1RawDataErrorComparator',
+        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrorsLegacyFormatCPUSerial' ), # Alpaka Serial
+        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigisLegacyFormatCUDACPUSerial' ),              # CUDA CPU
+        topFolderName = cms.string( 'SiPixelHeterogeneous/PixelDigiErrorsCompareAlpakavsCUDACPU' )
+    )
+
+    process.hltPixelDigiErrorsCompareAlpakavsCUDAGPU = cms.EDProducer('SiPixelPhase1RawDataErrorComparator',
+        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigis' ),       # Alpaka Device
+        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigisCUDA' ),   # CUDA GPU
+        topFolderName = cms.string( 'SiPixelHeterogeneous/PixelDigiErrorsCompareAlpakavsCUDAGPU' )
+    )
 
     # PixelRecHits: monitor of CPUSerial product (Alpaka backend: 'serial_sync')
     process.hltPixelRecHitsSoAMonitorSerial = cms.EDProducer('SiPixelPhase1MonitorRecHitsSoAAlpaka',
@@ -520,7 +549,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     #  - DetIdCollection
     #  - DetIdCollection
     #  - edmNew::DetSetVector<PixelFEDChannel>
-    process.hltSiPixelDigisCUDACPUSerial = cms.EDProducer("SiPixelRawToDigi",
+    process.hltSiPixelDigisLegacyFormatCUDACPUSerial = cms.EDProducer("SiPixelRawToDigi",
         IncludeErrors = cms.bool( True ),
         UseQualityInfo = cms.bool( False ),
         ErrorList = cms.vint32( 29 ),
@@ -559,7 +588,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
         maxNumberOfClusters = cms.int32(-1),
         mightGet = cms.optional.untracked.vstring,
         payloadType = cms.string('HLT'),
-        src = cms.InputTag("hltSiPixelDigisCUDACPUSerial")
+        src = cms.InputTag("hltSiPixelDigisLegacyFormatCUDACPUSerial")
     )
 
     # CUDA EDProducer
@@ -591,7 +620,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
 
     process.HLTDoLocalPixelCUDACPUSerialTask = cms.ConditionalTask(
         process.hltOnlineBeamSpotCPUSerial,
-        process.hltSiPixelDigisCUDACPUSerial,
+        process.hltSiPixelDigisLegacyFormatCUDACPUSerial,
         process.hltSiPixelClustersLegacyFormatCUDACPUSerial,
         process.hltSiPixelRecHitsSoACUDACPUSerial,
         process.hltSiPixelRecHitsLegacyFormatCUDACPUSerial,

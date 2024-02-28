@@ -189,7 +189,59 @@ from Configuration.ProcessModifiers.alpakaCUDAValidationPixel_cff import alpakaC
 from RecoLocalTracker.SiPixelClusterizer.SiPixelClusterizer_cfi import siPixelClusters as _siPixelClusters
 
 siPixelClustersPreSplittingCPU = _siPixelClusters.clone(
-    payloadType = cms.string('HLT')
+    payloadType = cms.string('HLT'),
+    src = cms.InputTag('siPixelDigis@cpu')
+)
+
+# The siPixelDigisTask is not included in the pixelTrackingOnly reconstruction,
+# and whatever it does to build pixel digi errors in CUDA was copied over here;
+# It is part of the pixelDigiErrors comparison, requested in
+# https://github.com/cms-sw/cmssw/pull/43964#pullrequestreview-1881323617
+from EventFilter.SiPixelRawToDigi.SiPixelRawToDigi_cfi import siPixelDigis
+
+# copy the pixel digis (except errors) and clusters to the host
+from EventFilter.SiPixelRawToDigi.siPixelDigisSoAFromCUDA_cfi import siPixelDigisSoAFromCUDA as _siPixelDigisSoAFromCUDA
+siPixelDigisSoA = _siPixelDigisSoAFromCUDA.clone(
+    src = "siPixelClustersPreSplittingCUDA"
+)
+
+# copy the pixel digis errors to the host
+from EventFilter.SiPixelRawToDigi.siPixelDigiErrorsSoAFromCUDA_cfi import siPixelDigiErrorsSoAFromCUDA as _siPixelDigiErrorsSoAFromCUDA
+siPixelDigiErrorsSoA = _siPixelDigiErrorsSoAFromCUDA.clone(
+    src = "siPixelClustersPreSplittingCUDA"
+)
+
+# convert the pixel digis errors to the legacy format
+from EventFilter.SiPixelRawToDigi.siPixelDigiErrorsFromSoA_cfi import siPixelDigiErrorsFromSoA as _siPixelDigiErrorsFromSoA
+siPixelDigiErrors = _siPixelDigiErrorsFromSoA.clone()
+
+# SwitchProducer wrapping the legacy pixel digis producer or an alias combining the pixel digis information converted from SoA
+alpakaCUDAValidationPixel.toModify(siPixelDigis,
+    cuda = cms.EDAlias(
+        siPixelDigiErrors = cms.VPSet(
+            cms.PSet(type = cms.string("DetIdedmEDCollection")),
+            cms.PSet(type = cms.string("SiPixelRawDataErroredmDetSetVector")),
+            cms.PSet(type = cms.string("PixelFEDChanneledmNewDetSetVector"))
+        ),
+        siPixelDigisClustersPreSplitting = cms.VPSet(
+            cms.PSet(type = cms.string("PixelDigiedmDetSetVector"))
+        )
+    )
+)
+
+# These instances produce pixelDigiErrors in Alpaka
+siPixelDigiErrorsAlpaka = cms.EDProducer('SiPixelDigiErrorsFromSoAAlpaka',
+    digiErrorSoASrc = cms.InputTag('siPixelClustersPreSplittingAlpaka'),
+    fmtErrorsSoASrc = cms.InputTag('siPixelClustersPreSplittingAlpaka'),
+    CablingMapLabel = cms.string(''),
+    UsePhase1 = cms.bool(True),
+    ErrorList = cms.vint32(29),
+    UserErrorList = cms.vint32(40)
+)
+
+siPixelDigiErrorsAlpakaSerial = siPixelDigiErrorsAlpaka.clone(
+    digiErrorSoASrc = cms.InputTag('siPixelClustersPreSplittingAlpakaSerial'),
+    fmtErrorsSoASrc = cms.InputTag('siPixelClustersPreSplittingAlpakaSerial')
 )
 
 alpakaCUDAValidationPixel.toReplaceWith(siPixelClustersPreSplittingTask, cms.Task(
@@ -198,7 +250,18 @@ alpakaCUDAValidationPixel.toReplaceWith(siPixelClustersPreSplittingTask, cms.Tas
                         # conditions used *only* by the modules running on GPU
                         siPixelGainCalibrationForHLTGPU,
                         siPixelROCsStatusAndMappingWrapperESProducer,
+                        # # get pixel digi errors from alpaka device and serial
+                        siPixelDigiErrorsAlpaka,
+                        siPixelDigiErrorsAlpakaSerial,
                         # reconstruct the pixel clusters on the cpu
                         siPixelClustersPreSplittingCPU,
                         # reconstruct the pixel digis and clusters on the gpu
-                        siPixelClustersPreSplittingCUDA))
+                        siPixelClustersPreSplittingCUDA,
+                        # copy the pixel digis (except errors) and clusters to the host
+                        siPixelDigisSoA,
+                        # copy the pixel digis errors to the host
+                        siPixelDigiErrorsSoA,
+                        # convert the pixel digis errors to the legacy format
+                        siPixelDigiErrors,
+                        # SwitchProducer wrapping the legacy pixel digis producer or an alias combining the pixel digis information converted from SoA
+                        siPixelDigis))

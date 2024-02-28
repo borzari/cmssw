@@ -306,6 +306,13 @@ def customizeHLTforDQMGPUvsCPUPixel(process):
             'keep *_hltPixelVerticesLegacyFormatCPUSerial_*_*',
         ]
 
+    # PixelDigiErrors: 'GPUvsCPU' comparison
+    process.hltPixelDigiErrorsCompareGPUvsCPU = cms.EDProducer('SiPixelPhase1RawDataErrorComparator',
+        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrorsLegacyFormatCPUSerial' ),
+        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigis' ),
+        topFolderName = cms.string( 'SiPixelHeterogeneous/PixelDigiErrorsCompareGPUvsCPU' )
+    )
+
     # PixelRecHits: monitor of CPUSerial product (Alpaka backend: 'serial_sync')
     process.hltPixelRecHitsSoAMonitorCPU = cms.EDProducer('SiPixelPhase1MonitorRecHitsSoAAlpaka',
         pixelHitsSrc = cms.InputTag( 'hltSiPixelRecHitsCPUSerial' ),
@@ -379,7 +386,8 @@ def customizeHLTforDQMGPUvsCPUPixel(process):
     )
 
     process.HLTDQMPixelReconstruction = cms.Sequence(
-        process.hltPixelRecHitsSoAMonitorCPU
+        process.hltPixelDigiErrorsCompareGPUvsCPU
+      + process.hltPixelRecHitsSoAMonitorCPU
       + process.hltPixelRecHitsSoAMonitorGPU
       + process.hltPixelRecHitsSoACompareGPUvsCPU
       + process.hltPixelTracksSoAMonitorCPU
