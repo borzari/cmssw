@@ -1673,7 +1673,7 @@ upgradeWFs['PatatrackPixelOnlyAlpakaCUDAValidation'] = PatatrackWorkflow(
         '-s': 'HARVESTING:@trackingOnlyValidation+@pixelTrackingOnlyDQM'
     },
     suffix = 'Patatrack_PixelOnlyAlpakaCUDAValidation',
-    offset = 0.405,
+    offset = 0.5041,
 )
 
 # end of Patatrack workflows
