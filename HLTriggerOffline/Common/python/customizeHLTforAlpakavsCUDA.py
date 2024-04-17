@@ -15,77 +15,44 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
     if dqmPixelRecoPathName == None:
         return process
 
-    process.hltPixelConsumerGPU.eventProducts = [
-        'hltSiPixelClusters',
-        'hltSiPixelClustersSoA',
-        'hltSiPixelDigis',
-        'hltSiPixelRecHits',
-        'hltSiPixelRecHitsSoA',
-        'hltPixelTracks',
-        'hltPixelTracksSoA',
-        'hltPixelVertices',
-        'hltPixelVerticesSoA',
-        'hltSiPixelClustersCUDA',
-        'hltSiPixelClustersSoACUDA',
-        'hltSiPixelDigisCUDA',
-        'hltSiPixelDigisSoACUDA',
-        'hltSiPixelRecHitsCUDA',
-        'hltSiPixelRecHitsSoACUDA',
-        'hltPixelTracksCUDA',
-        'hltPixelTracksSoACUDA',
-        'hltPixelVerticesCUDA',
-        'hltPixelVerticesSoACUDA',
-    ]
-
-    process.hltPixelConsumerCPU.eventProducts = []
-    for foo in process.hltPixelConsumerGPU.eventProducts:
-        process.hltPixelConsumerCPU.eventProducts += [foo+'CPUSerial']
-    # Left over legacy format collections
-    process.hltPixelConsumerCPU.eventProducts += ['hltPixelTracksLegacyFormatCPUSerial',
-                                                  'hltPixelTracksLegacyFormatCUDACPUSerial',
-                                                  'hltPixelVerticesLegacyFormatCPUSerial',
-                                                  'hltPixelVerticesLegacyFormatCUDACPUSerial',
-                                                  'hltSiPixelClustersLegacyFormatCPUSerial',
-                                                  'hltSiPixelDigiErrorsLegacyFormatCPUSerial',
-                                                  'hltSiPixelRecHitsLegacyFormatCPUSerial',
-                                                  'hltSiPixelRecHitsLegacyFormatCUDACPUSerial',
-                                                  'hltSiPixelDigisLegacyFormatCUDACPUSerial']
-
     # modify EventContent of DQMGPUvsCPU stream
-    if hasattr(process, 'hltOutputDQMGPUvsCPU'):
-        process.hltOutputDQMGPUvsCPU.outputCommands = [
-            'drop *',
+    try:
+        outCmds_new = [foo for foo in process.hltOutputDQMGPUvsCPU.outputCommands if 'Pixel' not in foo]
+        outCmds_new += [
             'keep *Cluster*_hltSiPixelClusters_*_*',
-            'keep *Cluster*_hltSiPixelClustersLegacyFormatCPUSerial_*_*',
-            'keep *_hltSiPixelDigis_*_*',
-            'keep *_hltSiPixelDigiErrorsLegacyFormatCPUSerial_*_*',
+            'keep *Cluster*_hltSiPixelClustersSerialSync_*_*',
+            'keep *_hltSiPixelDigiErrors_*_*',
+            'keep *_hltSiPixelDigiErrorsSerialSync_*_*',
             'keep *RecHit*_hltSiPixelRecHits_*_*',
-            'keep *RecHit*_hltSiPixelRecHitsLegacyFormatCPUSerial_*_*',
+            'keep *RecHit*_hltSiPixelRecHitsSerialSync_*_*',
             'keep *_hltPixelTracks_*_*',
-            'keep *_hltPixelTracksLegacyFormatCPUSerial_*_*',
+            'keep *_hltPixelTracksSerialSync_*_*',
             'keep *_hltPixelVertices_*_*',
-            'keep *_hltPixelVerticesLegacyFormatCPUSerial_*_*',
+            'keep *_hltPixelVerticesSerialSync_*_*',
             'keep *Cluster*_hltSiPixelClustersCUDA_*_*',
-            'keep *Cluster*_hltSiPixelClustersLegacyFormatCUDACPUSerial_*_*',
+            'keep *Cluster*_hltSiPixelClustersCUDASerialSync_*_*',
             'keep *_hltSiPixelDigisCUDA_*_*',
-            'keep *_hltSiPixelDigisLegacyFormatCUDACPUSerial_*_*',
+            'keep *_hltSiPixelDigiErrorsCUDASerialSync_*_*',
             'keep *RecHit*_hltSiPixelRecHitsCUDA_*_*',
-            'keep *RecHit*_hltSiPixelRecHitsLegacyFormatCUDACPUSerial_*_*',
+            'keep *RecHit*_hltSiPixelRecHitsCUDASerialSync_*_*',
             'keep *_hltPixelTracksCUDA_*_*',
-            'keep *_hltPixelTracksLegacyFormatCUDACPUSerial_*_*',
+            'keep *_hltPixelTracksCUDASerialSync_*_*',
             'keep *_hltPixelVerticesCUDA_*_*',
-            'keep *_hltPixelVerticesLegacyFormatCUDACPUSerial_*_*',
+            'keep *_hltPixelVerticesCUDASerialSync_*_*',
         ]
+        process.hltOutputDQMGPUvsCPU.outputCommands = outCmds_new[:]
+    except:
+        pass
 
     from DQM.SiPixelPhase1Common.SiPixelPhase1RawData_cfi import SiPixelPhase1RawDataConf,SiPixelPhase1RawDataAnalyzer
 
-    # PixelDigiErrors: monitor of CPUSerial product
+    # PixelDigiErrors: monitor of SerialSync product
     SiPixelPhase1RawDataConfForSerial = copy.deepcopy(SiPixelPhase1RawDataConf)
     for pset in SiPixelPhase1RawDataConfForSerial:
         pset.topFolderName =  "SiPixelHeterogeneous/PixelErrorsSerial"
 
     process.hltPixelPhase1MonitorRawDataASerial = SiPixelPhase1RawDataAnalyzer.clone(
-        src = "hltSiPixelDigiErrorsLegacyFormatCPUSerial",
+        src = "hltSiPixelDigiErrorsSerialSync",
         histograms = SiPixelPhase1RawDataConfForSerial
     )
 
@@ -95,17 +62,17 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         pset.topFolderName =  "SiPixelHeterogeneous/PixelErrorsDevice"
 
     process.hltPixelPhase1MonitorRawDataADevice = SiPixelPhase1RawDataAnalyzer.clone(
-        src = "hltSiPixelDigis",
+        src = "hltSiPixelDigiErrors",
         histograms = SiPixelPhase1RawDataConfForDevice
     )
 
-    # PixelDigiErrors: monitor of CPUSerial product with CUDA
+    # PixelDigiErrors: monitor of SerialSync product with CUDA
     SiPixelPhase1RawDataConfForCPU = copy.deepcopy(SiPixelPhase1RawDataConf)
     for pset in SiPixelPhase1RawDataConfForCPU:
         pset.topFolderName =  "SiPixelHeterogeneous/PixelErrorsCPU"
 
     process.hltPixelPhase1MonitorRawDataACPU = SiPixelPhase1RawDataAnalyzer.clone(
-        src = "hltSiPixelDigisLegacyFormatCUDACPUSerial",
+        src = "hltSiPixelDigiErrorsCUDASerialSync",
         histograms = SiPixelPhase1RawDataConfForCPU
     )
 
@@ -115,40 +82,40 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         pset.topFolderName =  "SiPixelHeterogeneous/PixelErrorsGPU"
 
     process.hltPixelPhase1MonitorRawDataAGPU = SiPixelPhase1RawDataAnalyzer.clone(
-        src = "hltSiPixelDigisCUDA",
+        src = "hltSiPixelDigiErrorsCUDA",
         histograms = SiPixelPhase1RawDataConfForGPU
     )
 
     # PixelDigiErrors: 'Alpaka' comparison
     process.hltPixelDigiErrorsCompareAlpaka = cms.EDProducer('SiPixelPhase1RawDataErrorComparator',
-        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrorsLegacyFormatCPUSerial' ),
-        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigis' ),
+        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrorsSerialSync' ),
+        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigiErrors' ),
         topFolderName = cms.string( 'SiPixelHeterogeneous/PixelErrorsCompareAlpaka' )
     )
 
     # PixelDigiErrors: 'CUDA' comparison
     process.hltPixelDigiErrorsCompareCUDA = cms.EDProducer('SiPixelPhase1RawDataErrorComparator',
-        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigisLegacyFormatCUDACPUSerial' ),
-        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigisCUDA' ),
+        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrorsCUDASerialSync' ),
+        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigiErrorsCUDA' ),
         topFolderName = cms.string( 'SiPixelHeterogeneous/PixelErrorsCompareCUDA' )
     )
 
     # PixelDigiErrors: 'AlpakavsCUDA' comparisons
     process.hltPixelDigiErrorsCompareAlpakavsCUDACPU = cms.EDProducer('SiPixelPhase1RawDataErrorComparator',
-        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrorsLegacyFormatCPUSerial' ), # Alpaka Serial
-        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigisLegacyFormatCUDACPUSerial' ),              # CUDA CPU
+        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrorsSerialSync' ), # Alpaka Serial
+        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigiErrorsCUDASerialSync' ),              # CUDA CPU
         topFolderName = cms.string( 'SiPixelHeterogeneous/PixelErrorsCompareAlpakavsCUDACPU' )
     )
 
     process.hltPixelDigiErrorsCompareAlpakavsCUDAGPU = cms.EDProducer('SiPixelPhase1RawDataErrorComparator',
-        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigis' ),       # Alpaka Device
-        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigisCUDA' ),   # CUDA GPU
+        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrors' ),       # Alpaka Device
+        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigiErrorsCUDA' ),   # CUDA GPU
         topFolderName = cms.string( 'SiPixelHeterogeneous/PixelErrorsCompareAlpakavsCUDAGPU' )
     )
 
-    # PixelRecHits: monitor of CPUSerial product (Alpaka backend: 'serial_sync')
+    # PixelRecHits: monitor of SerialSync product (Alpaka backend: 'serial_sync')
     process.hltPixelRecHitsSoAMonitorSerial = cms.EDProducer('SiPixelPhase1MonitorRecHitsSoAAlpaka',
-        pixelHitsSrc = cms.InputTag( 'hltSiPixelRecHitsCPUSerial' ),
+        pixelHitsSrc = cms.InputTag( 'hltSiPixelRecHitsSoASerialSync' ),
         TopFolderName = cms.string( 'SiPixelHeterogeneous/PixelRecHitsSerial' )
     )
 
@@ -158,9 +125,9 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         TopFolderName = cms.string( 'SiPixelHeterogeneous/PixelRecHitsDevice' )
     )
 
-    # PixelRecHits: monitor of CPUSerial product with CUDA
+    # PixelRecHits: monitor of SerialSync product with CUDA
     process.hltPixelRecHitsSoAMonitorCPU = cms.EDProducer('SiPixelPhase1MonitorRecHitsSoA',
-        pixelHitsSrc = cms.InputTag( 'hltSiPixelRecHitsSoACUDACPUSerial' ),
+        pixelHitsSrc = cms.InputTag( 'hltSiPixelRecHitsSoACUDASerialSync' ),
         TopFolderName = cms.string( 'SiPixelHeterogeneous/PixelRecHitsCPU' )
     )
 
@@ -172,7 +139,7 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
 
     # PixelRecHits: 'Alpaka' comparison
     process.hltPixelRecHitsSoACompareAlpaka = cms.EDProducer('SiPixelPhase1CompareRecHits',
-        pixelHitsReferenceSoA = cms.InputTag( 'hltSiPixelRecHitsCPUSerial' ),
+        pixelHitsReferenceSoA = cms.InputTag( 'hltSiPixelRecHitsSoASerialSync' ),
         pixelHitsTargetSoA = cms.InputTag( 'hltSiPixelRecHitsSoA' ),
         topFolderName = cms.string( 'SiPixelHeterogeneous/PixelRecHitsCompareAlpaka' ),
         minD2cut = cms.double( 1.0E-4 ),
@@ -181,7 +148,7 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
 
     # PixelRecHits: 'CUDA' comparison
     process.hltPixelRecHitsSoACompareCUDA = cms.EDProducer('SiPixelPhase1CompareRecHits',
-        pixelHitsReferenceCUDA = cms.InputTag( 'hltSiPixelRecHitsSoACUDACPUSerial' ),
+        pixelHitsReferenceCUDA = cms.InputTag( 'hltSiPixelRecHitsSoACUDASerialSync' ),
         pixelHitsTargetCUDA = cms.InputTag( 'hltSiPixelRecHitsSoAFromCUDA' ),
         topFolderName = cms.string( 'SiPixelHeterogeneous/PixelRecHitsCompareCUDA' ),
         minD2cut = cms.double( 1.0E-4 ),
@@ -190,8 +157,8 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
 
     # PixelRecHits: 'AlpakavsCUDA' comparisons
     process.hltPixelRecHitsSoACompareAlpakavsCUDACPU = cms.EDProducer('SiPixelPhase1CompareRecHits',
-        pixelHitsReferenceSoA = cms.InputTag( 'hltSiPixelRecHitsCPUSerial' ),
-        pixelHitsTargetCUDA = cms.InputTag( 'hltSiPixelRecHitsSoACUDACPUSerial' ),
+        pixelHitsReferenceSoA = cms.InputTag( 'hltSiPixelRecHitsSoASerialSync' ),
+        pixelHitsTargetCUDA = cms.InputTag( 'hltSiPixelRecHitsSoACUDASerialSync' ),
         topFolderName = cms.string( 'SiPixelHeterogeneous/PixelRecHitsCompareAlpakavsCUDACPU' ),
         minD2cut = cms.double( 1.0E-4 ),
         case = cms.string('AlpakavsCUDA')
@@ -205,11 +172,11 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         case = cms.string('AlpakavsCUDA')
     )
 
-    # PixelTracks: monitor of CPUSerial product (Alpaka backend: 'serial_sync')
+    # PixelTracks: monitor of SerialSync product (Alpaka backend: 'serial_sync')
     process.hltPixelTracksSoAMonitorSerial = cms.EDProducer("SiPixelPhase1MonitorTrackSoAAlpaka",
         mightGet = cms.optional.untracked.vstring,
         minQuality = cms.string('loose'),
-        pixelTrackSrc = cms.InputTag('hltPixelTracksCPUSerial'),
+        pixelTrackSrc = cms.InputTag('hltPixelTracksSoASerialSync'),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelTrackSerial'),
         useQualityCut = cms.bool(True)
     )
@@ -223,11 +190,11 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         useQualityCut = cms.bool(True)
     )
 
-    # PixelTracks: monitor of CPUSerial product with CUDA
+    # PixelTracks: monitor of SerialSync product with CUDA
     process.hltPixelTracksSoAMonitorCPU = cms.EDProducer("SiPixelPhase1MonitorTrackSoA",
         mightGet = cms.optional.untracked.vstring,
         minQuality = cms.string('loose'),
-        pixelTrackSrc = cms.InputTag('hltPixelTracksSoACUDACPUSerial'),
+        pixelTrackSrc = cms.InputTag('hltPixelTracksSoACUDASerialSync'),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelTrackCPU'),
         useQualityCut = cms.bool(True)
     )
@@ -246,7 +213,7 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         deltaR2cut = cms.double(0.04),
         mightGet = cms.optional.untracked.vstring,
         minQuality = cms.string('loose'),
-        pixelTrackReferenceSoA = cms.InputTag("hltPixelTracksCPUSerial"),
+        pixelTrackReferenceSoA = cms.InputTag("hltPixelTracksSoASerialSync"),
         pixelTrackTargetSoA = cms.InputTag("hltPixelTracksSoA"),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelTrackCompareAlpaka'),
         useQualityCut = cms.bool(True),
@@ -258,7 +225,7 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         deltaR2cut = cms.double(0.04),
         mightGet = cms.optional.untracked.vstring,
         minQuality = cms.string('loose'),
-        pixelTrackReferenceCUDA = cms.InputTag("hltPixelTracksSoACUDACPUSerial"),
+        pixelTrackReferenceCUDA = cms.InputTag("hltPixelTracksSoACUDASerialSync"),
         pixelTrackTargetCUDA = cms.InputTag("hltPixelTracksSoAFromCUDA"),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelTrackCompareCUDA'),
         useQualityCut = cms.bool(True),
@@ -270,8 +237,8 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         deltaR2cut = cms.double(0.04),
         mightGet = cms.optional.untracked.vstring,
         minQuality = cms.string('loose'),
-        pixelTrackReferenceSoA = cms.InputTag("hltPixelTracksCPUSerial"),
-        pixelTrackTargetCUDA = cms.InputTag("hltPixelTracksSoACUDACPUSerial"),
+        pixelTrackReferenceSoA = cms.InputTag("hltPixelTracksSoASerialSync"),
+        pixelTrackTargetCUDA = cms.InputTag("hltPixelTracksSoACUDASerialSync"),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelTrackCompareAlpakavsCUDACPU'),
         useQualityCut = cms.bool(True),
         case = cms.string('AlpakavsCUDA')
@@ -288,11 +255,11 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         case = cms.string('AlpakavsCUDA')
     )
 
-    # PixelVertices: monitor of CPUSerial product (Alpaka backend: 'serial_sync')
+    # PixelVertices: monitor of SerialSync product (Alpaka backend: 'serial_sync')
     process.hltPixelVertexSoAMonitorSerial = cms.EDProducer("SiPixelMonitorVertexSoAAlpaka",
         beamSpotSrc = cms.InputTag("hltOnlineBeamSpot"),
         mightGet = cms.optional.untracked.vstring,
-        pixelVertexSrc = cms.InputTag("hltPixelVerticesCPUSerial"),
+        pixelVertexSrc = cms.InputTag("hltPixelVerticesSoASerialSync"),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexSerial')
     )
 
@@ -304,11 +271,11 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexDevice')
     )
 
-    # PixelTracks: monitor of CPUSerial product with CUDA
+    # PixelTracks: monitor of SerialSync product with CUDA
     process.hltPixelVertexSoAMonitorCPU = cms.EDProducer("SiPixelMonitorVertexSoA",
         beamSpotSrc = cms.InputTag("hltOnlineBeamSpot"),
         mightGet = cms.optional.untracked.vstring,
-        pixelVertexSrc = cms.InputTag("hltPixelVerticesSoACUDACPUSerial"),
+        pixelVertexSrc = cms.InputTag("hltPixelVerticesSoACUDASerialSync"),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexCPU')
     )
 
@@ -325,7 +292,7 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         beamSpotSrc = cms.InputTag("hltOnlineBeamSpot"),
         dzCut = cms.double(1),
         mightGet = cms.optional.untracked.vstring,
-        pixelVertexReferenceSoA = cms.InputTag("hltPixelVerticesCPUSerial"),
+        pixelVertexReferenceSoA = cms.InputTag("hltPixelVerticesSoASerialSync"),
         pixelVertexTargetSoA = cms.InputTag("hltPixelVerticesSoA"),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexCompareAlpaka'),
         case = cms.string('Alpaka')
@@ -336,7 +303,7 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         beamSpotSrc = cms.InputTag("hltOnlineBeamSpot"),
         dzCut = cms.double(1),
         mightGet = cms.optional.untracked.vstring,
-        pixelVertexReferenceCUDA = cms.InputTag("hltPixelVerticesSoACUDACPUSerial"),
+        pixelVertexReferenceCUDA = cms.InputTag("hltPixelVerticesSoACUDASerialSync"),
         pixelVertexTargetCUDA = cms.InputTag("hltPixelVerticesSoAFromCUDA"),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexCompareCUDA'),
         case = cms.string('CUDA')
@@ -347,8 +314,8 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         beamSpotSrc = cms.InputTag("hltOnlineBeamSpot"),
         dzCut = cms.double(1),
         mightGet = cms.optional.untracked.vstring,
-        pixelVertexReferenceSoA = cms.InputTag("hltPixelVerticesCPUSerial"),
-        pixelVertexTargetCUDA = cms.InputTag("hltPixelVerticesSoACUDACPUSerial"),
+        pixelVertexReferenceSoA = cms.InputTag("hltPixelVerticesSoASerialSync"),
+        pixelVertexTargetCUDA = cms.InputTag("hltPixelVerticesSoACUDASerialSync"),
         topFolderName = cms.string('SiPixelHeterogeneous/PixelVertexCompareAlpakavsCUDACPU'),
         case = cms.string('AlpakavsCUDA')
     )
@@ -363,7 +330,7 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
         case = cms.string('AlpakavsCUDA')
     )
 
-    process.HLTDQMPixelReconstruction = cms.Sequence(
+    process.HLTDQMPixelReconstruction = cms.Path(
         process.hltPixelPhase1MonitorRawDataASerial
       + process.hltPixelPhase1MonitorRawDataADevice
       + process.hltPixelPhase1MonitorRawDataACPU
@@ -398,26 +365,9 @@ def customizeHLTforDQMAlpakavsCUDAPixel(process):
       + process.hltPixelVertexSoACompareAlpakavsCUDAGPU
     )
 
-    # Add CPUSerial sequences to DQM_PixelReconstruction_v Path
-    dqmPixelRecoPath = getattr(process, dqmPixelRecoPathName)
-    try:
-        dqmPixelRecoPathIndex = dqmPixelRecoPath.index(process.HLTRecopixelvertexingSequence) + 1
-        for cpuSeqName in [
-            'HLTDoLocalPixelCPUSerialSequence',
-            'HLTRecopixelvertexingCPUSerialSequence',
-        ]:
-            dqmPixelRecoPath.insert(dqmPixelRecoPathIndex, getattr(process, cpuSeqName))
-            dqmPixelRecoPathIndex += 1
-        for cudaSeqName in [
-            'HLTDoLocalPixelCUDASequence',
-            'HLTRecopixelvertexingCUDASequence',
-            'HLTDoLocalPixelCUDACPUSerialSequence',
-            'HLTRecopixelvertexingCUDACPUSerialSequence',
-        ]:
-            dqmPixelRecoPath.insert(dqmPixelRecoPathIndex, getattr(process, cudaSeqName))
-            dqmPixelRecoPathIndex += 1
-    except:
-        dqmPixelRecoPathIndex = None
+    for delMod in ['hltPixelConsumerCPU', 'hltPixelConsumerGPU']:
+        if hasattr(process, delMod):
+            process.__delattr__(delMod)
 
     return process
 
@@ -426,18 +376,18 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     '''
 
     # Producing records for CUDA
-    process.siPixelGainCalibrationForHLTGPU = cms.ESProducer( "SiPixelGainCalibrationForHLTGPUESProducer",
+    process.hltSiPixelGainCalibrationForHLTGPU = cms.ESProducer( "SiPixelGainCalibrationForHLTGPUESProducer",
         appendToDataLabel = cms.string( "" )
     )
 
-    process.siPixelROCsStatusAndMappingWrapperESProducer = cms.ESProducer( "SiPixelROCsStatusAndMappingWrapperESProducer",
+    process.hltSiPixelROCsStatusAndMappingWrapperESProducer = cms.ESProducer( "SiPixelROCsStatusAndMappingWrapperESProducer",
         ComponentName = cms.string( "" ),
         CablingMapLabel = cms.string( "" ),
         UseQualityInfo = cms.bool( False ),
         appendToDataLabel = cms.string( "" )
     )
 
-    process.pixelCPEFastESProducerPhase1 = cms.ESProducer("PixelCPEFastESProducerPhase1",
+    process.hltPixelCPEFastESProducerPhase1 = cms.ESProducer("PixelCPEFastESProducerPhase1",
         appendToDataLabel = cms.string(''),
     )
 
@@ -494,7 +444,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     #  - SiPixelDigiErrorsCUDA
     # produces
     #  - SiPixelErrorsSoA
-    process.hltSiPixelDigisErrorsSoACUDA = cms.EDProducer("SiPixelDigiErrorsSoAFromCUDA",
+    process.hltSiPixelDigiErrorsSoACUDA = cms.EDProducer("SiPixelDigiErrorsSoAFromCUDA",
         src = cms.InputTag("hltSiPixelClustersSoACUDA")
     )
 
@@ -521,8 +471,8 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     #  - DetIdCollection
     #  - DetIdCollection, 'UserErrorModules'
     #  - edmNew::DetSetVector<PixelFEDChannel>
-    process.hltSiPixelDigisCUDA = cms.EDProducer('SiPixelDigiErrorsFromSoA',
-        digiErrorSoASrc = cms.InputTag('hltSiPixelDigisErrorsSoACUDA'),
+    process.hltSiPixelDigiErrorsCUDA = cms.EDProducer('SiPixelDigiErrorsFromSoA',
+        digiErrorSoASrc = cms.InputTag('hltSiPixelDigiErrorsSoACUDA'),
         CablingMapLabel = cms.string(''),
         UsePhase1 = cms.bool(True),
         ErrorList = cms.vint32(29),
@@ -569,22 +519,20 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     ###
     ### Task: Pixel Local Reconstruction
     ###
-    process.HLTDoLocalPixelCUDATask = cms.ConditionalTask(
-        process.hltOnlineBeamSpotGPU,
-        process.hltSiPixelClustersSoACUDA,
-        process.hltSiPixelDigisSoACUDA,
-        process.hltSiPixelDigisErrorsSoACUDA,
-        process.hltSiPixelClustersCUDA,   # was: hltSiPixelClusters
-        process.hltSiPixelDigisCUDA, # was: hltSiPixelDigis
-        process.hltSiPixelRecHitsSoACUDA,
-        process.hltSiPixelRecHitsSoAFromCUDA,
-        process.hltSiPixelRecHitsCUDA,    # was: hltSiPixelRecHits
+    process.HLTDoLocalPixelCUDASequence = cms.Sequence(
+        process.hltOnlineBeamSpotGPU +
+        process.hltSiPixelClustersSoACUDA +
+        process.hltSiPixelDigisSoACUDA + # Needed to produce hltSiPixelClustersCUDA
+        process.hltSiPixelDigiErrorsSoACUDA + # Needed to produce hltSiPixelDigiErrorsCUDA
+        process.hltSiPixelClustersCUDA +
+        process.hltSiPixelDigiErrorsCUDA +
+        process.hltSiPixelRecHitsSoACUDA +
+        process.hltSiPixelRecHitsSoAFromCUDA +
+        process.hltSiPixelRecHitsCUDA
     )
 
-    process.HLTDoLocalPixelCUDASequence = cms.Sequence( process.HLTDoLocalPixelCUDATask )
-
     ###
-    ### CPUSerial version of Pixel Local Reconstruction
+    ### SerialSync version of Pixel Local Reconstruction
     ###
 
     # Probably not needed; can keep using hltOnlineBeamSpot
@@ -593,7 +541,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     #  - reco::BeamSpot
     # produces
     #  - BeamSpotCUDA
-    process.hltOnlineBeamSpotCPUSerial = process.hltOnlineBeamSpot.clone()
+    process.hltOnlineBeamSpotSerialSync = process.hltOnlineBeamSpot.clone()
 
     # legacy EDProducer
     # consumes
@@ -604,7 +552,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     #  - DetIdCollection
     #  - DetIdCollection
     #  - edmNew::DetSetVector<PixelFEDChannel>
-    process.hltSiPixelDigisLegacyFormatCUDACPUSerial = cms.EDProducer("SiPixelRawToDigi",
+    process.hltSiPixelDigiErrorsCUDASerialSync = cms.EDProducer("SiPixelRawToDigi",
         IncludeErrors = cms.bool( True ),
         UseQualityInfo = cms.bool( False ),
         ErrorList = cms.vint32( 29 ),
@@ -622,7 +570,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     #  - edm::DetSetVector<PixelDigi>
     # produces
     #  - SiPixelClusterCollectionNew
-    process.hltSiPixelClustersLegacyFormatCUDACPUSerial = cms.EDProducer("SiPixelClusterProducer",
+    process.hltSiPixelClustersCUDASerialSync = cms.EDProducer("SiPixelClusterProducer",
         ChannelThreshold = cms.int32(10),
         ClusterMode = cms.string('PixelThresholdClusterizer'),
         ClusterThreshold = cms.int32(4000),
@@ -643,7 +591,7 @@ def customizeHLTforCUDAPixelRecoLocal(process):
         maxNumberOfClusters = cms.int32(-1),
         mightGet = cms.optional.untracked.vstring,
         payloadType = cms.string('HLT'),
-        src = cms.InputTag("hltSiPixelDigisLegacyFormatCUDACPUSerial")
+        src = cms.InputTag("hltSiPixelDigiErrorsCUDASerialSync")
     )
 
     # CUDA EDProducer
@@ -653,12 +601,12 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     # produces
     #  - TrackingRecHitSoAHost<TrackerTraits>
     #  - HMSstorage
-    process.hltSiPixelRecHitsSoACUDACPUSerial = cms.EDProducer("SiPixelRecHitSoAFromLegacyPhase1",
+    process.hltSiPixelRecHitsSoACUDASerialSync = cms.EDProducer("SiPixelRecHitSoAFromLegacyPhase1",
         CPE = cms.string('PixelCPEFast'),
-        beamSpot = cms.InputTag("hltOnlineBeamSpotCPUSerial"),
+        beamSpot = cms.InputTag("hltOnlineBeamSpotSerialSync"),
         convertToLegacy = cms.bool(False),
         mightGet = cms.optional.untracked.vstring,
-        src = cms.InputTag("hltSiPixelClustersLegacyFormatCUDACPUSerial")
+        src = cms.InputTag("hltSiPixelClustersCUDASerialSync")
     )
 
     # legacy EDProducer
@@ -668,20 +616,18 @@ def customizeHLTforCUDAPixelRecoLocal(process):
     # produces
     #  - SiPixelRecHitCollection
     #  - HMSstorage
-    process.hltSiPixelRecHitsLegacyFormatCUDACPUSerial = process.hltSiPixelRecHitsCUDA.clone(
+    process.hltSiPixelRecHitsCUDASerialSync = process.hltSiPixelRecHitsCUDA.clone(
         pixelRecHitSrc = 'hltSiPixelRecHitsSoACUDA',
-        src = 'hltSiPixelClustersLegacyFormatCUDACPUSerial',
+        src = 'hltSiPixelClustersCUDASerialSync',
     )
 
-    process.HLTDoLocalPixelCUDACPUSerialTask = cms.ConditionalTask(
-        process.hltOnlineBeamSpotCPUSerial,
-        process.hltSiPixelDigisLegacyFormatCUDACPUSerial,
-        process.hltSiPixelClustersLegacyFormatCUDACPUSerial,
-        process.hltSiPixelRecHitsSoACUDACPUSerial,
-        process.hltSiPixelRecHitsLegacyFormatCUDACPUSerial,
+    process.HLTDoLocalPixelCUDACPUOnly = cms.Sequence(
+        process.hltOnlineBeamSpotSerialSync +
+        process.hltSiPixelDigiErrorsCUDASerialSync +
+        process.hltSiPixelClustersCUDASerialSync +
+        process.hltSiPixelRecHitsSoACUDASerialSync +
+        process.hltSiPixelRecHitsCUDASerialSync
     )
-
-    process.HLTDoLocalPixelCUDACPUSerialSequence = cms.Sequence( process.HLTDoLocalPixelCUDACPUSerialTask )
 
     return process
 
@@ -743,8 +689,8 @@ def customizeHLTforCUDAPixelRecoTracking(process):
     #  - TrackingRecHitSoAHost<TrackerTraits>
     # produces
     #  - TrackSoAHeterogeneousHost<TrackerTraits>
-    process.hltPixelTracksSoACUDACPUSerial = process.hltPixelTracksSoACUDA.clone(
-        pixelRecHitSrc = 'hltSiPixelRecHitsSoACUDACPUSerial',
+    process.hltPixelTracksSoACUDASerialSync = process.hltPixelTracksSoACUDA.clone(
+        pixelRecHitSrc = 'hltSiPixelRecHitsSoACUDASerialSync',
         onGPU = cms.bool(False)
     )
 
@@ -788,25 +734,21 @@ def customizeHLTforCUDAPixelRecoTracking(process):
     #  - reco::TrackExtraCollection
     #  - reco::TrackCollection
     #  - IndToEdm
-    process.hltPixelTracksLegacyFormatCUDACPUSerial = process.hltPixelTracksCUDA.clone(
-        pixelRecHitLegacySrc = cms.InputTag("hltSiPixelRecHitsLegacyFormatCUDACPUSerial"),
-        trackSrc = cms.InputTag("hltPixelTracksSoACUDACPUSerial")
+    process.hltPixelTracksCUDASerialSync = process.hltPixelTracksCUDA.clone(
+        pixelRecHitLegacySrc = cms.InputTag("hltSiPixelRecHitsCUDASerialSync"),
+        trackSrc = cms.InputTag("hltPixelTracksSoACUDASerialSync")
     )
 
-    process.HLTRecoPixelTracksCUDATask = cms.ConditionalTask(
-        process.hltPixelTracksSoACUDA,
-        process.hltPixelTracksSoAFromCUDA,
-        process.hltPixelTracksCUDA,
+    process.HLTRecoPixelTracksCUDASequence = cms.Sequence(
+        process.hltPixelTracksSoACUDA +
+        process.hltPixelTracksSoAFromCUDA +
+        process.hltPixelTracksCUDA
     )
 
-    process.HLTRecoPixelTracksCUDACPUSerialTask = cms.ConditionalTask(
-        process.hltPixelTracksSoACUDACPUSerial,
-        process.hltPixelTracksLegacyFormatCUDACPUSerial,
+    process.HLTRecoPixelTracksCUDASerialSyncSequence = cms.Sequence(
+        process.hltPixelTracksSoACUDASerialSync +
+        process.hltPixelTracksCUDASerialSync
     )
-
-    process.HLTRecoPixelTracksCUDASequence = cms.Sequence( process.HLTRecoPixelTracksCUDATask )
-
-    process.HLTRecoPixelTracksCUDACPUSerialSequence = cms.Sequence( process.HLTRecoPixelTracksCUDACPUSerialTask )
 
     return process
 
@@ -839,9 +781,9 @@ def customizeHLTforCUDAPixelRecoVertexing(process):
     #  - TrackSoAHeterogeneousHost<TrackerTraits>
     # produces
     #  - ZVertexSoAHost
-    process.hltPixelVerticesSoACUDACPUSerial = process.hltPixelVerticesSoACUDA.clone(
+    process.hltPixelVerticesSoACUDASerialSync = process.hltPixelVerticesSoACUDA.clone(
         onGPU = cms.bool(False),
-        pixelTrackSrc = cms.InputTag("hltPixelTracksSoACUDACPUSerial"),
+        pixelTrackSrc = cms.InputTag("hltPixelTracksSoACUDASerialSync"),
     )
 
     # Needed to convert vertices on device to vertices on host for monitoring/comparisons
@@ -876,32 +818,51 @@ def customizeHLTforCUDAPixelRecoVertexing(process):
     #  - IndToEdm
     # produces
     #  - reco::VertexCollection
-    process.hltPixelVerticesLegacyFormatCUDACPUSerial = process.hltPixelVerticesCUDA.clone(
-        TrackCollection = cms.InputTag("hltPixelTracksLegacyFormatCUDACPUSerial"),
-        src = cms.InputTag("hltPixelVerticesSoACUDACPUSerial")
+    process.hltPixelVerticesCUDASerialSync = process.hltPixelVerticesCUDA.clone(
+        TrackCollection = cms.InputTag("hltPixelTracksCUDASerialSync"),
+        src = cms.InputTag("hltPixelVerticesSoACUDASerialSync")
     )
 
-    ## failsafe for fake menus
-    if(not hasattr(process,'hltTrimmedPixelVertices')):
-        return process
-
-    process.HLTRecopixelvertexingCUDATask = cms.ConditionalTask(
-        process.HLTRecoPixelTracksCUDATask,
-        process.hltPixelVerticesSoACUDA,
-        process.hltPixelVerticesSoAFromCUDA,
-        process.hltPixelVerticesCUDA,
-        process.hltTrimmedPixelVertices 
+    # legacy EDProducer
+    # consumes
+    #  - reco::VertexCollection
+    # produces
+    #  - (trimmed) reco::VertexCollection
+    process.hltTrimmedPixelVerticesCUDA = cms.EDProducer( "PixelVertexCollectionTrimmer",
+        src = cms.InputTag( "hltPixelVerticesCUDA" ),
+        maxVtx = cms.uint32( 100 ),
+        fractionSumPt2 = cms.double( 0.3 ),
+        minSumPt2 = cms.double( 0.0 ),
+        PVcomparer = cms.PSet(  refToPSet_ = cms.string( "HLTPSetPvClusterComparerForIT" ) )
     )
 
-    process.HLTRecopixelvertexingCUDACPUSerialTask = cms.ConditionalTask(
-        process.HLTRecoPixelTracksCUDACPUSerialTask,
-        process.hltPixelVerticesSoACUDACPUSerial,
-        process.hltPixelVerticesLegacyFormatCUDACPUSerial,
+    # legacy EDProducer
+    # consumes
+    #  - reco::VertexCollection
+    # produces
+    #  - (trimmed) reco::VertexCollection
+    process.hltTrimmedPixelVerticesCUDASerialSync = cms.EDProducer( "PixelVertexCollectionTrimmer",
+        src = cms.InputTag( "hltPixelVerticesCUDASerialSync" ),
+        maxVtx = cms.uint32( 100 ),
+        fractionSumPt2 = cms.double( 0.3 ),
+        minSumPt2 = cms.double( 0.0 ),
+        PVcomparer = cms.PSet(  refToPSet_ = cms.string( "HLTPSetPvClusterComparerForIT" ) )
     )
 
-    process.HLTRecopixelvertexingCUDASequence = cms.Sequence( process.HLTRecopixelvertexingCUDATask )
+    process.HLTRecopixelvertexingCUDASequence = cms.Sequence(
+        process.HLTRecoPixelTracksCUDASequence +
+        process.hltPixelVerticesSoACUDA +
+        process.hltPixelVerticesSoAFromCUDA +
+        process.hltPixelVerticesCUDA +
+        process.hltTrimmedPixelVerticesCUDA
+    )
 
-    process.HLTRecopixelvertexingCUDACPUSerialSequence = cms.Sequence( process.HLTRecopixelvertexingCUDACPUSerialTask )
+    process.HLTRecopixelvertexingCUDACPUOnly = cms.Sequence(
+        process.HLTRecoPixelTracksCUDASerialSyncSequence +
+        process.hltPixelVerticesSoACUDASerialSync +
+        process.hltPixelVerticesCUDASerialSync +
+        process.hltTrimmedPixelVerticesCUDASerialSync
+    )
 
     return process
 

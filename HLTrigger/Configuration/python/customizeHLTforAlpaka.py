@@ -318,7 +318,7 @@ def customizeHLTforDQMGPUvsCPUPixel(process):
         pset.topFolderName =  "SiPixelHeterogeneous/PixelErrorsSerial"
 
     process.hltPixelPhase1MonitorRawDataASerial = SiPixelPhase1RawDataAnalyzer.clone(
-        src = "hltSiPixelDigiErrorsLegacyFormatCPUSerial",
+        src = "hltSiPixelDigiErrorsSerialSync",
         histograms = SiPixelPhase1RawDataConfForSerial
     )
 
@@ -328,14 +328,14 @@ def customizeHLTforDQMGPUvsCPUPixel(process):
         pset.topFolderName =  "SiPixelHeterogeneous/PixelErrorsDevice"
 
     process.hltPixelPhase1MonitorRawDataADevice = SiPixelPhase1RawDataAnalyzer.clone(
-        src = "hltSiPixelDigis",
+        src = "hltSiPixelDigiErrors",
         histograms = SiPixelPhase1RawDataConfForDevice
     )
 
     # PixelDigiErrors: 'GPUvsCPU' comparison
     process.hltPixelDigiErrorsCompareGPUvsCPU = cms.EDProducer('SiPixelPhase1RawDataErrorComparator',
-        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrorsLegacyFormatCPUSerial' ),
-        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigis' ),
+        pixelErrorSrcCPU = cms.InputTag( 'hltSiPixelDigiErrorsSerialSync' ),
+        pixelErrorSrcGPU = cms.InputTag( 'hltSiPixelDigiErrors' ),
         topFolderName = cms.string( 'SiPixelHeterogeneous/PixelDigiErrorsCompareGPUvsCPU' )
     )
 
