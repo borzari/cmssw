@@ -151,6 +151,31 @@ siPixelMonitorVertexSoAGPU = siPixelMonitorVertexSoA.clone(
 
 ### Alpaka
 
+# digi errors
+SiPixelPhase1RawDataConfForSerial = copy.deepcopy(SiPixelPhase1RawDataConf)
+for pset in SiPixelPhase1RawDataConfForSerial:
+    pset.topFolderName =  "SiPixelHeterogeneous/PixelErrorsSerial"
+
+siPixelPhase1MonitorRawDataASerial = SiPixelPhase1RawDataAnalyzer.clone(
+    src = "siPixelDigiErrorsAlpakaSerial",
+    histograms = SiPixelPhase1RawDataConfForSerial
+)
+
+SiPixelPhase1RawDataConfForDevice = copy.deepcopy(SiPixelPhase1RawDataConf)
+for pset in SiPixelPhase1RawDataConfForDevice:
+    pset.topFolderName =  "SiPixelHeterogeneous/PixelErrorsDevice"
+
+siPixelPhase1MonitorRawDataADevice = SiPixelPhase1RawDataAnalyzer.clone(
+    src = "siPixelDigiErrorsAlpaka",
+    histograms = SiPixelPhase1RawDataConfForDevice
+)
+
+siPixelPhase1CompareDigiErrorsSoAAlpaka = siPixelPhase1RawDataErrorComparator.clone(
+    pixelErrorSrcGPU = cms.InputTag("siPixelDigiErrorsAlpaka"),
+    pixelErrorSrcCPU = cms.InputTag("siPixelDigiErrorsAlpakaSerial"),
+    topFolderName = cms.string('SiPixelHeterogeneous/PixelErrorCompareGPUvsCPU')
+)
+
 # PixelRecHits: monitor of CPUSerial product (Alpaka backend: 'serial_sync')
 siPixelRecHitsSoAMonitorSerial = siPixelPhase1MonitorRecHitsSoAAlpaka.clone(
     pixelHitsSrc = cms.InputTag( 'siPixelRecHitsPreSplittingAlpakaSerial' ),
@@ -201,6 +226,9 @@ monitorpixelSoACompareSource = cms.Sequence(siPixelPhase1MonitorRawDataACPU *
                                             siPixelPhase1RawDataErrorComparator)
 # and the Alpaka version
 monitorpixelSoACompareSourceAlpaka = cms.Sequence(
+                                            siPixelPhase1MonitorRawDataASerial *
+                                            siPixelPhase1MonitorRawDataADevice *
+                                            siPixelPhase1CompareDigiErrorsSoAAlpaka *
                                             siPixelRecHitsSoAMonitorSerial *
                                             siPixelRecHitsSoAMonitorDevice *
                                             siPixelPhase1CompareRecHits *
