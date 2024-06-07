@@ -1,0 +1,95 @@
+Rucio client intialized for account borzari
+CRAB project directory:		/afs/cern.ch/work/b/borzari/CMSSW_13_0_13_trigger/src/TriggerSignalAnalysis/triggerSignalAnalyzer/test/crab/crab_Muon_MET105IsoTrk50Sig_2023C0
+Task name:			240601_231946:borzari_crab_Muon_MET105IsoTrk50Sig_2023C0
+Grid scheduler - Task Worker:	crab3@vocms0197.cern.ch - crab-prod-tw01
+Status on the CRAB server:	SUBMITTED
+Task URL to use for HELP:	https://cmsweb.cern.ch/crabserver/ui/task/240601_231946%3Aborzari_crab_Muon_MET105IsoTrk50Sig_2023C0
+Dashboard monitoring URL:	https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=borzari&var-task=240601_231946%3Aborzari_crab_Muon_MET105IsoTrk50Sig_2023C0&from=1717280386000&to=now
+Status on the scheduler:	COMPLETED
+
+Jobs status:                    finished     		100.0% (227/227)
+
+No publication information (publication has been disabled in the CRAB configuration file)
+
+Warning: the max jobs runtime is less than 30% of the task requested value (1250 min), please consider to request a lower value for failed jobs (allowed through crab resubmit) and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task.
+
+Summary of run jobs:
+ * Memory: 57MB min, 1158MB max, 897MB ave
+ * Runtime: 0:04:29 min, 1:12:40 max, 0:30:25 ave
+ * CPU eff: 31% min, 91% max, 73% ave
+ * Waste: 14:30:55 (11% of total)
+
+Log file is /afs/cern.ch/work/b/borzari/CMSSW_13_0_13_trigger/src/TriggerSignalAnalysis/triggerSignalAnalyzer/test/crab/crab_Muon_MET105IsoTrk50Sig_2023C0/crab.log
+Rucio client intialized for account borzari
+CRAB project directory:		/afs/cern.ch/work/b/borzari/CMSSW_13_0_13_trigger/src/TriggerSignalAnalysis/triggerSignalAnalyzer/test/crab/crab_Muon_MET105IsoTrk50Sig_2023C1
+Task name:			240601_232047:borzari_crab_Muon_MET105IsoTrk50Sig_2023C1
+Grid scheduler - Task Worker:	crab3@vocms0122.cern.ch - crab-prod-tw01
+Status on the CRAB server:	SUBMITTED
+Task URL to use for HELP:	https://cmsweb.cern.ch/crabserver/ui/task/240601_232047%3Aborzari_crab_Muon_MET105IsoTrk50Sig_2023C1
+Dashboard monitoring URL:	https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=borzari&var-task=240601_232047%3Aborzari_crab_Muon_MET105IsoTrk50Sig_2023C1&from=1717280447000&to=now
+Status on the scheduler:	FAILED
+
+Jobs status:                    failed       		  0.5% (  1/215)
+				finished     		 99.5% (214/215)
+
+No publication information (publication has been disabled in the CRAB configuration file)
+
+Error Summary: (use crab status --verboseErrors for details about the errors)
+
+  1 jobs failed with exit code 8001
+
+Have a look at https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/JobExitCodes for a description of the exit codes.
+
+Warning: the max jobs runtime is less than 30% of the task requested value (1250 min), please consider to request a lower value for failed jobs (allowed through crab resubmit) and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task.
+
+Summary of run jobs:
+ * Memory: 1019MB min, 1158MB max, 928MB ave
+ * Runtime: 0:02:59 min, 1:46:29 max, 0:37:04 ave
+ * CPU eff: 21% min, 88% max, 71% ave
+ * Waste: 4:01:45 (3% of total)
+
+Log file is /afs/cern.ch/work/b/borzari/CMSSW_13_0_13_trigger/src/TriggerSignalAnalysis/triggerSignalAnalyzer/test/crab/crab_Muon_MET105IsoTrk50Sig_2023C1/crab.log
+Rucio client intialized for account borzari
+CRAB project directory:		/afs/cern.ch/work/b/borzari/CMSSW_13_0_13_trigger/src/TriggerSignalAnalysis/triggerSignalAnalyzer/test/crab/crab_Muon_MET105IsoTrk50Sig_2023D0
+Task name:			240601_232139:borzari_crab_Muon_MET105IsoTrk50Sig_2023D0
+Grid scheduler - Task Worker:	crab3@vocms0196.cern.ch - crab-prod-tw01
+Status on the CRAB server:	SUBMITTED
+Task URL to use for HELP:	https://cmsweb.cern.ch/crabserver/ui/task/240601_232139%3Aborzari_crab_Muon_MET105IsoTrk50Sig_2023D0
+Dashboard monitoring URL:	https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=borzari&var-task=240601_232139%3Aborzari_crab_Muon_MET105IsoTrk50Sig_2023D0&from=1717280499000&to=now
+Status on the scheduler:	COMPLETED
+
+Jobs status:                    finished     		100.0% (44/44)
+
+No publication information (publication has been disabled in the CRAB configuration file)
+
+Warning: the max jobs runtime is less than 30% of the task requested value (1250 min), please consider to request a lower value for failed jobs (allowed through crab resubmit) and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task.
+
+Summary of run jobs:
+ * Memory: 726MB min, 1156MB max, 804MB ave
+ * Runtime: 0:02:18 min, 1:15:31 max, 0:29:33 ave
+ * CPU eff: 30% min, 89% max, 68% ave
+ * Waste: 21:16:35 (50% of total)
+
+Log file is /afs/cern.ch/work/b/borzari/CMSSW_13_0_13_trigger/src/TriggerSignalAnalysis/triggerSignalAnalyzer/test/crab/crab_Muon_MET105IsoTrk50Sig_2023D0/crab.log
+Rucio client intialized for account borzari
+CRAB project directory:		/afs/cern.ch/work/b/borzari/CMSSW_13_0_13_trigger/src/TriggerSignalAnalysis/triggerSignalAnalyzer/test/crab/crab_Muon_MET105IsoTrk50Sig_2023D1
+Task name:			240601_232230:borzari_crab_Muon_MET105IsoTrk50Sig_2023D1
+Grid scheduler - Task Worker:	crab3@vocms0155.cern.ch - crab-prod-tw01
+Status on the CRAB server:	SUBMITTED
+Task URL to use for HELP:	https://cmsweb.cern.ch/crabserver/ui/task/240601_232230%3Aborzari_crab_Muon_MET105IsoTrk50Sig_2023D1
+Dashboard monitoring URL:	https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=borzari&var-task=240601_232230%3Aborzari_crab_Muon_MET105IsoTrk50Sig_2023D1&from=1717280550000&to=now
+Status on the scheduler:	COMPLETED
+
+Jobs status:                    finished     		100.0% (38/38)
+
+No publication information (publication has been disabled in the CRAB configuration file)
+
+Warning: the max jobs runtime is less than 30% of the task requested value (1250 min), please consider to request a lower value for failed jobs (allowed through crab resubmit) and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task.
+
+Summary of run jobs:
+ * Memory: 921MB min, 995MB max, 872MB ave
+ * Runtime: 0:03:41 min, 3:39:43 max, 0:40:58 ave
+ * CPU eff: 13% min, 92% max, 60% ave
+ * Waste: 31:35:00 (55% of total)
+
+Log file is /afs/cern.ch/work/b/borzari/CMSSW_13_0_13_trigger/src/TriggerSignalAnalysis/triggerSignalAnalyzer/test/crab/crab_Muon_MET105IsoTrk50Sig_2023D1/crab.log
