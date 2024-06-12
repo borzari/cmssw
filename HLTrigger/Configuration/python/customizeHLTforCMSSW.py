@@ -302,7 +302,7 @@ def customizeHLTforPR(process):
         topFolderName = cms.string( 'SiPixelHeterogeneous/PixelErrorsCompareGPUvsCPU' )
     )
 
-    # These comparisons are to change the names of the modules
+    # Comparisons below are to change the names of the modules defined in customizeHLTforAlpaka
     process.hltPixelRecHitsSoACompareGPUvsCPU = cms.EDProducer('SiPixelPhase1CompareRecHits',
         pixelHitsReferenceSoA = cms.InputTag('hltSiPixelRecHitsSoASerialSync'),
         pixelHitsTargetSoA = cms.InputTag('hltSiPixelRecHitsSoA'),
