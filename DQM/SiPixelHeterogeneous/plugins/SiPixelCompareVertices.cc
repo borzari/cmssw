@@ -32,7 +32,7 @@ public:
   ~SiPixelCompareVertices() override = default;
   void bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun, edm::EventSetup const& iSetup) override;
   void analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) override;
-  // analyzeSeparate is templated to accept distinct types of SoAs 
+  // analyzeSeparate is templated to accept distinct types of SoAs
   // The default use case is to use vertices from Alpaka reconstructed on CPU and GPU;
   template <typename U, typename V>
   void analyzeSeparate(U tokenRef, V tokenTar, const edm::Event& iEvent);
@@ -40,8 +40,7 @@ public:
 
 private:
   // these two are both on Host but originally they have been produced on Host or on Device
-  const edm::EDGetTokenT<ZVertexHost>
-      tokenSoAVertexReferenceSoA_;
+  const edm::EDGetTokenT<ZVertexHost> tokenSoAVertexReferenceSoA_;
   const edm::EDGetTokenT<ZVertexHost> tokenSoAVertexTargetSoA_;
   const edm::EDGetTokenT<reco::BeamSpot> tokenBeamSpot_;
   const std::string topFolderName_;
@@ -203,4 +202,3 @@ void SiPixelCompareVertices::fillDescriptions(edm::ConfigurationDescriptions& de
 
 // TODO: change module name to SiPixelCompareVerticesSoA when CUDA code is removed
 DEFINE_FWK_MODULE(SiPixelCompareVertices);
-

@@ -77,7 +77,7 @@ public:
   ~SiPixelCompareTracks() override = default;
   void bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun, edm::EventSetup const& iSetup) override;
   void analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) override;
-  // analyzeSeparate is templated to accept distinct types of SoAs 
+  // analyzeSeparate is templated to accept distinct types of SoAs
   // The default use case is to use tracks from Alpaka reconstructed on CPU and GPU;
   template <typename U, typename V>
   void analyzeSeparate(U tokenRef, V tokenTar, const edm::Event& iEvent);
@@ -85,8 +85,7 @@ public:
 
 private:
   // these two are both on Host but originally they have been produced on Host or on Device
-  const edm::EDGetTokenT<PixelTrackSoA>
-      tokenSoATrackReference_;
+  const edm::EDGetTokenT<PixelTrackSoA> tokenSoATrackReference_;
   const edm::EDGetTokenT<PixelTrackSoA> tokenSoATrackTarget_;
   const std::string topFolderName_;
   const bool useQualityCut_;

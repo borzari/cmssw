@@ -30,7 +30,7 @@ public:
   void dqmBeginRun(const edm::Run&, const edm::EventSetup&) override;
   void bookHistograms(DQMStore::IBooker& ibooker, edm::Run const& iRun, edm::EventSetup const& iSetup) override;
   void analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) override;
-  // analyzeSeparate is templated to accept distinct types of SoAs 
+  // analyzeSeparate is templated to accept distinct types of SoAs
   // The default use case is to use rechits from Alpaka reconstructed on CPU and GPU;
   template <typename U, typename V>
   void analyzeSeparate(U tokenRef, V tokenTar, const edm::Event& iEvent);
