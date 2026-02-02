@@ -12,6 +12,8 @@ from Configuration.ProcessModifiers.pp_on_AA_cff import pp_on_AA
 # Phase 2 Tracker Modifier
 from Configuration.Eras.Modifier_phase2_tracker_cff import phase2_tracker
 
+from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
+
 # The legacy pixel rechit producer
 siPixelRecHitsPreSplitting = siPixelRecHits.clone(
         src = 'siPixelClustersPreSplitting'
@@ -70,6 +72,35 @@ alpaka.toReplaceWith(siPixelRecHitsPreSplitting, _siPixelRecHitFromSoAAlpaka.clo
             pixelRecHitSrc = cms.InputTag('siPixelRecHitsPreSplittingAlpaka'),
             src = cms.InputTag('siPixelClustersPreSplitting'))
 )
+
+siPixelRecHitsPreSplittingMaskCPU = _siPixelRecHitFromSoAAlpaka.clone(dumpForMasking=True)
+
+pixelTrackMask.toModify(siPixelRecHitsPreSplitting,
+    cpu = cms.EDAlias(
+            siPixelRecHitsPreSplittingMaskCPU = cms.VPSet(
+                 cms.PSet(type = cms.string("SiPixelRecHitedmNewDetSetVector")),
+                 cms.PSet(type = cms.string("uintAsHostProduct"))
+             )
+))
+
+# siPixelRecHitsPreSplittingMaskSoA = SwitchProducerCUDA(
+#     cpu = cms.EDAlias(
+#             siPixelRecHitsPreSplittingMaskCPU = cms.VPSet(
+#                  cms.PSet(type = cms.string("pixelTopologyPhase1TrackingRecHitSoAHost")),
+#                  cms.PSet(type = cms.string("uintAsHostProduct"))
+#              )),
+# )
+
+# pixelTrackMask.toReplaceWith(siPixelRecHitsPreSplittingTask, cms.Task(
+#     cms.Task(
+#         # reconstruct the pixel rechits on the cpu
+#         siPixelRecHitsPreSplittingMaskCPU,
+#         # SwitchProducer wrapping an EDAlias on cpu or the converter from SoA to legacy on gpu
+#         siPixelRecHitsPreSplittingTask.copy(),
+#         # producing and converting on cpu (if needed)
+#         siPixelRecHitsPreSplittingMaskSoA)
+#         )
+#         )
 
 (alpaka & pp_on_AA & ~phase2_tracker).toModify(siPixelRecHitsPreSplitting,
             maxHitsInModules = cms.uint32(2048)

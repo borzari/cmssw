@@ -387,6 +387,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                                                   float bfield,
                                                                                   uint32_t nDoublets,
                                                                                   uint32_t nTracks,
+                                                                                  MapToHit const& mask,
                                                                                   Queue& queue) const {
     using HelixFit = HelixFit<TrackerTraits>;
     using GPUKernels = CAHitNtupletGeneratorKernels<TrackerTraits>;
@@ -417,7 +418,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         m_params, hits_d.nHits(), hits_d.offsetBPIX2(), nDoublets, nTracks, layers.metadata().size(), queue);
 
     kernels.prepareHits(trackingHits, hitModules, layers, queue);
-    kernels.buildDoublets(trackingHits, graph, layers, hits_d.offsetBPIX2(), queue);
+    kernels.buildDoublets(trackingHits, graph, layers, hits_d.offsetBPIX2(),mask.view(), queue);
     kernels.launchKernels(
         trackingHits, hits_d.offsetBPIX2(), layers.metadata().size(), trackCollection.view(), layers, graph, queue);
 

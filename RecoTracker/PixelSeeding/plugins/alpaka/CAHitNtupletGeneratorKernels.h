@@ -174,6 +174,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                        const ::reco::CAGraphSoAConstView& cc,
                        const ::reco::CALayersSoAConstView& ll,
                        uint32_t offsetBPIX2,
+                       const MapToHitConstView& maskView,
                        Queue& queue);
 
     static void printCounters();
@@ -236,6 +237,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     std::optional<CAPairSoACollection> deviceTriplets_;
     std::optional<CAPairSoACollection> deviceTracksCells_;
+
+    std::optional<cms::alpakatools::device_buffer<Device, uint8_t[]>> deviceHitMask_;
+
+    bool doFit_;
 
     // this could be inferred from the above buffers
     // but seems cleaner to have a dedicate variable

@@ -34,6 +34,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using HitsOnDevice = reco::TrackingRecHitsSoACollection;
     using HitsOnHost = ::reco::TrackingRecHitHost;
 
+    using MapToHit = reco::TrackingRecHitsMaskingCollection;
+
     using TkSoADevice = reco::TracksSoACollection;
     using Quality = ::pixelTrack::Quality;
 
@@ -61,6 +63,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                 float bfield,
                                 uint32_t maxDoublets,
                                 uint32_t maxTuples,
+                                MapToHit const& mask,
                                 Queue& queue) const;
 
   private:

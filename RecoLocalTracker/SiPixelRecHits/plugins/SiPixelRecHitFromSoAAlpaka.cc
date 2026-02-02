@@ -25,6 +25,8 @@ class SiPixelRecHitFromSoAAlpaka : public edm::global::EDProducer<> {
   using hindex_type = uint32_t;  //typename TrackerTraits::hindex_type;
   using HMSstorage = typename std::vector<hindex_type>;
 
+  using MapToHit = std::vector<std::pair<uint32_t,uint32_t>>;
+
 public:
   explicit SiPixelRecHitFromSoAAlpaka(const edm::ParameterSet& iConfig);
   ~SiPixelRecHitFromSoAAlpaka() override = default;
@@ -43,6 +45,8 @@ private:
   const edm::EDGetTokenT<SiPixelClusterCollectionNew> clusterToken_;  // legacy clusters
   const edm::EDPutTokenT<SiPixelRecHitCollection> rechitsPutToken_;   // legacy rechits
   const edm::EDPutTokenT<HMSstorage> hostPutToken_;
+  const edm::EDPutTokenT<MapToHit> mapToHitPutToken_;
+  const bool dumpForMasking_;
 };
 
 SiPixelRecHitFromSoAAlpaka::SiPixelRecHitFromSoAAlpaka(const edm::ParameterSet& iConfig)
@@ -51,7 +55,9 @@ SiPixelRecHitFromSoAAlpaka::SiPixelRecHitFromSoAAlpaka(const edm::ParameterSet& 
       hitsToken_(consumes(iConfig.getParameter<edm::InputTag>("pixelRecHitSrc"))),
       clusterToken_(consumes(iConfig.getParameter<edm::InputTag>("src"))),
       rechitsPutToken_(produces()),
-      hostPutToken_(produces()) {}
+      hostPutToken_(produces()),
+      mapToHitPutToken_(produces()),
+      dumpForMasking_(iConfig.getParameter<bool>("dumpForMasking")) {}
 
 void SiPixelRecHitFromSoAAlpaka::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
@@ -59,6 +65,7 @@ void SiPixelRecHitFromSoAAlpaka::fillDescriptions(edm::ConfigurationDescriptions
       ->setComment("Max number of hits in a single module");
   desc.add<edm::InputTag>("pixelRecHitSrc", edm::InputTag("siPixelRecHitsPreSplittingAlpaka"));
   desc.add<edm::InputTag>("src", edm::InputTag("siPixelClustersPreSplitting"));
+  desc.add<bool>("dumpForMasking", false);
   descriptions.addWithDefaultLabel(desc);
 }
 
@@ -78,6 +85,7 @@ void SiPixelRecHitFromSoAAlpaka::produce(edm::StreamID streamID,
 
   HMSstorage hmsp(nModules + 1);
 
+  // Should MapToHit be passed empty as well in the case the event has no hits?
   if (0 == nHits) {
     hmsp.clear();
     iEvent.emplace(rechitsPutToken_, std::move(output));
@@ -102,6 +110,12 @@ void SiPixelRecHitFromSoAAlpaka::produce(edm::StreamID streamID,
 
   int numberOfDetUnits = 0;
   int numberOfClusters = 0;
+
+  MapToHit mapToHit;
+
+  if(dumpForMasking_)
+    mapToHit.reserve(nHits);
+
   for (auto const& dsv : *hclusters) {
     numberOfDetUnits++;
     unsigned int detid = dsv.detId();
@@ -158,6 +172,11 @@ void SiPixelRecHitFromSoAAlpaka::produce(edm::StreamID streamID,
 
       // Create a persistent edm::Ref to the cluster
       edm::Ref<edmNew::DetSetVector<SiPixelCluster>, SiPixelCluster> cluster = edmNew::makeRefTo(hclusters, &clust);
+
+      if(dumpForMasking_)
+        // mapToHit.emplace_back(std::vector<std::pair<uint16_t,uint16_t>>(cluster.key(),ij));
+        mapToHit.emplace_back(std::pair<uint32_t,uint32_t>(cluster.key(),ij));
+
       // Make a RecHit and add it to the DetSet
       recHitsOnDetUnit.emplace_back(lp, le, rqw, *genericDet, cluster);
       // =============================
@@ -175,6 +194,7 @@ void SiPixelRecHitFromSoAAlpaka::produce(edm::StreamID streamID,
                                          << " clusters";
 
   iEvent.emplace(rechitsPutToken_, std::move(output));
+  iEvent.emplace(mapToHitPutToken_, std::move(mapToHit));
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"

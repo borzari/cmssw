@@ -41,13 +41,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const device::EDGetToken<reco::TrackingRecHitsSoACollection> trackerRecHitToken_;
 
     const device::EDPutToken<reco::TrackingRecHitsSoACollection> outputRecHitsSoAToken_;
+    const device::EDPutToken<reco::TrackingRecHitsMaskingCollection> outputRecHitsMaskToken_;
   };
 
   SiPixelRecHitExtendedAlpaka::SiPixelRecHitExtendedAlpaka(const edm::ParameterSet& iConfig)
       : EDProducer(iConfig),
         pixelRecHitToken_(consumes(iConfig.getParameter<edm::InputTag>("pixelRecHitsSoA"))),
         trackerRecHitToken_(consumes(iConfig.getParameter<edm::InputTag>("trackerRecHitsSoA"))),
-        outputRecHitsSoAToken_(produces()) {}
+        outputRecHitsSoAToken_(produces()),
+        outputRecHitsMaskToken_(produces()) {}
 
   void SiPixelRecHitExtendedAlpaka::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
@@ -185,6 +187,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // emplace the merged SoA collection in the event
     iEvent.emplace(outputRecHitsSoAToken_, std::move(output));
+
+    // create masking vector with zeros and emplace in the event
+    auto TrackingRecHitsMasking = reco::TrackingRecHitsMaskingCollection(static_cast<uint32_t>(output.nHits()), queue); // initializes not all 0s, so needs to be changed
+    for(int i = 0; i < TrackingRecHitsMasking.view().metadata().size(); ++i){
+      // // dummy masking for testing
+      // if (i % 10 == 0) TrackingRecHitsMasking.view()[i].recHitMask() = 1;
+      // else TrackingRecHitsMasking.view()[i].recHitMask() = 0;
+      TrackingRecHitsMasking.view()[i].recHitMask() = 0;
+    }
+    iEvent.emplace(outputRecHitsMaskToken_, std::move(TrackingRecHitsMasking));
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

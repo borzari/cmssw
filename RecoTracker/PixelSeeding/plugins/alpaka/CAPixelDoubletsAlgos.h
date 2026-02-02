@@ -169,7 +169,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caPixelDoublets {
                                                         uint32_t const* __restrict__ offsets,
                                                         PhiBinner<TrackerTraits> const* phiBinner,
                                                         HitToCell* outerHitHisto,
-                                                        AlgoParams const& params) {
+                                                        AlgoParams const& params,
+                                                        MapToHitConstView maskView) {
     const bool doClusterCut = params.minYsizeB1_ > 0 or params.minYsizeB2_ > 0;
     const bool doZSizeCut = params.maxDYsize12_ > 0 or params.maxDYsize_ > 0 or params.maxDYPred_ > 0;
 
@@ -220,6 +221,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caPixelDoublets {
         ;
       --pairLayerId;
 
+      // printf("This is in j -- %u -- %u\n",j,maskView[j].recHitMask());
+      // if(maskView[j].recHitMask())
+      //       continue;
+
       ALPAKA_ASSERT_ACC(pairLayerId < nPairs);
       ALPAKA_ASSERT_ACC(j < innerLayerCumulativeSize[pairLayerId]);
       ALPAKA_ASSERT_ACC(0 == pairLayerId || j >= innerLayerCumulativeSize[pairLayerId - 1]);
@@ -231,6 +236,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caPixelDoublets {
       auto hoff = PhiHisto::histOff(outer);
       auto i = (0 == pairLayerId) ? j : j - innerLayerCumulativeSize[pairLayerId - 1];
       i += offsets[inner];
+
+      // Is this the correct index to look into for the masking?
+      // printf("This is in i -- %u -- %u\n",i,maskView[i].recHitMask());
+      if(maskView[i].recHitMask())
+        continue;
 
       ALPAKA_ASSERT_ACC(i >= offsets[inner]);
       ALPAKA_ASSERT_ACC(i < offsets[inner + 1]);
@@ -281,7 +291,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caPixelDoublets {
       if (doClusterCut && outer > pixelTopology::last_barrel_layer &&
           clusterCut<TrackerTraits, TAcc>(acc, hh, ll, params, i)) {
 #ifdef DOUBLETS_DEBUG
-        printf("Killed here 4\n");
+        printf("Killed here 3\n");
 #endif
         continue;
       }
@@ -341,6 +351,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caPixelDoublets {
         for (uint32_t pIndex : cms::alpakatools::independent_group_elements_x(acc, maxpIndex)) {
           // FIXME implement alpaka::ldg and use it here? or is it const* __restrict__ enough?
           auto oi = p[pIndex];
+          // printf("This is in oi -- %u -- %u\n",oi,maskView[oi].recHitMask());
+          if(maskView[oi].recHitMask())
+            continue;
           ALPAKA_ASSERT_ACC(oi >= offsets[outer]);
           ALPAKA_ASSERT_ACC(oi < offsets[outer + 1]);
 #ifdef DOUBLETS_DEBUG

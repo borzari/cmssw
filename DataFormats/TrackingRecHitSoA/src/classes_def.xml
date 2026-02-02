@@ -12,4 +12,17 @@
 
   <class name="SiPixelHitStatus"/>
   <class name="SiPixelHitStatusAndCharge"/>
+
+  <!-- Recursive templates (with no data) ensuring we have one CollectionLeaf<index, type> for each layout in the collection -->
+  <class name="portablecollection::CollectionImpl<0, reco::TrackingHitsLayout<128, false>, reco::HitModulesLayout<128, false>>"/>
+  <class name="portablecollection::CollectionImpl<1, reco::HitModulesLayout<128, false>>"/>
+
+  <!-- Recursive templates implementing the association of indices and layouts, and containing the data -->
+  <class name="portablecollection::CollectionLeaf<0, reco::TrackingHitsLayout<128, false>>"/>
+  <class name="portablecollection::CollectionLeaf<1, reco::HitModulesLayout<128, false>>"/>
+
+  <class name="reco::TrackingRecHitsMaskingLayout<128,false>"/>
+  <class name="PortableHostCollection<reco::TrackingRecHitsMaskingLayout<128,false> >"/>
+  <class name="edm::Wrapper<PortableHostCollection<reco::TrackingRecHitsMaskingLayout<128,false> > >"/>
+  
 </lcgdict>
