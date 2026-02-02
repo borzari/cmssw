@@ -387,6 +387,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                                                   float bfield,
                                                                                   uint32_t nDoublets,
                                                                                   uint32_t nTracks,
+                                                                                  MapToHit const& mask,
                                                                                   Queue& queue) const {
     using HelixFit = HelixFit<TrackerTraits>;
     using GPUKernels = CAHitNtupletGeneratorKernels<TrackerTraits>;
@@ -412,6 +413,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                           geometry_d.view<::reco::CAGraphSoA>(),
                           geometry_d.view<::reco::CALayersSoA>(),
                           hits_d.offsetBPIX2(),
+                          mask.view(),
                           queue);
     kernels.launchKernels(hits_d.view(),
                           hits_d.offsetBPIX2(),

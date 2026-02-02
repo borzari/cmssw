@@ -20,6 +20,10 @@
   <!-- Recursive templates implementing the association of indices and layouts, and containing the data -->
   <class name="portablecollection::CollectionLeaf<0, reco::TrackingHitsLayout<128, false>>"/>
   <class name="portablecollection::CollectionLeaf<1, reco::HitModulesLayout<128, false>>"/>
+
+  <class name="reco::TrackingRecHitsMaskingLayout<128,false>"/>
+  <class name="PortableHostCollection<reco::TrackingRecHitsMaskingLayout<128,false> >"/>
+  <class name="edm::Wrapper<PortableHostCollection<reco::TrackingRecHitsMaskingLayout<128,false> > >"/>
   
 </lcgdict>
 

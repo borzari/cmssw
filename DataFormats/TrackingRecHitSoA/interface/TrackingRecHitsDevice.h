@@ -21,6 +21,9 @@ namespace reco {
   using HitPortableCollectionDevice = PortableDeviceMultiCollection<TDev, reco::TrackingRecHitSoA, reco::HitModuleSoA>;
 
   template <typename TDev>
+  using TrackingRecHitsMaskingDevice = PortableDeviceCollection<TrackingRecHitsMaskingSoA, TDev>;
+
+  template <typename TDev>
   class TrackingRecHitDevice : public HitPortableCollectionDevice<TDev> {
   public:
     TrackingRecHitDevice() = default;
@@ -76,6 +79,7 @@ namespace reco {
     // offsetBPIX2 is used on host functions so is useful to have it also stored in the class and not only in the layout
     int32_t offsetBPIX2_ = 0;
   };
+
 }  // namespace reco
 
 #endif  // DataFormats_RecHits_interface_TrackingRecHitSoADevice_h

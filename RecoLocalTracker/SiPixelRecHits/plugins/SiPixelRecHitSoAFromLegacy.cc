@@ -39,6 +39,7 @@ public:
   using HitModuleStart = std::array<uint32_t, TrackerTraits::numberOfModules + 1>;
   using HMSstorage = HostProduct<uint32_t[]>;
   using HitsOnHost = TrackingRecHitSoAHost<TrackerTraits>;
+  using MapToHit = std::vector<std::pair<uint32_t,uint32_t>>;
 
 private:
   void produce(edm::StreamID streamID, edm::Event& iEvent, const edm::EventSetup& iSetup) const override;
@@ -50,6 +51,10 @@ private:
   const edm::EDPutTokenT<HitsOnHost> tokenHit_;
   const edm::EDPutTokenT<HMSstorage> tokenModuleStart_;
   const bool convert2Legacy_;
+
+  const bool dumpForMasking_;
+
+  static constexpr uint16_t invalidClusterId = std::numeric_limits<uint16_t>::max(); //From legacy SiPixelCluster dataformat
 };
 
 template <typename TrackerTraits>
@@ -60,9 +65,12 @@ SiPixelRecHitSoAFromLegacyT<TrackerTraits>::SiPixelRecHitSoAFromLegacyT(const ed
       clusterToken_{consumes<SiPixelClusterCollectionNew>(iConfig.getParameter<edm::InputTag>("src"))},
       tokenHit_{produces<HitsOnHost>()},
       tokenModuleStart_{produces<HMSstorage>()},
-      convert2Legacy_(iConfig.getParameter<bool>("convertToLegacy")) {
+      convert2Legacy_(iConfig.getParameter<bool>("convertToLegacy")),
+      dumpForMasking_(iConfig.getParameter<bool>("dumpForMasking"))  {
   if (convert2Legacy_)
     produces<SiPixelRecHitCollectionNew>();
+  if (dumpForMasking_)
+    produces<MapToHit>();
 }
 
 template <typename TrackerTraits>
@@ -216,6 +224,10 @@ void SiPixelRecHitSoAFromLegacyT<TrackerTraits>::produce(edm::StreamID streamID,
         digis_h.view()[ndigi].yy() = px.y;
         digis_h.view()[ndigi].adc() = px.adc;
         digis_h.view()[ndigi].moduleId() = gind;
+
+        if( clust.originalId() == invalidClusterId) // some clusters are invalid
+          digis_h.view()[ndigi].moduleId() = gpuClustering::invalidModuleId;
+
         digis_h.view()[ndigi].clus() = ic;
         ++ndigi;
       }

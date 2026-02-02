@@ -23,6 +23,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::reco {
   using TrackingRecHitsSoACollection = std::conditional_t<std::is_same_v<Device, alpaka::DevCpu>,
                                                           ::reco::TrackingRecHitHost,
                                                           ::reco::TrackingRecHitDevice<Device>>;
+
+  using ::reco::TrackingRecHitsMaskingDevice;
+  using ::reco::TrackingRecHitsMaskingHost;
+  using TrackingRecHitsMaskingCollection =
+      std::conditional_t<std::is_same_v<Device, alpaka::DevCpu>, TrackingRecHitsMaskingHost, TrackingRecHitsMaskingDevice<Device>>;
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::reco
 
 namespace cms::alpakatools {
@@ -90,5 +95,6 @@ namespace cms::alpakatools {
 }  // namespace cms::alpakatools
 
 ASSERT_DEVICE_MATCHES_HOST_COLLECTION(reco::TrackingRecHitsSoACollection, reco::TrackingRecHitHost);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(reco::TrackingRecHitsMaskingCollection, reco::TrackingRecHitsMaskingHost);
 
 #endif  // DataFormats_TrackingRecHitSoA_interface_alpaka_TrackingRecHitsSoACollection_h
