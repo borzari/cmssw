@@ -109,8 +109,8 @@ pixelTracksHighPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     avgCellsPerHit     = 13,
     avgCellsPerCell    = 0.0268, 
     avgTracksPerCell   = 0.0123, 
-    maxNumberOfDoublets = str(512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
-    maxNumberOfTuples   = str(32 * 1024),   # this couul be much lower (2.1k, these are quads)
+    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
 phase2_tracker.toReplaceWith(pixelTracksHighPtAlpaka,_pixelTracksAlpakaPhase2.clone())
@@ -132,10 +132,18 @@ def _modifyForPPonAAandNotPhase2(producer):
 
 
 
+
+
+
+
+
+
 from Configuration.ProcessModifiers.phase2CAExtension_cff import phase2CAExtension
 phase2CAExtension.toReplaceWith(pixelTracksHighPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone(
     hitMask = "siPixelRecHitsExtendedPreSplittingAlpaka",
     pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
+    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 ))
 
 # pixel tracks SoA producer on the cpu, for validation
@@ -144,7 +152,9 @@ pixelTracksHighPtAlpakaSerial = makeSerialClone(pixelTracksHighPtAlpaka,
 )
 
 phase2CAExtension.toModify(pixelTracksHighPtAlpakaSerial,
-                           pixelRecHitSrc = 'siPixelRecHitsExtendedPreSplittingAlpakaSerial'
+                           pixelRecHitSrc = 'siPixelRecHitsExtendedPreSplittingAlpakaSerial',
+                           maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+                           maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
                            )
 
 # pixel tracks SoA merger
@@ -159,8 +169,8 @@ pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     avgCellsPerHit     = 13,
     avgCellsPerCell    = 0.0268,
     avgTracksPerCell   = 0.0123,
-    maxNumberOfDoublets = str(512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
-    maxNumberOfTuples   = str(32 * 1024),   # this couul be much lower (2.1k, these are quads)
+    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
 phase2CAExtension.toReplaceWith(pixelTracksLowPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone(
@@ -175,6 +185,8 @@ phase2CAExtension.toReplaceWith(pixelTracksLowPtAlpaka,_pixelTracksAlpakaPhase2E
         maxZip = cms.double(12),
         minPt = cms.double(0.3)
     ),
+    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 ))
 
 # pixel tracks SoA producer on the cpu, for validation
@@ -194,6 +206,8 @@ phase2CAExtension.toModify(pixelTracksLowPtAlpakaSerial,
                                 maxZip = cms.double(12),
                                 minPt = cms.double(0.3)
                             ),
+                            maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+                            maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
                            )
 
 # legacy pixel tracks from SoA
@@ -218,8 +232,8 @@ pixelTracksDisplHighPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     avgCellsPerHit     = 13,
     avgCellsPerCell    = 0.0268,
     avgTracksPerCell   = 0.0123,
-    maxNumberOfDoublets = str(512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
-    maxNumberOfTuples   = str(32 * 1024),   # this couul be much lower (2.1k, these are quads)
+    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
 phase2CAExtension.toReplaceWith(pixelTracksDisplHighPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone(
@@ -233,6 +247,8 @@ phase2CAExtension.toReplaceWith(pixelTracksDisplHighPtAlpaka,_pixelTracksAlpakaP
         maxZip = cms.double(12),
         minPt = cms.double(0.9)
     ),
+    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 ))
 
 pixelTracksDisplHighPtAlpakaSerial = makeSerialClone(pixelTracksDisplHighPtAlpaka,
@@ -250,6 +266,8 @@ phase2CAExtension.toModify(pixelTracksDisplHighPtAlpakaSerial,
                                maxZip = cms.double(12),
                                minPt = cms.double(0.9)
                            ),
+                           maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+                           maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
                            )
 
 pixelTracksDisplHighPtSoAMerger = _pixelTracksSoAMerger.clone(
@@ -269,8 +287,8 @@ pixelTracksDisplLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     avgCellsPerHit     = 13,
     avgCellsPerCell    = 0.0268,
     avgTracksPerCell   = 0.0123,
-    maxNumberOfDoublets = str(512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
-    maxNumberOfTuples   = str(32 * 1024),   # this couul be much lower (2.1k, these are quads)
+    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
 phase2CAExtension.toReplaceWith(pixelTracksDisplLowPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone(
@@ -285,6 +303,8 @@ phase2CAExtension.toReplaceWith(pixelTracksDisplLowPtAlpaka,_pixelTracksAlpakaPh
         maxZip = cms.double(12),
         minPt = cms.double(0.3)
     ),
+    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 ))
 
 pixelTracksDisplLowPtAlpakaSerial = makeSerialClone(pixelTracksDisplLowPtAlpaka,
@@ -303,6 +323,8 @@ phase2CAExtension.toModify(pixelTracksDisplLowPtAlpakaSerial,
                                maxZip = cms.double(12),
                                minPt = cms.double(0.3)
                            ),
+                           maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+                           maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
                            )
 
 pixelTracksSoAMerger = _pixelTracksSoAMerger.clone(
@@ -330,12 +352,11 @@ alpaka.toReplaceWith(pixelTracksTask, cms.Task(
     pixelTracksHighPtAlpakaSerial,
     # Updates the TrackingRecHitsMasking collection for next iteration
     pixelTracksHighPtMaskingSoA,
+    
     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
     pixelTracksLowPtAlpaka,
     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
     pixelTracksLowPtAlpakaSerial,
-    # # Merge the produced SoAs directly
-    # pixelTracksLowPtSoAMerger,
     # Updates the TrackingRecHitsMasking collection for next iteration
     pixelTracksLowPtMaskingSoA,
 
@@ -343,8 +364,6 @@ alpaka.toReplaceWith(pixelTracksTask, cms.Task(
     pixelTracksDisplHighPtAlpaka,
     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
     pixelTracksDisplHighPtAlpakaSerial,
-    # # Merge the produced SoAs directly
-    # pixelTracksDisplHighPtSoAMerger,
     # Updates the TrackingRecHitsMasking collection for next iteration
     pixelTracksDisplHighPtMaskingSoA,
 
@@ -352,6 +371,7 @@ alpaka.toReplaceWith(pixelTracksTask, cms.Task(
     pixelTracksDisplLowPtAlpaka,
     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
     pixelTracksDisplLowPtAlpakaSerial,
+    # No need for masking after this iteration
 
     # Merge the produced SoAs directly
     pixelTracksSoAMerger,
