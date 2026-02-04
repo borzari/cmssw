@@ -28,7 +28,8 @@
 #include "RecoTracker/TkMSParametrization/interface/PixelRecoUtilities.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 
-#define GPU_DEBUG
+// #define GPU_DEBUG
+#define NTRACKS_DEBUG
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -125,7 +126,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // the output is also a SoA collection with the same layout as the input ones
     auto output = reco::TracksSoACollection({std::reduce(nTks.begin(), nTks.end()), std::reduce(nHits.begin(), nHits.end())}, queue);
 
-#ifdef GPU_DEBUG
+#ifdef NTRACKS_DEBUG
     std::cout << "----------------- Merging Input Tracks -----------------\n";
     for(int i = 0; i < int(nTks.size()); ++i) std::cout << "Number of tracks input " << i+1 << ": " << nTks[i] << '\n';
     std::cout << "Total number of tracks: " << output.view().metadata().size() << '\n';
@@ -141,6 +142,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     int nSoAsAux = 0; // auxiliar index to correctly access nTks and nHits
     for(const auto& it : inputTkSoAs) {
 
+      if(nTks[nSoAsAux] == 0) {
+        nSoAsAux = nSoAsAux + 1; // still need to increase the SoA position to correctly access the cumul vectors
+        continue;
+      }
+
       auto inpTkView = it->view();
 
       // auxiliar for correctly memcpy-ing eigen columns
@@ -154,6 +160,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto outDesc = LayoutType::Descriptor(outView);
       auto inpTkDesc = LayoutType::ConstDescriptor(inpTkView);
 
+      // correctly copy total of nTracks
+      const int nTotal = cumulNTks[cumulNTks.size() - 1];
+
       // merge all columns using a compile-time loop
 
       // number of columns (same for all hits SoAs)
@@ -166,11 +175,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           // scalar type, copy the value directly
           alpaka::memcpy(queue,
                          cms::alpakatools::make_device_view(queue, outCol.data(), 1),
-                         cms::alpakatools::make_device_view(queue, inpTkCol.data(), 1));
+                         cms::alpakatools::make_device_view(queue, &nTotal, 1));
 
 #ifdef GPU_DEBUG
           alpaka::wait(queue);
-          // std::cout << "Copied scalar with index " << columnIndex << '\n';
+          std::cout << "Copied scalar with index " << columnIndex << '\n';
 #endif
         } else if constexpr (std::get<columnIndex>(outDesc.columnTypes) == cms::soa::SoAColumnType::eigen) {
           for(int i = 0; i < nEigenAux; ++i) {
@@ -181,7 +190,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 #ifdef GPU_DEBUG
           alpaka::wait(queue);
-          // std::cout << "Copied eigen column with index " << columnIndex << ", " << i << '\n';
+          std::cout << "Copied eigen column with index " << columnIndex << ", " << i << '\n';
 #endif
           }
           nEigenAux = nEigenAux + 10;
@@ -192,11 +201,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                          cms::alpakatools::make_device_view(queue, inpTkCol.data(), nTks[nSoAsAux]));
 #ifdef GPU_DEBUG
           alpaka::wait(queue);
-          // std::cout << "Copied column with index " << columnIndex << '\n';
+          std::cout << "Copied column with index " << columnIndex << '\n';
 #endif
         }
 
       });
+
+      // update output hitOffsets to take into account the previous SoAs
+      for(int i = cumulNTks[nSoAsAux]; i < cumulNTks[nSoAsAux + 1]; ++i){
+         output.view()[i].hitOffsets() += cumulNHits[nSoAsAux];
+      }
 
       // copy track hits information for inp1 hits
       alpaka::memcpy(
@@ -209,7 +223,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           cms::alpakatools::make_device_view(queue, it->view<::reco::TrackHitSoA>().detId().data(), nHits[nSoAsAux]));
 #ifdef GPU_DEBUG
       alpaka::wait(queue);
-      // std::cout << "Copied track hits\n";
+      std::cout << "Copied track hits\n";
 
 #endif
 
@@ -217,7 +231,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       }
 
+#ifdef GPU_DEBUG
     for(int i = 0; i < std::min(int(*(std::min_element(nTks.begin(), nTks.end()))),10); ++i) {
+
+      std::cout << "track number: " << outView.nTracks() << std::endl;
+      std::cout << "------------------------------------------------------------------------------------------" << std::endl;
+
+      std::cout << "track quality (";
+      for(int k = 1; k < int(cumulNTks.size()); ++k) std::cout << "inp" << k << " - out" << k << " -- ";
+      std::cout << "): ";
+      for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout << pixelTrack::qualityName[int(inputTkSoAs[k]->view()[i].quality())] << " - " << pixelTrack::qualityName[int(outView[i + cumulNTks[k]].quality())] << " -- ";
+      std::cout << std::endl;
+      std::cout << "------------------------------------------------------------------------------------------" << std::endl;
 
       std::cout << "track pt (";
       for(int k = 1; k < int(cumulNTks.size()); ++k) std::cout << "inp" << k << " - out" << k << " -- ";
@@ -251,6 +276,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
       std::cout << "==========================================================================================" << std::endl;
     }
+#endif
 
     // emplace the merged SoA collection in the event
     iEvent.emplace(outputTkSoAToken_, std::move(output));

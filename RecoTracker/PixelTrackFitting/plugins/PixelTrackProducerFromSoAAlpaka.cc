@@ -389,6 +389,9 @@ void PixelTrackProducerFromSoAAlpaka::produce(edm::StreamID streamID,
   // loop over (sorted) tracks
   for (const auto &it : sortIdxs) {
     auto nHits = reco::nHits(tsoa.view(), it);
+    // std::cout << "it: " << it << std::endl;
+    // std::cout << "nHits: " << nHits << std::endl;
+    // std::cout << "hitOffs[" << it << "]: " << hitOffs[it] << " -- hitOffs[" << it << " - 1]: " << hitOffs[it - 1] << std::endl;
     assert(nHits >= 3);
     auto q = quality[it];
 
