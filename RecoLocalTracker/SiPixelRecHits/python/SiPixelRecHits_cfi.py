@@ -75,13 +75,13 @@ alpaka.toReplaceWith(siPixelRecHitsPreSplitting, _siPixelRecHitFromSoAAlpaka.clo
 
 siPixelRecHitsPreSplittingMaskCPU = _siPixelRecHitFromSoAAlpaka.clone(dumpForMasking=True)
 
-pixelTrackMask.toModify(siPixelRecHitsPreSplitting,
-    cpu = cms.EDAlias(
-            siPixelRecHitsPreSplittingMaskCPU = cms.VPSet(
-                 cms.PSet(type = cms.string("SiPixelRecHitedmNewDetSetVector")),
-                 cms.PSet(type = cms.string("uintAsHostProduct"))
-             )
-))
+# pixelTrackMask.toModify(siPixelRecHitsPreSplitting,
+#     cpu = cms.EDAlias(
+#             siPixelRecHitsPreSplittingMaskCPU = cms.VPSet(
+#                  cms.PSet(type = cms.string("SiPixelRecHitedmNewDetSetVector")),
+#                  cms.PSet(type = cms.string("uintAsHostProduct"))
+#              )
+# ))
 
 # siPixelRecHitsPreSplittingMaskSoA = SwitchProducerCUDA(
 #     cpu = cms.EDAlias(
