@@ -40,6 +40,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     void produce(edm::StreamID streamID, device::Event& iEvent, const device::EventSetup& iSetup) const override;
 
+    pixelTrack::Quality const minQuality_;
+
     const device::EDGetToken<reco::TrackingRecHitsMaskingCollection> inputRecHitsMaskToken_;
     const device::EDGetToken<reco::TracksSoACollection> inputTrackSoAToken_;
 
@@ -48,15 +50,26 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   PixelTracksMaskingSoA::PixelTracksMaskingSoA(const edm::ParameterSet& iConfig)
       : EDProducer(iConfig),
+        minQuality_(pixelTrack::qualityByName(iConfig.getParameter<std::string>("minQuality"))),
         inputRecHitsMaskToken_(consumes(iConfig.getParameter<edm::InputTag>("recHitsMaskSoASrc"))),
         inputTrackSoAToken_(consumes(iConfig.getParameter<edm::InputTag>("tracksSoASrc"))),
-        outputRecHitsMaskToken_(produces()) {}
+        outputRecHitsMaskToken_(produces()) {
+          if (minQuality_ == pixelTrack::Quality::notQuality) {
+            throw cms::Exception("PixelTrackConfiguration")
+                << iConfig.getParameter<std::string>("minQuality") + " is not a pixelTrack::Quality";
+          }
+          if (minQuality_ < pixelTrack::Quality::dup) {
+            throw cms::Exception("PixelTrackConfiguration")
+                << iConfig.getParameter<std::string>("minQuality") + " not supported";
+          }
+        }
 
   void PixelTracksMaskingSoA::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
 
     desc.add<edm::InputTag>("recHitsMaskSoASrc", edm::InputTag("siPixelRecHitsExtendedPreSplittingAlpaka")); // has to be changed for each iteration
     desc.add<edm::InputTag>("tracksSoASrc", edm::InputTag("pixelTracksHighPtAlpaka")); // has to be changed for each iteration
+    desc.add<std::string>("minQuality", "highPurity");
 
     descriptions.addWithDefaultLabel(desc);
   }
@@ -84,7 +97,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       getHit = getHit + ::reco::nHits(inpTkColl.view(),i);
 
-      if(inpTkColl.view()[i].quality() < pixelTrack::qualityByName("highPurity")) continue;
+      if(inpTkColl.view()[i].quality() < minQuality_) continue;
       
       for(int j = 0; j < ::reco::nHits(inpTkColl.view(),i); ++j){
         TrackingRecHitsMasking.view()[inpTkColl.view<::reco::TrackHitSoA>()[getHit - j - 1].id()].recHitMask() = 1;
