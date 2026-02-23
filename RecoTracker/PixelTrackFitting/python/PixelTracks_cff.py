@@ -163,6 +163,7 @@ phase2CAExtension.toReplaceWith(pixelTracks, _pixelTrackProducerFromSoAAlpaka.cl
     beamSpot = cms.InputTag("offlineBeamSpot"),
     minNumberOfHits = cms.int32(0),
     minQuality = cms.string('tight'),
+    # minQuality = cms.string('highPurity'),
     trackSrc = cms.InputTag("pixelTracksAlpaka"),
     outerTrackerRecHitSrc = cms.InputTag("siPhase2RecHits"),
     outerTrackerRecHitSoAConverterSrc = cms.InputTag("phase2OTRecHitsSoAConverter"),
@@ -171,14 +172,13 @@ phase2CAExtension.toReplaceWith(pixelTracks, _pixelTrackProducerFromSoAAlpaka.cl
 ))
 
 alpaka.toReplaceWith(pixelTracksTask, cms.Task(
-    # Build the highPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
+    # Build the pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
     pixelTracksAlpaka,
-    # Build the highPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
+    # Build the pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
     pixelTracksAlpakaSerial,
     # Convert the pixel tracks from SoA to legacy format
     pixelTracks)
 )
-
 
 
 
@@ -200,6 +200,227 @@ from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
     pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
     maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
+    ptmin = 5.0,
+    trackQualityCuts = cms.PSet(
+        maxChi2 = cms.double(5),
+        maxChi2Quintuplets = cms.double(3),
+        maxChi2TripletsOrQuadruplets = cms.double(1),
+        maxTip = cms.double(0.3),
+        maxZip = cms.double(12),
+        minPt = cms.double(5.0)
+    ),
+    geometry = cms.PSet(
+        caDCACuts = cms.vdouble(
+            0.15000000596046448, 0.25, 0.20000000298023224, 0.20000000298023224, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.10000000149011612, 0.10000000149011612,
+            0.10000000149011612
+        ),
+        caThetaCuts = cms.vdouble(
+            0.0020000000949949026, 0.0020000000949949026, 0.0020000000949949026, 0.0020000000949949026, 0.003000000026077032,
+            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
+            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
+            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
+            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
+            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
+            0.003000000026077032
+        ),
+        maxDR = cms.vdouble(
+            5, 10, 8, 5, 8,
+            5, 7, 10, 8, 10,
+            8, 10, 7, 7, 7,
+            4.5, 9, 4.5, 9, 4.5,
+            9, 4.5, 8, 4, 8,
+            4.5, 8, 4, 10, 5,
+            3, 3, 4, 4, 4,
+            3.5, 4.5, 9, 4.5, 9,
+            4.5, 9, 4.5, 8, 4,
+            8, 4.5, 8, 4, 10,
+            5, 3, 3, 4, 4,
+            4, 3.5, 10000, 10000, 10000,
+            10000, 16, 16, 16, 16,
+            14, 16, 16, 16, 16,
+            14, 10000, 10000
+        ),
+        maxDZ = cms.vdouble(
+            16, 16, 25, 25, 0,
+            0, 13, 15, 19, 21,
+            0, 0, 9, 13, 0,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 15, -10, 35,
+            22, 32.5, 50, 50, 70,
+            70, -5, -10, -5, -15,
+            -25, 50, 40
+        ),
+        maxInner = cms.vdouble(
+            17, 14, 10000, 10000, -4,
+            -7, 17, 15, 10000, 10000,
+            -6, -9, 18, 10000, -11,
+            14, 14, 13, 13, 13,
+            13, 13, 13, 13, 13,
+            13, 13, 13, 16, 16,
+            6, 4, 6, 22, 22,
+            22, 14, 14, 13, 13,
+            13, 13, 13, 13, 13,
+            13, 13, 13, 13, 16,
+            16, 6, 4, 6, 22,
+            22, 22, 10, -10, 20,
+            20, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 1200, 1200
+        ),
+        maxOuter = cms.vdouble(
+            10000, 10000, 10, 10000, 10,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 21,
+            7, 7, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            21, 7, 7, 10000, 10000,
+            10000, 10000, 30, -25, 50,
+            45, 57, 80, 95, 110,
+            10000, -30, -40, -55, -70,
+            -80, 10000, 10000
+        ),
+        minDZ = cms.vdouble(
+            -16, -16, 0, 0, -25,
+            -25, -13, -15, 0, 0,
+            -19, -21, -9, 0, -13,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -15, -35, 10,
+            -22, 5, -10, 5, 15,
+            25, -32.5, -50, -50, -70,
+            -70, -50, -40
+        ),
+        minInner = cms.vdouble(
+            -17, -14, 4, 7, -10000,
+            -10000, -17, -15, 6, 9,
+            -10000, -10000, -18, 11, -10000,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 12, 0,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 12,
+            0, 0, 0, 0, 0,
+            0, 0, -10, -20, 10,
+            -20, 11, 11, 11, 11,
+            0, 11, 11, 11, 11,
+            0, -1200, -1200
+        ),
+        minOuter = cms.vdouble(
+            -10000, -10000, 0, 0, 0,
+            0, -10000, -10000, 6, 6,
+            6, 6, -10000, 11, 11,
+            3, 3, 3, 3, 3,
+            3, 3, 3, 3, 3,
+            4, 4, 3, 20, 6,
+            0, 0, 0, 7, 7,
+            7, 3, 3, 3, 3,
+            3, 3, 3, 3, 3,
+            3, 4, 4, 3, 20,
+            6, 0, 0, 0, 7,
+            7, 7, -30, -50, 25,
+            -45, 30, 40, 55, 70,
+            80, -57, -70, -95, -110,
+            -10000, -10000, -10000
+        ),
+        pairGraph = cms.vuint32(
+            0, 1, 0, 2, 0,
+            4, 0, 5, 0, 16,
+            0, 17, 1, 2, 1,
+            3, 1, 4, 1, 5,
+            1, 16, 1, 17, 2,
+            3, 2, 4, 2, 16,
+            4, 5, 4, 6, 5,
+            6, 5, 7, 6, 7,
+            6, 8, 7, 8, 7,
+            9, 8, 9, 8, 10,
+            9, 10, 9, 11, 10,
+            11, 10, 12, 11, 12,
+            11, 13, 11, 14, 11,
+            15, 12, 13, 13, 14,
+            14, 15, 16, 17, 16,
+            18, 17, 18, 17, 19,
+            18, 19, 18, 20, 19,
+            20, 19, 21, 20, 21,
+            20, 22, 21, 22, 21,
+            23, 22, 23, 22, 24,
+            23, 24, 23, 25, 23,
+            26, 23, 27, 24, 25,
+            25, 26, 26, 27, 2,
+            28, 2, 28, 2, 28,
+            3, 28, 4, 28, 5,
+            28, 6, 28, 7, 28,
+            8, 28, 16, 28, 17,
+            28, 18, 28, 19, 28,
+            20, 28, 28, 29, 29,
+            30
+        ),
+        phiCuts = cms.vint32(
+            int(0.8*350), int(0.8*600), int(0.8*450), int(0.8*522), int(0.8*450),
+            int(0.8*522), int(0.8*400), int(0.8*650), int(0.8*500), int(0.8*730),
+            int(0.8*500), int(0.8*730), int(0.8*350), int(0.8*400), int(0.8*400),
+            int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*250),
+            int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522),
+            int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650), int(0.8*300),
+            int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250), int(0.8*250),
+            int(0.8*250), int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522),
+            int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250),
+            int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650),
+            int(0.8*300), int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250),
+            int(0.8*250), int(0.8*250), int(0.8*1200), int(0.8*1200), int(0.8*1200),
+            int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
+            int(0.8*850), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
+            int(0.8*1000), int(0.8*1100), int(0.8*1250)
+        ),
+        ptCuts = cms.vdouble(
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5, 4.5, 4.5,
+            4.5, 4.5, 4.5
+        ),
+        startingPairs = cms.vuint32(
+            0, 1, 2, 3, 4,
+            5, 6, 8, 10, 12,
+            15, 17, 19, 21, 23,
+            25, 27, 36, 38, 40,
+            42, 44, 46, 48
+        )
+    ),
 ))
 
 # pixel tracks SoA producer on the cpu, for validation
@@ -217,6 +438,7 @@ pixelTracksHighPtAlpakaSerial = makeSerialClone(pixelTracksHighPtAlpaka,
 from RecoTracker.PixelSeeding.pixelTracksMaskingSoA_cfi import pixelTracksMaskingSoA as _pixelTracksMaskingSoA
 
 pixelTracksHighPtMaskingSoA = _pixelTracksMaskingSoA.clone(
+    # minQuality = "loose",
     tracksSoASrc = "pixelTracksHighPtAlpaka",
 )
 
@@ -243,6 +465,218 @@ pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     ),
     maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
+    geometry = cms.PSet(
+        caDCACuts = cms.vdouble(
+            0.15000000596046448, 0.25, 0.20000000298023224, 0.20000000298023224, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.10000000149011612, 0.10000000149011612,
+            0.10000000149011612
+        ),
+        caThetaCuts = cms.vdouble(
+            0.0020000000949949026, 0.0020000000949949026, 0.0020000000949949026, 0.0020000000949949026, 0.003000000026077032,
+            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
+            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
+            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
+            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
+            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
+            0.003000000026077032
+        ),
+        maxDR = cms.vdouble(
+            5, 10, 8, 5, 8,
+            5, 7, 10, 8, 10,
+            8, 10, 7, 7, 7,
+            4.5, 9, 4.5, 9, 4.5,
+            9, 4.5, 8, 4, 8,
+            4.5, 8, 4, 10, 5,
+            3, 3, 4, 4, 4,
+            3.5, 4.5, 9, 4.5, 9,
+            4.5, 9, 4.5, 8, 4,
+            8, 4.5, 8, 4, 10,
+            5, 3, 3, 4, 4,
+            4, 3.5, 10000, 10000, 10000,
+            10000, 16, 16, 16, 16,
+            14, 16, 16, 16, 16,
+            14, 10000, 10000
+        ),
+        maxDZ = cms.vdouble(
+            16, 16, 25, 25, 0,
+            0, 13, 15, 19, 21,
+            0, 0, 9, 13, 0,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 15, -10, 35,
+            22, 32.5, 50, 50, 70,
+            70, -5, -10, -5, -15,
+            -25, 50, 40
+        ),
+        maxInner = cms.vdouble(
+            17, 14, 10000, 10000, -4,
+            -7, 17, 15, 10000, 10000,
+            -6, -9, 18, 10000, -11,
+            14, 14, 13, 13, 13,
+            13, 13, 13, 13, 13,
+            13, 13, 13, 16, 16,
+            6, 4, 6, 22, 22,
+            22, 14, 14, 13, 13,
+            13, 13, 13, 13, 13,
+            13, 13, 13, 13, 16,
+            16, 6, 4, 6, 22,
+            22, 22, 10, -10, 20,
+            20, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 1200, 1200
+        ),
+        maxOuter = cms.vdouble(
+            10000, 10000, 10, 10000, 10,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 21,
+            7, 7, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            10000, 10000, 10000, 10000, 10000,
+            21, 7, 7, 10000, 10000,
+            10000, 10000, 30, -25, 50,
+            45, 57, 80, 95, 110,
+            10000, -30, -40, -55, -70,
+            -80, 10000, 10000
+        ),
+        minDZ = cms.vdouble(
+            -16, -16, 0, 0, -25,
+            -25, -13, -15, 0, 0,
+            -19, -21, -9, 0, -13,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -10000, -10000, -10000,
+            -10000, -10000, -15, -35, 10,
+            -22, 5, -10, 5, 15,
+            25, -32.5, -50, -50, -70,
+            -70, -50, -40
+        ),
+        minInner = cms.vdouble(
+            -17, -14, 4, 7, -10000,
+            -10000, -17, -15, 6, 9,
+            -10000, -10000, -18, 11, -10000,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 12, 0,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 12,
+            0, 0, 0, 0, 0,
+            0, 0, -10, -20, 10,
+            -20, 11, 11, 11, 11,
+            0, 11, 11, 11, 11,
+            0, -1200, -1200
+        ),
+        minOuter = cms.vdouble(
+            -10000, -10000, 0, 0, 0,
+            0, -10000, -10000, 6, 6,
+            6, 6, -10000, 11, 11,
+            3, 3, 3, 3, 3,
+            3, 3, 3, 3, 3,
+            4, 4, 3, 20, 6,
+            0, 0, 0, 7, 7,
+            7, 3, 3, 3, 3,
+            3, 3, 3, 3, 3,
+            3, 4, 4, 3, 20,
+            6, 0, 0, 0, 7,
+            7, 7, -30, -50, 25,
+            -45, 30, 40, 55, 70,
+            80, -57, -70, -95, -110,
+            -10000, -10000, -10000
+        ),
+        pairGraph = cms.vuint32(
+            0, 1, 0, 2, 0,
+            4, 0, 5, 0, 16,
+            0, 17, 1, 2, 1,
+            3, 1, 4, 1, 5,
+            1, 16, 1, 17, 2,
+            3, 2, 4, 2, 16,
+            4, 5, 4, 6, 5,
+            6, 5, 7, 6, 7,
+            6, 8, 7, 8, 7,
+            9, 8, 9, 8, 10,
+            9, 10, 9, 11, 10,
+            11, 10, 12, 11, 12,
+            11, 13, 11, 14, 11,
+            15, 12, 13, 13, 14,
+            14, 15, 16, 17, 16,
+            18, 17, 18, 17, 19,
+            18, 19, 18, 20, 19,
+            20, 19, 21, 20, 21,
+            20, 22, 21, 22, 21,
+            23, 22, 23, 22, 24,
+            23, 24, 23, 25, 23,
+            26, 23, 27, 24, 25,
+            25, 26, 26, 27, 2,
+            28, 2, 28, 2, 28,
+            3, 28, 4, 28, 5,
+            28, 6, 28, 7, 28,
+            8, 28, 16, 28, 17,
+            28, 18, 28, 19, 28,
+            20, 28, 28, 29, 29,
+            30
+        ),
+        phiCuts = cms.vint32(
+            int(1.0*350), int(1.0*600), int(1.0*450), int(1.0*522), int(1.0*450),
+            int(1.0*522), int(1.0*400), int(1.0*650), int(1.0*500), int(1.0*730),
+            int(1.0*500), int(1.0*730), int(1.0*350), int(1.0*400), int(1.0*400),
+            int(1.0*300), int(1.0*522), int(1.0*300), int(1.0*522), int(1.0*250),
+            int(1.0*522), int(1.0*250), int(1.0*522), int(1.0*250), int(1.0*522),
+            int(1.0*300), int(1.0*522), int(1.0*240), int(1.0*650), int(1.0*300),
+            int(1.0*200), int(1.0*220), int(1.0*250), int(1.0*250), int(1.0*250),
+            int(1.0*250), int(1.0*300), int(1.0*522), int(1.0*300), int(1.0*522),
+            int(1.0*250), int(1.0*522), int(1.0*250), int(1.0*522), int(1.0*250),
+            int(1.0*522), int(1.0*300), int(1.0*522), int(1.0*240), int(1.0*650),
+            int(1.0*300), int(1.0*200), int(1.0*220), int(1.0*250), int(1.0*250),
+            int(1.0*250), int(1.0*250), int(1.0*1200), int(1.0*1200), int(1.0*1200),
+            int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000),
+            int(1.0*850), int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000),
+            int(1.0*1000), int(1.0*1100), int(1.0*1250)
+        ),
+        ptCuts = cms.vdouble(
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.25,
+            0.25, 0.25, 0.25
+        ),
+        startingPairs = cms.vuint32(
+            0, 1, 2, 3, 4,
+            5, 6, 8, 10, 12,
+            15, 17, 19, 21, 23,
+            25, 27, 36, 38, 40,
+            42, 44, 46, 48
+        )
+    ),
 ))
 
 # pixel tracks SoA producer on the cpu, for validation
@@ -277,6 +711,7 @@ from  RecoTracker.PixelTrackFitting.pixelTrackProducerFromSoAAlpaka_cfi import p
 from RecoTracker.PixelSeeding.pixelTracksSoAMerger_cfi import pixelTracksSoAMerger as _pixelTracksSoAMerger
 
 pixelTracksLowPtMaskingSoA = _pixelTracksMaskingSoA.clone(
+    # minQuality = "loose",
     recHitsMaskSoASrc = "pixelTracksHighPtMaskingSoA",
     tracksSoASrc = "pixelTracksLowPtAlpaka",
 )
@@ -325,6 +760,7 @@ pixelTracksDisplHighPtAlpakaSerial = makeSerialClone(pixelTracksDisplHighPtAlpak
                            )
 
 pixelTracksDisplHighPtMaskingSoA = _pixelTracksMaskingSoA.clone(
+    # minQuality = "loose",
     recHitsMaskSoASrc = "pixelTracksLowPtMaskingSoA",
     tracksSoASrc = "pixelTracksDisplHighPtAlpaka",
 )
@@ -376,7 +812,15 @@ pixelTracksDisplLowPtAlpakaSerial = makeSerialClone(pixelTracksDisplLowPtAlpaka,
                            maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
                            )
 
-pixelTracksAlpaka = _pixelTracksSoAMerger.clone()
+(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksAlpaka, _pixelTracksSoAMerger.clone(
+    inputTkSoAs = cms.VInputTag("pixelTracksHighPtAlpaka","pixelTracksLowPtAlpaka"),
+    minQuality = cms.string('tight'),
+    matchFraction = cms.double(0.0),
+))
+
+# (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksAlpaka, _pixelTracksSoAMerger.clone(
+#     inputTkSoAs = cms.VInputTag("pixelTracksHighPtAlpaka","pixelTracksLowPtAlpaka"),
+# ))
 
 
 (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracks, _pixelTrackProducerFromSoAAlpaka.clone(
@@ -391,6 +835,40 @@ pixelTracksAlpaka = _pixelTracksSoAMerger.clone()
     requireQuadsFromConsecutiveLayers = cms.bool(True)
 ))
 
+# (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksTask, cms.Task(
+#     # Build the highPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
+#     pixelTracksHighPtAlpaka,
+#     # Build the highPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
+#     pixelTracksHighPtAlpakaSerial,
+#     # Updates the TrackingRecHitsMasking collection for next iteration
+#     pixelTracksHighPtMaskingSoA,
+    
+#     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
+#     pixelTracksLowPtAlpaka,
+#     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
+#     pixelTracksLowPtAlpakaSerial,
+#     # Updates the TrackingRecHitsMasking collection for next iteration
+#     pixelTracksLowPtMaskingSoA,
+
+#     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
+#     pixelTracksDisplHighPtAlpaka,
+#     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
+#     pixelTracksDisplHighPtAlpakaSerial,
+#     # Updates the TrackingRecHitsMasking collection for next iteration
+#     pixelTracksDisplHighPtMaskingSoA,
+
+#     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
+#     pixelTracksDisplLowPtAlpaka,
+#     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
+#     pixelTracksDisplLowPtAlpakaSerial,
+#     # No need for masking after the last iteration
+
+#     # Merge the produced SoAs directly
+#     pixelTracksAlpaka,
+#     # Convert the pixel tracks from SoA to legacy format
+#     pixelTracks)
+# )
+
 (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksTask, cms.Task(
     # Build the highPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
     pixelTracksHighPtAlpaka,
@@ -403,21 +881,6 @@ pixelTracksAlpaka = _pixelTracksSoAMerger.clone()
     pixelTracksLowPtAlpaka,
     # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
     pixelTracksLowPtAlpakaSerial,
-    # Updates the TrackingRecHitsMasking collection for next iteration
-    pixelTracksLowPtMaskingSoA,
-
-    # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
-    pixelTracksDisplHighPtAlpaka,
-    # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
-    pixelTracksDisplHighPtAlpakaSerial,
-    # Updates the TrackingRecHitsMasking collection for next iteration
-    pixelTracksDisplHighPtMaskingSoA,
-
-    # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
-    pixelTracksDisplLowPtAlpaka,
-    # Build the lowPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
-    pixelTracksDisplLowPtAlpakaSerial,
-    # No need for masking after the last iteration
 
     # Merge the produced SoAs directly
     pixelTracksAlpaka,

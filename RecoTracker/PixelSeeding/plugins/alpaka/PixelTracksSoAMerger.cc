@@ -30,6 +30,7 @@
 
 // #define GPU_DEBUG
 #define NTRACKS_DEBUG
+// #define DUPLICATE_DEBUG
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -42,6 +43,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     void produce(edm::StreamID streamID, device::Event& iEvent, const device::EventSetup& iSetup) const override;
+    bool checkForDuplicate(const reco::TracksSoACollection& trks, int i, int j) const;
+
+    pixelTrack::Quality const minQuality_;
+    double const matchFraction_;
 
     std::vector<edm::EDGetTokenT<reco::TracksHost>> inputTkSoATokenV_;
     std::vector<edm::InputTag> inputTkSoATagV_;
@@ -51,10 +56,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   PixelTracksSoAMerger::PixelTracksSoAMerger(const edm::ParameterSet& iConfig)
       : EDProducer(iConfig),
+        minQuality_(pixelTrack::qualityByName(iConfig.getParameter<std::string>("minQuality"))),
+        matchFraction_(iConfig.getParameter<double>("matchFraction")),
         inputTkSoATagV_(iConfig.getParameter<std::vector<edm::InputTag>>("inputTkSoAs")),
         outputTkSoAToken_(produces()) {
           for(const auto& it : inputTkSoATagV_) {
+            std::cout << it << std::endl;
             inputTkSoATokenV_.push_back(consumes<reco::TracksHost>(it));
+          }
+          if (minQuality_ == pixelTrack::Quality::notQuality) {
+            throw cms::Exception("PixelTrackConfiguration")
+                << iConfig.getParameter<std::string>("minQuality") + " is not a pixelTrack::Quality";
+          }
+          if (minQuality_ < pixelTrack::Quality::dup) {
+            throw cms::Exception("PixelTrackConfiguration")
+                << iConfig.getParameter<std::string>("minQuality") + " not supported";
           }
         }
 
@@ -62,6 +78,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::ParameterSetDescription desc;
 
     desc.add<std::vector<edm::InputTag>>("inputTkSoAs", {edm::InputTag("pixelTracksHighPtAlpaka"),edm::InputTag("pixelTracksLowPtAlpaka"),edm::InputTag("pixelTracksDisplHighPtAlpaka"),edm::InputTag("pixelTracksDisplLowPtAlpaka")});
+    desc.add<std::string>("minQuality", "highPurity");
+    desc.add<double>("matchFraction", 0.0);
 
     descriptions.addWithDefaultLabel(desc);
   }
@@ -123,20 +141,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       cumulNHits.push_back(auxCumulNHits);
     }
 
-    // the output is also a SoA collection with the same layout as the input ones
-    auto output = reco::TracksSoACollection({std::reduce(nTks.begin(), nTks.end()), std::reduce(nHits.begin(), nHits.end())}, queue);
+    // the outputTemp is also a SoA collection with the same layout as the input ones
+    auto outputTemp = reco::TracksSoACollection({std::reduce(nTks.begin(), nTks.end()), std::reduce(nHits.begin(), nHits.end())}, queue);
 
 #ifdef NTRACKS_DEBUG
     std::cout << "----------------- Merging Input Tracks -----------------\n";
     for(int i = 0; i < int(nTks.size()); ++i) std::cout << "Number of tracks input " << i+1 << ": " << nTks[i] << '\n';
-    std::cout << "Total number of tracks: " << output.view().metadata().size() << '\n';
+    std::cout << "Total number of tracks: " << outputTemp.view().metadata().size() << '\n';
     for(int i = 0; i < int(nHits.size()); ++i) std::cout << "Number of hits input " << i+1 << ": " << nHits[i] << '\n';
-    std::cout << "Total number of hits: " << output.view<::reco::TrackHitSoA>().metadata().size() << '\n'
+    std::cout << "Total number of hits: " << outputTemp.view<::reco::TrackHitSoA>().metadata().size() << '\n'
     << "---------------------------------------------------------------------\n";
 #endif
 
     // start from the tracks SoA, use metarecords to loop over all the columns
-    auto outView = output.view();
+    auto outView = outputTemp.view();
 
     // start a loop here over the input SoAs to be easier to access each object
     int nSoAsAux = 0; // auxiliar index to correctly access nTks and nHits
@@ -207,19 +225,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       });
 
-      // update output hitOffsets to take into account the previous SoAs
+      // update outputTemp hitOffsets to take into account the previous SoAs
       for(int i = cumulNTks[nSoAsAux]; i < cumulNTks[nSoAsAux + 1]; ++i){
-         output.view()[i].hitOffsets() += cumulNHits[nSoAsAux];
+         outputTemp.view()[i].hitOffsets() += cumulNHits[nSoAsAux];
       }
 
       // copy track hits information for inp1 hits
       alpaka::memcpy(
           queue,
-          cms::alpakatools::make_device_view(queue, output.view<::reco::TrackHitSoA>().id().data() + cumulNHits[nSoAsAux], nHits[nSoAsAux]),
+          cms::alpakatools::make_device_view(queue, outputTemp.view<::reco::TrackHitSoA>().id().data() + cumulNHits[nSoAsAux], nHits[nSoAsAux]),
           cms::alpakatools::make_device_view(queue, it->view<::reco::TrackHitSoA>().id().data(), nHits[nSoAsAux]));
       alpaka::memcpy(
           queue,
-          cms::alpakatools::make_device_view(queue, output.view<::reco::TrackHitSoA>().detId().data() + cumulNHits[nSoAsAux], nHits[nSoAsAux]),
+          cms::alpakatools::make_device_view(queue, outputTemp.view<::reco::TrackHitSoA>().detId().data() + cumulNHits[nSoAsAux], nHits[nSoAsAux]),
           cms::alpakatools::make_device_view(queue, it->view<::reco::TrackHitSoA>().detId().data(), nHits[nSoAsAux]));
 #ifdef GPU_DEBUG
       alpaka::wait(queue);
@@ -278,9 +296,86 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 #endif
 
+    auto output = reco::TracksSoACollection({std::reduce(nTks.begin(), nTks.end()), std::reduce(nHits.begin(), nHits.end())}, queue);
+
+    int auxOutputTkIndex = 0;
+    int auxOutputHitIndex = 0;
+
+    for(int i = 0; i < outputTemp.view().metadata().size(); ++i){
+
+      if(outputTemp.view()[i].quality() < minQuality_) continue;
+
+      bool hasDuplicate = false;
+      for(int j = i + 1; j < outputTemp.view().metadata().size(); ++j) {
+        if(outputTemp.view()[j].quality() < minQuality_) continue;
+        hasDuplicate = checkForDuplicate(outputTemp,i,j);
+        if(hasDuplicate) break;
+      }
+      if(hasDuplicate) continue;
+
+      output.view()[auxOutputTkIndex].quality() = outputTemp.view()[i].quality();
+      output.view()[auxOutputTkIndex].chi2() = outputTemp.view()[i].chi2();
+      output.view()[auxOutputTkIndex].nLayers() = outputTemp.view()[i].nLayers();
+      output.view()[auxOutputTkIndex].eta() = outputTemp.view()[i].eta();
+      output.view()[auxOutputTkIndex].pt() = outputTemp.view()[i].pt();
+      for(int k = 0; k < 5; ++k) output.view()[auxOutputTkIndex].state()[k] = outputTemp.view()[i].state()[k];
+      for(int k = 0; k < 15; ++k) output.view()[auxOutputTkIndex].covariance()[k] = outputTemp.view()[i].covariance()[k];
+      if (auxOutputTkIndex != 0) {output.view()[auxOutputTkIndex].hitOffsets() = output.view()[auxOutputTkIndex - 1].hitOffsets() + ::reco::nHits(outputTemp.view(),i);}
+      else {output.view()[auxOutputTkIndex].hitOffsets() = ::reco::nHits(outputTemp.view(),i);}
+
+      int auxHitOffsetsIdBegin = 0;
+      if (i > 0) auxHitOffsetsIdBegin = outputTemp.view()[i - 1].hitOffsets();
+
+      int auxHitOffsetsIdEnd = outputTemp.view()[i].hitOffsets();
+      if (i > 0) auxHitOffsetsIdEnd = outputTemp.view()[i].hitOffsets();
+
+      for(int k = int(auxHitOffsetsIdBegin); k < int(auxHitOffsetsIdEnd); ++k){
+        output.view<::reco::TrackHitSoA>()[auxOutputHitIndex].id() = outputTemp.view<::reco::TrackHitSoA>()[k].id();
+        output.view<::reco::TrackHitSoA>()[auxOutputHitIndex].detId() = outputTemp.view<::reco::TrackHitSoA>()[k].detId();
+        ++auxOutputHitIndex;
+      }
+
+      ++auxOutputTkIndex;
+    }
+    output.view().nTracks() = auxOutputTkIndex;
+
+#ifdef NTRACKS_DEBUG
+    std::cout << "----------------- Removing duplicates -----------------\n";
+    std::cout << "Aux total number of tracks: " << auxOutputTkIndex << '\n';
+    std::cout << "Aux total number of hits: " << auxOutputHitIndex << '\n';
+    std::cout << "Total number of tracks: " << output.view().nTracks() << '\n';
+    std::cout << "Total number of hits: " << output.view()[auxOutputTkIndex - 1].hitOffsets() << '\n';
+    std::cout << "Aux total and Total should be the same" << '\n'
+    << "---------------------------------------------------------------------\n";
+#endif
+
     // emplace the merged SoA collection in the event
     iEvent.emplace(outputTkSoAToken_, std::move(output));
   }
+
+  bool PixelTracksSoAMerger::checkForDuplicate(const reco::TracksSoACollection& trks, int i, int j) const{
+    bool isDuplicate = false;
+    if(::reco::nHits(trks.view(),i) == ::reco::nHits(trks.view(),j)){
+      int matchedHits = 0;
+      for(int k = 0; k < ::reco::nHits(trks.view(),i); ++k){
+        int auxHitOffsetsId = 0;
+        if (i > 0) auxHitOffsetsId = trks.view()[i - 1].hitOffsets();
+        if(trks.view<::reco::TrackHitSoA>()[auxHitOffsetsId + k].id() == trks.view<::reco::TrackHitSoA>()[trks.view()[j - 1].hitOffsets() + k].id()) ++matchedHits;
+#ifdef DUPLICATE_DEBUG
+        if(trks.view<::reco::TrackHitSoA>()[auxHitOffsetsId + k].id() == trks.view<::reco::TrackHitSoA>()[trks.view()[j - 1].hitOffsets() + k].id()) std::cout << "Increased matchedHits" << std::endl;
+#endif
+      }
+      if(double(matchedHits) / double(::reco::nHits(trks.view(),i)) > matchFraction_) isDuplicate = true;
+#ifdef DUPLICATE_DEBUG
+        if(isDuplicate) std::cout << "isDuplicate is set to TRUE" << "\n -------------------------------------" << std::endl;
+#endif
+      return isDuplicate;
+    }
+    else {
+      return isDuplicate;
+    }
+  }
+
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
