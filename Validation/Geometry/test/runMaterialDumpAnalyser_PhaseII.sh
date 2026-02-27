@@ -39,9 +39,9 @@ done
 if checkFile SingleMuPt10_pythia8_cfi_GEN_SIM_PhaseII.root ; then
   cmsDriver.py SingleMuPt10_pythia8_cfi \
 -s GEN,SIM \
---conditions auto:phase2_realistic \
+--conditions auto:phase2_realistic_T35 \
 -n ${events} \
---era Phase2C2 \
+--era Phase2C22I13M9 \
 --eventcontent FEVTDEBUG \
 --datatier GEN-SIM \
 --beamspot NoSmear \
@@ -60,9 +60,9 @@ fi
 if checkFile SingleMuPt10_step2_DIGI_L1_DIGI2RAW_HLT_PhaseII.root ; then
   cmsDriver.py step2   \
 -s DIGI:pdigi_valid,L1TrackTrigger,L1,DIGI2RAW,HLT:@fake2  \
---conditions auto:phase2_realistic \
+--conditions auto:phase2_realistic_T35 \
 -n -1  \
---era Phase2C2  \
+--era Phase2C22I13M9  \
 --eventcontent FEVTDEBUGHLT \
 --datatier GEN-SIM-DIGI-RAW  \
 --nThreads=6 \
@@ -81,9 +81,9 @@ fi
 if checkFile SingleMuPt10_step3_RECO_DQM_PhaseII.root ; then
   cmsDriver.py step3 \
 -s RAW2DIGI,L1Reco,RECO,VALIDATION:@phase2Validation,DQM:@phase2 \
---conditions auto:phase2_realistic \
+--conditions auto:phase2_realistic_T35 \
 -n -1  \
---era Phase2C2  \
+--era Phase2C22I13M9  \
 --eventcontent FEVTDEBUGHLT,DQM  \
 --datatier GEN-SIM-RECO,DQMIO  \
 --nThreads=6 \
@@ -104,7 +104,7 @@ if checkFile DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO.root ; then
 -s HARVESTING:@trackingOnlyValidation+@trackingOnlyDQM  \
 --conditions auto:run2_mc \
 -n -1   \
---era Phase2C2  \
+--era Phase2C22I13M9  \
 --scenario pp  \
 --filetype DQM  \
 --geometry ${geometry}  \
@@ -121,7 +121,7 @@ fi
 # Neutrino Particle gun
 
 if checkFile single_neutrino_random.root ; then
-  cmsRun ../python/single_neutrino_cfg.py
+  cmsRun single_neutrino_cfg.py
   if [ $? -ne 0 ]; then
     echo "Error generating single neutrino gun, aborting."
     exit 1
@@ -135,7 +135,7 @@ fi
 
 for t in BeamPipe Tracker Phase2PixelBarrel Phase2OTBarrel Phase2PixelEndcap Phase2OTForward; do
   if [ ! -e matbdg_${t}.root ]; then
-    python3 runP_Tracker.py geom=${geometry} label=$t >& /dev/null &
+    python3 runP_TrackerPhase2TkBE_cfg.py geom=${geometry} label=$t >& /dev/null &
   fi
 done
 
@@ -144,7 +144,7 @@ waitPendingJobs
 # Always run the comparison at this stage, since you are guaranteed that all the ingredients are there
 
 for t in BeamPipe Tracker TrackerSumPhaseII Phase2PixelBarrel Phase2OTBarrel Phase2PixelEndcap Phase2OTForward; do
-  python3 MaterialBudget.py -s -d ${t}
+  python3 MaterialBudget.py -s -d ${t} -g ${geometry}
   if [ $? -ne 0 ]; then
     echo "Error while producing simulation material for ${t}, aborting"
     exit 1

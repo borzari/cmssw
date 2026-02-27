@@ -750,9 +750,9 @@ def createPlotsReco_(reco_file, label, debug=False):
         c.Modified()
         c.SaveAs("%sstacked_%s.png" % (s, label))
     hs = THStack("diff","")
-    for d in range(0,len(diffs)/2):
-        diffs[d+len(diffs)/2].Add(diffs[d], -1.)
-        hs.Add(diffs[d+len(diffs)/2]);
+    for d in range(0,int(len(diffs)/2)):
+        diffs[d+int(len(diffs)/2)].Add(diffs[d], -1.)
+        hs.Add(diffs[d+int(len(diffs)/2)]);
     hs.Draw()
     hs.GetYaxis().SetTitle("RadLen")
     c.Update()

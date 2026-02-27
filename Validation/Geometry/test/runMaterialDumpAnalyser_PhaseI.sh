@@ -120,7 +120,7 @@ fi
 # Neutrino Particle gun
 
 if checkFile single_neutrino_random.root ; then
-  cmsRun ../python/single_neutrino_cfg.py
+  cmsRun single_neutrino_cfg.py
   if [ $? -ne 0 ]; then
     echo "Error generating single neutrino gun, aborting."
     exit 1
@@ -143,7 +143,7 @@ waitPendingJobs
 # Always run the comparison at this stage, since you are guaranteed that all the ingredients are there
 
 for t in TrackerSum Pixel Strip InnerTracker BeamPipe Tracker PixBar PixFwdMinus PixFwdPlus TIB TOB TIDB TIDF TEC TkStrct InnerServices; do
-  python3 MaterialBudget.py -s -d ${t}
+  python3 MaterialBudget.py -s -d ${t} -g ${geometry}
   if [ $? -ne 0 ]; then
     echo "Error while producing simulation material for ${t}, aborting"
     exit 1
