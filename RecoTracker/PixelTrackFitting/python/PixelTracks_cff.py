@@ -163,7 +163,6 @@ phase2CAExtension.toReplaceWith(pixelTracks, _pixelTrackProducerFromSoAAlpaka.cl
     beamSpot = cms.InputTag("offlineBeamSpot"),
     minNumberOfHits = cms.int32(0),
     minQuality = cms.string('tight'),
-    # minQuality = cms.string('highPurity'),
     trackSrc = cms.InputTag("pixelTracksAlpaka"),
     outerTrackerRecHitSrc = cms.InputTag("siPhase2RecHits"),
     outerTrackerRecHitSoAConverterSrc = cms.InputTag("phase2OTRecHitsSoAConverter"),
@@ -200,15 +199,17 @@ from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
     pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
     maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
-    ptmin = 5.0,
+    ptmin = 2.0,
     trackQualityCuts = cms.PSet(
         maxChi2 = cms.double(5),
         maxChi2Quintuplets = cms.double(3),
         maxChi2TripletsOrQuadruplets = cms.double(1),
         maxTip = cms.double(0.3),
         maxZip = cms.double(12),
-        minPt = cms.double(5.0)
+        minPt = cms.double(2.0)
     ),
+    hardCurvCut = cms.double(0.010),
+    dzdrFact = cms.double(15.199999809265137),
     geometry = cms.PSet(
         caDCACuts = cms.vdouble(
             0.15000000596046448, 0.25, 0.20000000298023224, 0.20000000298023224, 0.25,
@@ -397,21 +398,21 @@ from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
             int(0.8*1000), int(0.8*1100), int(0.8*1250)
         ),
         ptCuts = cms.vdouble(
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5, 4.5, 4.5,
-            4.5, 4.5, 4.5
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9, 1.9, 1.9,
+            1.9, 1.9, 1.9
         ),
         startingPairs = cms.vuint32(
             0, 1, 2, 3, 4,
@@ -438,7 +439,7 @@ pixelTracksHighPtAlpakaSerial = makeSerialClone(pixelTracksHighPtAlpaka,
 from RecoTracker.PixelSeeding.pixelTracksMaskingSoA_cfi import pixelTracksMaskingSoA as _pixelTracksMaskingSoA
 
 pixelTracksHighPtMaskingSoA = _pixelTracksMaskingSoA.clone(
-    # minQuality = "loose",
+    minQuality = "tight",
     tracksSoASrc = "pixelTracksHighPtAlpaka",
 )
 
@@ -454,25 +455,27 @@ pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
 (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksLowPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone(
     hitMask = "pixelTracksHighPtMaskingSoA",
     pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
-    ptmin              = 0.3,
+    ptmin              = 0.45,
     trackQualityCuts = cms.PSet(
         maxChi2 = cms.double(5),
         maxChi2Quintuplets = cms.double(3),
         maxChi2TripletsOrQuadruplets = cms.double(1),
         maxTip = cms.double(0.3),
         maxZip = cms.double(12),
-        minPt = cms.double(0.3)
+        minPt = cms.double(0.45)
     ),
     maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
+    cellZ0Cut = cms.double(13.5),
+    hardCurvCut = cms.double(0.035),
     geometry = cms.PSet(
         caDCACuts = cms.vdouble(
-            0.15000000596046448, 0.25, 0.20000000298023224, 0.20000000298023224, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.10000000149011612, 0.10000000149011612,
+            0.16000000596046448, 0.30, 0.25000000298023224, 0.25000000298023224, 0.25,
+            0.25, 0.25, 0.25, 0.25, 0.26,
+            0.26, 0.30, 0.30, 0.30, 0.25,
+            0.25, 0.25, 0.25, 0.26, 0.26,
+            0.25, 0.26, 0.25, 0.30, 0.30,
+            0.30, 0.25, 0.25, 0.20000000149011612, 0.10000000149011612,
             0.10000000149011612
         ),
         caThetaCuts = cms.vdouble(
@@ -653,21 +656,21 @@ pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
             int(1.0*1000), int(1.0*1100), int(1.0*1250)
         ),
         ptCuts = cms.vdouble(
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40, 0.40, 0.40,
+            0.40, 0.40, 0.40
         ),
         startingPairs = cms.vuint32(
             0, 1, 2, 3, 4,
@@ -711,7 +714,7 @@ from  RecoTracker.PixelTrackFitting.pixelTrackProducerFromSoAAlpaka_cfi import p
 from RecoTracker.PixelSeeding.pixelTracksSoAMerger_cfi import pixelTracksSoAMerger as _pixelTracksSoAMerger
 
 pixelTracksLowPtMaskingSoA = _pixelTracksMaskingSoA.clone(
-    # minQuality = "loose",
+    minQuality = "tight",
     recHitsMaskSoASrc = "pixelTracksHighPtMaskingSoA",
     tracksSoASrc = "pixelTracksLowPtAlpaka",
 )
@@ -760,7 +763,7 @@ pixelTracksDisplHighPtAlpakaSerial = makeSerialClone(pixelTracksDisplHighPtAlpak
                            )
 
 pixelTracksDisplHighPtMaskingSoA = _pixelTracksMaskingSoA.clone(
-    # minQuality = "loose",
+    minQuality = "tight",
     recHitsMaskSoASrc = "pixelTracksLowPtMaskingSoA",
     tracksSoASrc = "pixelTracksDisplHighPtAlpaka",
 )
@@ -818,11 +821,6 @@ pixelTracksDisplLowPtAlpakaSerial = makeSerialClone(pixelTracksDisplLowPtAlpaka,
     matchFraction = cms.double(0.0),
 ))
 
-# (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksAlpaka, _pixelTracksSoAMerger.clone(
-#     inputTkSoAs = cms.VInputTag("pixelTracksHighPtAlpaka","pixelTracksLowPtAlpaka"),
-# ))
-
-
 (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracks, _pixelTrackProducerFromSoAAlpaka.clone(
     pixelRecHitLegacySrc = "siPixelRecHitsPreSplitting",
     beamSpot = cms.InputTag("offlineBeamSpot"),
@@ -869,6 +867,7 @@ pixelTracksDisplLowPtAlpakaSerial = makeSerialClone(pixelTracksDisplLowPtAlpaka,
 #     pixelTracks)
 # )
 
+# Just used to check only 2 iterations; more iterations (above) will probably be better
 (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksTask, cms.Task(
     # Build the highPt pixel ntuplets and the pixel tracks in SoA format with alpaka on the device
     pixelTracksHighPtAlpaka,

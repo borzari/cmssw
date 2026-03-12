@@ -29,7 +29,7 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 
 // #define GPU_DEBUG
-#define NTRACKS_DEBUG
+// #define NTRACKS_DEBUG
 // #define DUPLICATE_DEBUG
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -61,7 +61,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         inputTkSoATagV_(iConfig.getParameter<std::vector<edm::InputTag>>("inputTkSoAs")),
         outputTkSoAToken_(produces()) {
           for(const auto& it : inputTkSoATagV_) {
-            std::cout << it << std::endl;
             inputTkSoATokenV_.push_back(consumes<reco::TracksHost>(it));
           }
           if (minQuality_ == pixelTrack::Quality::notQuality) {
