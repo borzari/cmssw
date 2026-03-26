@@ -102,9 +102,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using HitsOnDevice = reco::TrackingRecHitsSoACollection;
     using HitsOnHost = ::reco::TrackingRecHitHost;
 
-    // using MapToHit = std::vector<std::pair<uint32_t,uint32_t>>;
     using MapToHit = reco::TrackingRecHitsMaskingCollection;
-    using MapToHitConstView = ::reco::TrackingRecHitsMaskingConstView;
 
     using TkSoAHost = ::reco::TracksHost;
     using TkSoADevice = reco::TracksSoACollection;
@@ -388,19 +386,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       uint32_t const maxTuples = maxNumberOfTuples_.evaluate(nHitsV, emptyV);
       uint32_t const maxDoublets = maxNumberOfDoublets_.evaluate(nHitsV, emptyV);
 
-    // {
       auto const& mask = iEvent.get(tokenHitMask_);
-      // std::cout << mask.size() << std::endl;
-      // std::cout << "PreMask GPU" << mask[0].first << std::endl;
-      // MapToHit mask(maxDoublets); // mask can be made full of 0s at an earlier stage in the case where no mask should be applied
-      // auto* maskPtr = mask.data();
-      // iEvent.emplace(tokenTrack_,
-      //                deviceAlgo_.makeTuplesAsync(hits, geometry, bf, maxDoublets, maxTuples, maskPtr, iEvent.queue()));
+      
       iEvent.emplace(tokenTrack_,
                      deviceAlgo_.makeTuplesAsync(hits, geometry, bf, maxDoublets, maxTuples, mask, iEvent.queue()));
-    // else
-    //   iEvent.emplace(tokenTrack_,
-    //                  deviceAlgo_.makeTuplesAsync(hits, geometry, bf, maxDoublets, maxTuples, iEvent.queue()));
 
     } else {
       edm::LogWarning("CAHitNtupletAlpaka") << "No hit on BPix1 (" << hits.offsetBPIX2()

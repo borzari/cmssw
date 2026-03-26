@@ -6,7 +6,6 @@
 
 #include "DataFormats/TrackSoA/interface/TracksHost.h"
 #include "DataFormats/TrackSoA/interface/alpaka/TracksSoACollection.h"
-#include "DataFormats/TrackSoA/interface/TracksHost.h"
 #include "DataFormats/TrackSoA/interface/TracksDevice.h"
 #include "DataFormats/TrackingRecHitSoA/interface/alpaka/TrackingRecHitsSoACollection.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
@@ -28,6 +27,8 @@
 #include "RecoTracker/TkMSParametrization/interface/PixelRecoUtilities.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 
+#include "CAHitNtupletGenerator.h"
+
 // #define GPU_DEBUG
 // #define NTRACKS_DEBUG
 // #define DUPLICATE_DEBUG
@@ -35,6 +36,9 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class PixelTracksSoAMerger : public global::EDProducer<> {
+
+  using Algo = CAHitMaskingAndMerger;
+
   public:
     explicit PixelTracksSoAMerger(const edm::ParameterSet& iConfig);
     ~PixelTracksSoAMerger() override = default;
@@ -43,15 +47,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     void produce(edm::StreamID streamID, device::Event& iEvent, const device::EventSetup& iSetup) const override;
-    bool checkForDuplicate(const reco::TracksSoACollection& trks, int i, int j) const;
+    // bool checkForDuplicate(const reco::TracksSoACollection& trks, int i, int j) const;
 
     pixelTrack::Quality const minQuality_;
     double const matchFraction_;
 
-    std::vector<edm::EDGetTokenT<reco::TracksHost>> inputTkSoATokenV_;
+    std::vector<device::EDGetToken<reco::TracksSoACollection>> inputTkSoATokenV_;
     std::vector<edm::InputTag> inputTkSoATagV_;
 
-    const edm::EDPutTokenT<reco::TracksSoACollection> outputTkSoAToken_;
+    const device::EDPutToken<reco::TracksSoACollection> outputTkSoAToken_;
+
+    Algo deviceAlgo_;
   };
 
   PixelTracksSoAMerger::PixelTracksSoAMerger(const edm::ParameterSet& iConfig)
@@ -61,7 +67,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         inputTkSoATagV_(iConfig.getParameter<std::vector<edm::InputTag>>("inputTkSoAs")),
         outputTkSoAToken_(produces()) {
           for(const auto& it : inputTkSoATagV_) {
-            inputTkSoATokenV_.push_back(consumes<reco::TracksHost>(it));
+            inputTkSoATokenV_.push_back(consumes(it));
           }
           if (minQuality_ == pixelTrack::Quality::notQuality) {
             throw cms::Exception("PixelTrackConfiguration")
@@ -105,7 +111,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // get both Pixel and Tracker SoA collections
     auto queue = iEvent.queue();
 
-    std::vector<const reco::TracksHost*> inputTkSoAs;
+    std::vector<const reco::TracksSoACollection*> inputTkSoAs;
     for(const auto& it : inputTkSoATokenV_) {
       auto const& aux = iEvent.get(it);
       inputTkSoAs.push_back(&aux);
@@ -225,9 +231,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       });
 
       // update outputTemp hitOffsets to take into account the previous SoAs
-      for(int i = cumulNTks[nSoAsAux]; i < cumulNTks[nSoAsAux + 1]; ++i){
-         outputTemp.view()[i].hitOffsets() += cumulNHits[nSoAsAux];
-      }
+      deviceAlgo_.updateHitOffsets(cumulNTks[nSoAsAux],cumulNTks[nSoAsAux + 1],cumulNHits[nSoAsAux],outputTemp,queue);
+
+      // for(int i = cumulNTks[nSoAsAux]; i < cumulNTks[nSoAsAux + 1]; ++i){
+      //    outputTemp.view()[i].hitOffsets() += cumulNHits[nSoAsAux];
+      // }
 
       // copy track hits information for inp1 hits
       alpaka::memcpy(
@@ -295,85 +303,90 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 #endif
 
-    auto output = reco::TracksSoACollection({std::reduce(nTks.begin(), nTks.end()), std::reduce(nHits.begin(), nHits.end())}, queue);
+//     auto output = reco::TracksSoACollection({std::reduce(nTks.begin(), nTks.end()), std::reduce(nHits.begin(), nHits.end())}, queue);
 
-    int auxOutputTkIndex = 0;
-    int auxOutputHitIndex = 0;
+//     int auxOutputTkIndex = 0;
+//     int auxOutputHitIndex = 0;
 
-    for(int i = 0; i < outputTemp.view().metadata().size(); ++i){
+//     for(int i = 0; i < outputTemp.view().metadata().size(); ++i){
 
-      if(outputTemp.view()[i].quality() < minQuality_) continue;
+//       if(outputTemp.view()[i].quality() < minQuality_) continue;
 
-      bool hasDuplicate = false;
-      for(int j = i + 1; j < outputTemp.view().metadata().size(); ++j) {
-        if(outputTemp.view()[j].quality() < minQuality_) continue;
-        hasDuplicate = checkForDuplicate(outputTemp,i,j);
-        if(hasDuplicate) break;
-      }
-      if(hasDuplicate) continue;
+//       bool hasDuplicate = false;
+//       for(int j = i + 1; j < outputTemp.view().metadata().size(); ++j) {
+//         if(outputTemp.view()[j].quality() < minQuality_) continue;
+//         hasDuplicate = checkForDuplicate(outputTemp,i,j);
+//         if(hasDuplicate) break;
+//       }
+//       if(hasDuplicate) continue;
 
-      output.view()[auxOutputTkIndex].quality() = outputTemp.view()[i].quality();
-      output.view()[auxOutputTkIndex].chi2() = outputTemp.view()[i].chi2();
-      output.view()[auxOutputTkIndex].nLayers() = outputTemp.view()[i].nLayers();
-      output.view()[auxOutputTkIndex].eta() = outputTemp.view()[i].eta();
-      output.view()[auxOutputTkIndex].pt() = outputTemp.view()[i].pt();
-      for(int k = 0; k < 5; ++k) output.view()[auxOutputTkIndex].state()[k] = outputTemp.view()[i].state()[k];
-      for(int k = 0; k < 15; ++k) output.view()[auxOutputTkIndex].covariance()[k] = outputTemp.view()[i].covariance()[k];
-      if (auxOutputTkIndex != 0) {output.view()[auxOutputTkIndex].hitOffsets() = output.view()[auxOutputTkIndex - 1].hitOffsets() + ::reco::nHits(outputTemp.view(),i);}
-      else {output.view()[auxOutputTkIndex].hitOffsets() = ::reco::nHits(outputTemp.view(),i);}
+//       output.view()[auxOutputTkIndex].quality() = outputTemp.view()[i].quality();
+//       output.view()[auxOutputTkIndex].chi2() = outputTemp.view()[i].chi2();
+//       output.view()[auxOutputTkIndex].nLayers() = outputTemp.view()[i].nLayers();
+//       output.view()[auxOutputTkIndex].eta() = outputTemp.view()[i].eta();
+//       output.view()[auxOutputTkIndex].pt() = outputTemp.view()[i].pt();
+//       for(int k = 0; k < 5; ++k) output.view()[auxOutputTkIndex].state()[k] = outputTemp.view()[i].state()[k];
+//       for(int k = 0; k < 15; ++k) output.view()[auxOutputTkIndex].covariance()[k] = outputTemp.view()[i].covariance()[k];
+//       if (auxOutputTkIndex != 0) {output.view()[auxOutputTkIndex].hitOffsets() = output.view()[auxOutputTkIndex - 1].hitOffsets() + ::reco::nHits(outputTemp.view(),i);}
+//       else {output.view()[auxOutputTkIndex].hitOffsets() = ::reco::nHits(outputTemp.view(),i);}
 
-      int auxHitOffsetsIdBegin = 0;
-      if (i > 0) auxHitOffsetsIdBegin = outputTemp.view()[i - 1].hitOffsets();
+//       int auxHitOffsetsIdBegin = 0;
+//       if (i > 0) auxHitOffsetsIdBegin = outputTemp.view()[i - 1].hitOffsets();
 
-      int auxHitOffsetsIdEnd = outputTemp.view()[i].hitOffsets();
-      if (i > 0) auxHitOffsetsIdEnd = outputTemp.view()[i].hitOffsets();
+//       int auxHitOffsetsIdEnd = outputTemp.view()[i].hitOffsets();
+//       if (i > 0) auxHitOffsetsIdEnd = outputTemp.view()[i].hitOffsets();
 
-      for(int k = int(auxHitOffsetsIdBegin); k < int(auxHitOffsetsIdEnd); ++k){
-        output.view<::reco::TrackHitSoA>()[auxOutputHitIndex].id() = outputTemp.view<::reco::TrackHitSoA>()[k].id();
-        output.view<::reco::TrackHitSoA>()[auxOutputHitIndex].detId() = outputTemp.view<::reco::TrackHitSoA>()[k].detId();
-        ++auxOutputHitIndex;
-      }
+//       for(int k = int(auxHitOffsetsIdBegin); k < int(auxHitOffsetsIdEnd); ++k){
+//         output.view<::reco::TrackHitSoA>()[auxOutputHitIndex].id() = outputTemp.view<::reco::TrackHitSoA>()[k].id();
+//         output.view<::reco::TrackHitSoA>()[auxOutputHitIndex].detId() = outputTemp.view<::reco::TrackHitSoA>()[k].detId();
+//         ++auxOutputHitIndex;
+//       }
 
-      ++auxOutputTkIndex;
-    }
-    output.view().nTracks() = auxOutputTkIndex;
+//       ++auxOutputTkIndex;
+//     }
+//     output.view().nTracks() = auxOutputTkIndex;
 
-#ifdef NTRACKS_DEBUG
-    std::cout << "----------------- Removing duplicates -----------------\n";
-    std::cout << "Aux total number of tracks: " << auxOutputTkIndex << '\n';
-    std::cout << "Aux total number of hits: " << auxOutputHitIndex << '\n';
-    std::cout << "Total number of tracks: " << output.view().nTracks() << '\n';
-    std::cout << "Total number of hits: " << output.view()[auxOutputTkIndex - 1].hitOffsets() << '\n';
-    std::cout << "Aux total and Total should be the same" << '\n'
-    << "---------------------------------------------------------------------\n";
-#endif
+// #ifdef NTRACKS_DEBUG
+//     std::cout << "----------------- Removing duplicates -----------------\n";
+//     std::cout << "Aux total number of tracks: " << auxOutputTkIndex << '\n';
+//     std::cout << "Aux total number of hits: " << auxOutputHitIndex << '\n';
+//     std::cout << "Total number of tracks: " << output.view().nTracks() << '\n';
+//     std::cout << "Total number of hits: " << output.view()[auxOutputTkIndex - 1].hitOffsets() << '\n';
+//     std::cout << "Aux total and Total should be the same" << '\n'
+//     << "---------------------------------------------------------------------\n";
+// #endif
+
+    // calculate the total number of tracks and hits
+    int totTracks = std::reduce(nTks.begin(), nTks.end());
+    int totHits = std::reduce(nHits.begin(), nHits.end());
 
     // emplace the merged SoA collection in the event
-    iEvent.emplace(outputTkSoAToken_, std::move(output));
+    // iEvent.emplace(outputTkSoAToken_, std::move(output));
+    iEvent.emplace(outputTkSoAToken_, deviceAlgo_.makeFilteredTracks(totTracks,totHits,outputTemp,minQuality_,matchFraction_,queue));
   }
 
-  bool PixelTracksSoAMerger::checkForDuplicate(const reco::TracksSoACollection& trks, int i, int j) const{
-    bool isDuplicate = false;
-    if(::reco::nHits(trks.view(),i) == ::reco::nHits(trks.view(),j)){
-      int matchedHits = 0;
-      for(int k = 0; k < ::reco::nHits(trks.view(),i); ++k){
-        int auxHitOffsetsId = 0;
-        if (i > 0) auxHitOffsetsId = trks.view()[i - 1].hitOffsets();
-        if(trks.view<::reco::TrackHitSoA>()[auxHitOffsetsId + k].id() == trks.view<::reco::TrackHitSoA>()[trks.view()[j - 1].hitOffsets() + k].id()) ++matchedHits;
-#ifdef DUPLICATE_DEBUG
-        if(trks.view<::reco::TrackHitSoA>()[auxHitOffsetsId + k].id() == trks.view<::reco::TrackHitSoA>()[trks.view()[j - 1].hitOffsets() + k].id()) std::cout << "Increased matchedHits" << std::endl;
-#endif
-      }
-      if(double(matchedHits) / double(::reco::nHits(trks.view(),i)) > matchFraction_) isDuplicate = true;
-#ifdef DUPLICATE_DEBUG
-        if(isDuplicate) std::cout << "isDuplicate is set to TRUE" << "\n -------------------------------------" << std::endl;
-#endif
-      return isDuplicate;
-    }
-    else {
-      return isDuplicate;
-    }
-  }
+//   bool PixelTracksSoAMerger::checkForDuplicate(const reco::TracksSoACollection& trks, int i, int j) const{
+//     bool isDuplicate = false;
+//     if(::reco::nHits(trks.view(),i) == ::reco::nHits(trks.view(),j)){
+//       int matchedHits = 0;
+//       for(int k = 0; k < ::reco::nHits(trks.view(),i); ++k){
+//         int auxHitOffsetsId = 0;
+//         if (i > 0) auxHitOffsetsId = trks.view()[i - 1].hitOffsets();
+//         if(trks.view<::reco::TrackHitSoA>()[auxHitOffsetsId + k].id() == trks.view<::reco::TrackHitSoA>()[trks.view()[j - 1].hitOffsets() + k].id()) ++matchedHits;
+// #ifdef DUPLICATE_DEBUG
+//         if(trks.view<::reco::TrackHitSoA>()[auxHitOffsetsId + k].id() == trks.view<::reco::TrackHitSoA>()[trks.view()[j - 1].hitOffsets() + k].id()) std::cout << "Increased matchedHits" << std::endl;
+// #endif
+//       }
+//       if(double(matchedHits) / double(::reco::nHits(trks.view(),i)) > matchFraction_) isDuplicate = true;
+// #ifdef DUPLICATE_DEBUG
+//         if(isDuplicate) std::cout << "isDuplicate is set to TRUE" << "\n -------------------------------------" << std::endl;
+// #endif
+//       return isDuplicate;
+//     }
+//     else {
+//       return isDuplicate;
+//     }
+//   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

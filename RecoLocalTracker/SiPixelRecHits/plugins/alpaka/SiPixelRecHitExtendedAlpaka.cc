@@ -23,6 +23,8 @@
 #include "RecoLocalTracker/SiPixelRecHits/interface/alpaka/PixelCPEFastParamsCollection.h"
 #include "RecoLocalTracker/SiPixelRecHits/interface/pixelCPEforDevice.h"
 
+#include "PixelRecHitKernel.h"
+
 //#define GPU_DEBUG
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -42,6 +44,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const device::EDPutToken<reco::TrackingRecHitsSoACollection> outputRecHitsSoAToken_;
     const device::EDPutToken<reco::TrackingRecHitsMaskingCollection> outputRecHitsMaskToken_;
+
+    const pixelgpudetails::PixelRecHitMaskingKernel Algo_;
   };
 
   SiPixelRecHitExtendedAlpaka::SiPixelRecHitExtendedAlpaka(const edm::ParameterSet& iConfig)
@@ -189,14 +193,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     iEvent.emplace(outputRecHitsSoAToken_, std::move(output));
 
     // create masking vector with zeros and emplace in the event
-    auto TrackingRecHitsMasking = reco::TrackingRecHitsMaskingCollection(static_cast<uint32_t>(output.nHits()), queue); // initializes not all 0s, so needs to be changed
-    for(int i = 0; i < TrackingRecHitsMasking.view().metadata().size(); ++i){
-      // // dummy masking for testing
-      // if (i % 10 == 0) TrackingRecHitsMasking.view()[i].recHitMask() = 1;
-      // else TrackingRecHitsMasking.view()[i].recHitMask() = 0;
-      TrackingRecHitsMasking.view()[i].recHitMask() = 0;
-    }
-    iEvent.emplace(outputRecHitsMaskToken_, std::move(TrackingRecHitsMasking));
+    iEvent.emplace(outputRecHitsMaskToken_, Algo_.makeHitsMaskingAsync(static_cast<uint32_t>(output.nHits()), iEvent.queue()));
+
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
