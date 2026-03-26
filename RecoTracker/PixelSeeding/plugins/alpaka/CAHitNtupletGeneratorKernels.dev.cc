@@ -429,7 +429,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         this->device_hitContainer_->data(),
                         this->device_tupleMultiplicity_->data());
     GenericContainer::template launchFinalize<Acc1D>(this->device_tupleMultiplicityView_, queue);
-
 #ifdef GPU_DEBUG
     alpaka::wait(queue);
     std::cout << "Kernel_countMultiplicity   -> done!" << std::endl;
@@ -792,6 +791,107 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::wait(queue);
     }
 #endif
+  }
+
+  void CAHitMaskingAndMergerKernels::updateMasking(::reco::TrackingRecHitsMaskingView& mask_view,
+                                                   const ::reco::TrackingRecHitsMaskingConstView& maskd_view,
+                                                   const ::reco::TrackSoAConstView& trackd_view,
+                                                   const ::reco::TrackHitSoAConstView& trackhitd_view,
+                                                   const pixelTrack::Quality minQuality,
+                                                   Queue& queue) {
+
+    using namespace caHitNtupletGeneratorKernels;
+
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "Starting CAHitMaskingAndMergerKernels::updateMasking" << std::endl;
+#endif
+
+    uint32_t nHits = maskd_view.metadata().size();
+
+    int threadsPerBlock = 128;
+    // note: the kernel should work with an arbitrary number of blocks
+    int blocks = nHits;
+    const auto workDiv1D = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlock);
+    alpaka::exec<Acc1D>(queue,
+                        workDiv1D,
+                        Kernel_updateMasking{},
+                        mask_view,
+                        maskd_view,
+                        trackd_view,
+                        trackhitd_view,
+                        minQuality);
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "Kernel_updateMasking -> done!" << std::endl;
+#endif
+
+  }
+
+  void CAHitMaskingAndMergerKernels::updateHitOffsets(int const& tksBeg,
+                                                      int const& tksEnd,
+                                                      int const& nHits,
+                                                      ::reco::TrackSoAView& trackd_view,
+                                                      Queue& queue) {
+
+    using namespace caHitNtupletGeneratorKernels;
+
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "Starting CAHitMaskingAndMergerKernels::updateHitOffsets" << std::endl;
+#endif
+
+    int threadsPerBlock = 1;
+    // note: the kernel should work with an arbitrary number of blocks
+    int blocks = 1;
+    const auto workDiv1D = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlock);
+    alpaka::exec<Acc1D>(queue,
+                        workDiv1D,
+                        Kernel_updateHitOffsets{},
+                        tksBeg,
+                        tksEnd,
+                        nHits,
+                        trackd_view);
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "Kernel_updateHitOffsets -> done!" << std::endl;
+#endif
+
+  }
+
+  void CAHitMaskingAndMergerKernels::filterTracks(::reco::TrackSoAView& track_view,
+                                                  ::reco::TrackHitSoAView& trackHit_view,
+                                                  const ::reco::TrackSoAConstView& inpTrack_view,
+                                                  const ::reco::TrackHitSoAConstView& inpTrackHit_view,
+                                                  const pixelTrack::Quality minQuality,
+                                                  const double matchFraction,
+                                                  Queue& queue) {
+
+    using namespace caHitNtupletGeneratorKernels;
+
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "Starting CAHitMaskingAndMergerKernels::filterTracks" << std::endl;
+#endif
+
+    int threadsPerBlock = 128;
+    // note: the kernel should work with an arbitrary number of blocks
+    int blocks = inpTrack_view.metadata().size();
+    const auto workDiv1D = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlock);
+    alpaka::exec<Acc1D>(queue,
+                        workDiv1D,
+                        Kernel_filterTracks{},
+                        track_view,
+                        trackHit_view,
+                        inpTrack_view,
+                        inpTrackHit_view,
+                        minQuality,
+                        matchFraction);
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "Kernel_filterTracks -> done!" << std::endl;
+#endif
+
   }
 
   /* This will make sense when we will be able to run this once per job in Alpaka

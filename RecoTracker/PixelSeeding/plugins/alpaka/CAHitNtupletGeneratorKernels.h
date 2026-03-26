@@ -248,6 +248,39 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     uint32_t maxNumberOfDoublets_;
   };
 
+  class CAHitMaskingAndMergerKernels {
+  public:
+    CAHitMaskingAndMergerKernels() = default;
+    ~CAHitMaskingAndMergerKernels() = default;
+
+    CAHitMaskingAndMergerKernels(const CAHitMaskingAndMergerKernels&) = delete;
+    CAHitMaskingAndMergerKernels(CAHitMaskingAndMergerKernels&&) = delete;
+    CAHitMaskingAndMergerKernels& operator=(const CAHitMaskingAndMergerKernels&) = delete;
+    CAHitMaskingAndMergerKernels& operator=(CAHitMaskingAndMergerKernels&&) = delete;
+
+    void updateMasking(::reco::TrackingRecHitsMaskingView& mask_view,
+                       const ::reco::TrackingRecHitsMaskingConstView& maskd_view,
+                       const ::reco::TrackSoAConstView& trackd_view,
+                       const ::reco::TrackHitSoAConstView& trackhitd_view,
+                       const pixelTrack::Quality minQuality,
+                       Queue& queue);
+
+    void updateHitOffsets(int const& tksBeg,
+                          int const& tksEnd,
+                          int const& nHits,
+                          ::reco::TrackSoAView& trackd_view,
+                          Queue& queue);
+
+    void filterTracks(::reco::TrackSoAView& track_view,
+                      ::reco::TrackHitSoAView& trackHit_view,
+                      const ::reco::TrackSoAConstView& inpTrack_view,
+                      const ::reco::TrackHitSoAConstView& inpTrackHit_view,
+                      const pixelTrack::Quality minQuality,
+                      const double matchFraction,
+                      Queue& queue);
+
+  };
+
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #endif  // RecoTracker_PixelSeeding_plugins_alpaka_CAHitNtupletGeneratorKernels_h

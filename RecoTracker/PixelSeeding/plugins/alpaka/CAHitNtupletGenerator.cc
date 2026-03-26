@@ -448,6 +448,80 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     return tracks;
   }
 
+  reco::TrackingRecHitsMaskingCollection CAHitMaskingAndMerger::makeMaskingAsync(MapToHit const& mask_d,
+                                                                                 TkSoADevice const& tracks_d,
+                                                                                 const pixelTrack::Quality minQuality,
+                                                                                 Queue& queue) const {
+
+    const int nHits = mask_d.view().metadata().size();
+
+    reco::TrackingRecHitsMaskingCollection mask(static_cast<uint32_t>(nHits), queue);
+
+    CAHitMaskingAndMergerKernels kernels;
+
+    kernels.updateMasking(mask.view(),
+                          mask_d.view(),
+                          tracks_d.view(),
+                          tracks_d.view<::reco::TrackHitSoA>(),
+                          minQuality,
+                          queue);
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "finished updating pixel masking on GPU" << std::endl;
+#endif
+
+    return mask;
+  }
+
+  void CAHitMaskingAndMerger::updateHitOffsets(int const& tksBeg,
+                                               int const& tksEnd,
+                                               int const& nHits,
+                                               TkSoADevice& tracks_d,
+                                               Queue& queue) const {
+
+    CAHitMaskingAndMergerKernels kernels;
+
+    kernels.updateHitOffsets(tksBeg,
+                             tksEnd,
+                             nHits,
+                             tracks_d.view(),
+                             queue);
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "finished updating track SoAs hit offsets on GPU" << std::endl;
+#endif
+
+    return;
+
+  }
+
+  reco::TracksSoACollection CAHitMaskingAndMerger::makeFilteredTracks(int const& nTracks,
+                                                                      int const& nHits,
+                                                                      TkSoADevice const& inpTracks,
+                                                                      pixelTrack::Quality const& minQuality,
+                                                                      double const& matchFraction,
+                                                                      Queue& queue) const {
+
+    CAHitMaskingAndMergerKernels kernels;
+
+    reco::TracksSoACollection tracks({{int(nTracks), int(nHits)}}, queue);
+
+    kernels.filterTracks(tracks.view(),
+                         tracks.view<::reco::TrackHitSoA>(),
+                         inpTracks.view(),
+                         inpTracks.view<::reco::TrackHitSoA>(),
+                         minQuality,
+                         matchFraction,
+                         queue);
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "finished filtering track SoAs on GPU" << std::endl;
+#endif
+
+    return tracks;
+
+  }
+
   template class CAHitNtupletGenerator<pixelTopology::Phase1>;
   template class CAHitNtupletGenerator<pixelTopology::Phase2>;
   template class CAHitNtupletGenerator<pixelTopology::Phase2OT>;

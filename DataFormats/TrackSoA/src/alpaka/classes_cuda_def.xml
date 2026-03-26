@@ -2,5 +2,6 @@
   <class name="alpaka_cuda_async::reco::TracksSoACollection" persistent="false"/>
   <class name="edm::DeviceProduct<alpaka_cuda_async::reco::TracksSoACollection>" persistent="false"/>
   <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::reco::TracksSoACollection>>" persistent="false"/>
+  <class name="edm::Wrapper<PortableDeviceMultiCollection<alpaka::DevUniformCudaHipRt<alpaka::ApiCudaRt>,reco::TrackLayout<128,false>,reco::TrackHitsLayout<128,false> > >" persistent="false"/>
 </lcgdict>
 

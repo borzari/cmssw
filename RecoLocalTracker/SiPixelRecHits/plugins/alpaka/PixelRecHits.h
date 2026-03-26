@@ -21,7 +21,7 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 #include "RecoLocalTracker/SiPixelRecHits/interface/pixelCPEforDevice.h"
 
-//#define GPU_DEBUG
+// #define GPU_DEBUG
 //#define ONLY_TRIPLETS_IN_HOLE
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace pixelRecHits {
@@ -217,6 +217,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             alpaka::syncBlockThreads(acc);
           }  // end loop on batches
         }
+      }
+    };
+
+    class LaunchZerosPixelMask {
+    public:
+      ALPAKA_FN_ACC void operator()(Acc1D const& acc,
+                                    ::reco::TrackingRecHitsMaskingView mask) const {
+        for(uint32_t ic : cms::alpakatools::independent_group_elements(acc, mask.metadata().size())){
+          assert(ic < (uint32_t)mask.metadata().size());
+          mask[ic].recHitMask() = 0;
+        }
+        alpaka::syncBlockThreads(acc);
       }
     };
 

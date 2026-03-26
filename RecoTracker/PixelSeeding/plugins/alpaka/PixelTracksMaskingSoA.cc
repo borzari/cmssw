@@ -26,11 +26,16 @@
 #include "RecoTracker/TkMSParametrization/interface/PixelRecoUtilities.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 
+#include "CAHitNtupletGenerator.h"
+
 #define GPU_DEBUG
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class PixelTracksMaskingSoA : public global::EDProducer<> {
+
+  using Algo = CAHitMaskingAndMerger;
+
   public:
     explicit PixelTracksMaskingSoA(const edm::ParameterSet& iConfig);
     ~PixelTracksMaskingSoA() override = default;
@@ -46,6 +51,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const device::EDGetToken<reco::TracksSoACollection> inputTrackSoAToken_;
 
     const device::EDPutToken<reco::TrackingRecHitsMaskingCollection> outputRecHitsMaskToken_;
+
+    Algo deviceAlgo_;
   };
 
   PixelTracksMaskingSoA::PixelTracksMaskingSoA(const edm::ParameterSet& iConfig)
@@ -82,29 +89,31 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const auto& inpMaskColl = iEvent.get(inputRecHitsMaskToken_);
     const auto& inpTkColl = iEvent.get(inputTrackSoAToken_);
 
-    // get total number of hits from input mask SoA collection
-    int nHits = inpMaskColl.view().metadata().size();
+    // // get total number of hits from input mask SoA collection
+    // int nHits = inpMaskColl.view().metadata().size();
     
-    // create masking vector with input mask values and emplace in the event
-    auto TrackingRecHitsMasking = reco::TrackingRecHitsMaskingCollection(static_cast<uint32_t>(nHits), queue);
-    for(int i = 0; i < TrackingRecHitsMasking.view().metadata().size(); ++i){
-      TrackingRecHitsMasking.view()[i].recHitMask() = inpMaskColl.view()[i].recHitMask();
-    }
+    // // create masking vector with input mask values and emplace in the event
+    // auto TrackingRecHitsMasking = reco::TrackingRecHitsMaskingCollection(static_cast<uint32_t>(nHits), queue);
+    // for(int i = 0; i < TrackingRecHitsMasking.view().metadata().size(); ++i){
+    //   TrackingRecHitsMasking.view()[i].recHitMask() = inpMaskColl.view()[i].recHitMask();
+    // }
 
-    int getHit = 0;
-    // loop over tracks hits IDs to change masking to 1
-    for(int i = 0; i < int(inpTkColl.view().nTracks()); ++i){
+    // int getHit = 0;
+    // // loop over tracks hits IDs to change masking to 1
+    // for(int i = 0; i < int(inpTkColl.view().nTracks()); ++i){
 
-      getHit = getHit + ::reco::nHits(inpTkColl.view(),i);
+    //   getHit = getHit + ::reco::nHits(inpTkColl.view(),i);
 
-      if(inpTkColl.view()[i].quality() < minQuality_) continue;
+    //   if(inpTkColl.view()[i].quality() < minQuality_) continue;
       
-      for(int j = 0; j < ::reco::nHits(inpTkColl.view(),i); ++j){
-        TrackingRecHitsMasking.view()[inpTkColl.view<::reco::TrackHitSoA>()[getHit - j - 1].id()].recHitMask() = 1;
-      }
-    }
+    //   for(int j = 0; j < ::reco::nHits(inpTkColl.view(),i); ++j){
+    //     TrackingRecHitsMasking.view()[inpTkColl.view<::reco::TrackHitSoA>()[getHit - j - 1].id()].recHitMask() = 1;
+    //   }
+    // }
 
-    iEvent.emplace(outputRecHitsMaskToken_, std::move(TrackingRecHitsMasking));
+    // iEvent.emplace(outputRecHitsMaskToken_, std::move(TrackingRecHitsMasking));
+
+    iEvent.emplace(outputRecHitsMaskToken_, deviceAlgo_.makeMaskingAsync(inpMaskColl, inpTkColl, minQuality_, iEvent.queue()));
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
