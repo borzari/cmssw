@@ -80,7 +80,7 @@ fi
 # Reco and special customization
 if checkFile SingleMuPt10_step3_RECO_DQM_PhaseII.root ; then
   cmsDriver.py step3 \
--s RAW2DIGI,L1Reco,RECO,VALIDATION:@phase2Validation,DQM:@phase2 \
+-s RAW2DIGI,L1Reco,RECO,PAT,VALIDATION:@phase2Validation,DQM:@phase2 \
 --conditions auto:phase2_realistic_T35 \
 -n -1  \
 --era Phase2C22I13M9  \
@@ -102,7 +102,7 @@ fi
 if checkFile DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO.root ; then
   cmsDriver.py step4  \
 -s HARVESTING:@trackingOnlyValidation+@trackingOnlyDQM  \
---conditions auto:run2_mc \
+--conditions auto:phase2_realistic_T35 \
 -n -1   \
 --era Phase2C22I13M9  \
 --scenario pp  \
@@ -151,5 +151,5 @@ for t in BeamPipe Tracker TrackerSumPhaseII Phase2PixelBarrel Phase2OTBarrel Pha
   fi
 done
 
-python MaterialBudget.py -c -r DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO.root -l PhaseIIDetector > MaterialBudget_Simul_vs_Reco_PhaseII.log 2>&1
+python3 MaterialBudget.py -c -r DQM_V0001_R000000001__Global__CMSSW_X_Y_Z__RECO.root -l PhaseIIDetector -g ${geometry} > MaterialBudget_Simul_vs_Reco_PhaseII.log 2>&1
 
