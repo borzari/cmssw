@@ -650,30 +650,44 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caHitNtupletGeneratorKernels {
   public:
     ALPAKA_FN_ACC void operator()(Acc1D const &acc,
                                   ::reco::TrackingRecHitsMaskingView mask_view,
-                                  const ::reco::TrackingRecHitsMaskingConstView& maskd_view,
                                   const ::reco::TrackSoAConstView& trackd_view,
                                   const ::reco::TrackHitSoAConstView& trackhitd_view,
                                   const pixelTrack::Quality minQuality) const {
 
-      for(uint32_t ic : cms::alpakatools::independent_group_elements(acc, mask_view.metadata().size())){
-        assert(ic < (uint32_t)mask_view.metadata().size());
-        mask_view[ic].recHitMask() = maskd_view[ic].recHitMask();
+      if (alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0] == 0) {
+
+      // auto& getHit = alpaka::declareSharedVar<uint32_t, __COUNTER__>(acc);
+
+      // if (alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0] == 0) {
+      //     getHit = 0;
+      // }
+      // alpaka::syncBlockThreads(acc);
+      // // printf("oiaaa getHit: %u\n",getHit);
+
+      // int local = 0;
+
+        int getHit = 0;
+        // loop over tracks hits IDs to change masking to 1
+        // for(int i = 0; i < trackd_view.nTracks(); ++i){
+          for(int j = 0; j < int(trackd_view.nTracks()); ++j){
+          // printf("trackd_view.nTracks(): %u\n",trackd_view.nTracks());
+          // for(uint32_t j : cms::alpakatools::uniform_elements(acc, trackd_view.nTracks())){
+            // printf("oiaaa i: %u\n",j);
+            // if(getHit >= uint32_t(trackhitd_view.metadata().size())) continue;
+            // if(*counter >= uint32_t(trackhitd_view.metadata().size())) continue;
+
+            getHit = getHit + ::reco::nHits(trackd_view,j);
+
+            if(trackd_view[j].quality() < minQuality) continue;
+
+            for(uint32_t k = 0; k < uint32_t(::reco::nHits(trackd_view,j)); ++k){
+              mask_view[trackhitd_view[getHit - k - 1].id()].recHitMask() = 1;
+            }
+          }
+          // alpaka::syncBlockThreads(acc);
+
+        // }
       }
-      alpaka::syncBlockThreads(acc);
-    
-      int getHit = 0;
-      // loop over tracks hits IDs to change masking to 1
-      for(int i = 0; i < int(trackd_view.nTracks()); ++i){
-
-        getHit = getHit + ::reco::nHits(trackd_view,i);
-
-        if(trackd_view[i].quality() < minQuality) continue;
-
-        for(int j = 0; j < ::reco::nHits(trackd_view,i); ++j){
-          mask_view[trackhitd_view[getHit - j - 1].id()].recHitMask() = 1;
-        }
-      }
-      alpaka::syncBlockThreads(acc);
     }
   };
 
@@ -685,8 +699,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caHitNtupletGeneratorKernels {
                                   int const& nHits,
                                   ::reco::TrackSoAView trackd_view) const {
 
-      for(int i = tksBeg; i < tksEnd; ++i){
-         trackd_view[i].hitOffsets() += nHits;
+      if (alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0] == 0) {
+        for(int i = tksBeg; i < tksEnd; ++i){
+           trackd_view[i].hitOffsets() += nHits;
+        }
       }
       alpaka::syncBlockThreads(acc);
     }
@@ -702,57 +718,79 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caHitNtupletGeneratorKernels {
                                   const pixelTrack::Quality minQuality,
                                   const double matchFraction) const {
 
-    int auxOutputTkIndex = 0;
-    int auxOutputHitIndex = 0;
+      if (alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0] == 0) {
 
-    for(int i = 0; i < inpTrack_view.metadata().size(); ++i){
+        uint32_t auxOutputTkIndex = 0;
+        uint32_t auxOutputHitIndex = 0;
 
-      if(inpTrack_view[i].quality() < minQuality) continue;
+        for(uint32_t i = 0; i < uint32_t(inpTrack_view.metadata().size()); ++i){
 
-      bool hasDuplicate = false;
-      for(int j = i + 1; j < inpTrack_view.metadata().size(); ++j) {
-        if(inpTrack_view[j].quality() < minQuality) continue;
-
-        if(::reco::nHits(inpTrack_view,i) == ::reco::nHits(inpTrack_view,j)){
-          int matchedHits = 0;
-          for(int k = 0; k < ::reco::nHits(inpTrack_view,i); ++k){
-            int auxHitOffsetsId = 0;
-            if (i > 0) auxHitOffsetsId = inpTrack_view[i - 1].hitOffsets();
-            if(inpTrackHit_view[auxHitOffsetsId + k].id() == inpTrackHit_view[inpTrack_view[j - 1].hitOffsets() + k].id()) ++matchedHits;
+          if(inpTrack_view[i].quality() < minQuality) continue;
+        
+          bool hasDuplicate = false;
+          for(uint32_t j : cms::alpakatools::uniform_elements_x(acc, inpTrack_view.metadata().size())){
+            if(j < i + 1) continue;
+            if(inpTrack_view[j].quality() < minQuality) continue;
+          
+            if(::reco::nHits(inpTrack_view,i) == ::reco::nHits(inpTrack_view,j)){
+              uint32_t matchedHits = 0;
+              for(uint32_t k = 0; k < uint32_t(::reco::nHits(inpTrack_view,i)); ++k){
+                uint32_t auxHitOffsetsId = 0;
+                if (i > 0) auxHitOffsetsId = inpTrack_view[i - 1].hitOffsets();
+                if(inpTrackHit_view[auxHitOffsetsId + k].id() == inpTrackHit_view[inpTrack_view[j - 1].hitOffsets() + k].id()) ++matchedHits;
+              }
+              if(double(matchedHits) / double(::reco::nHits(inpTrack_view,i)) > matchFraction) hasDuplicate = true;
+            }
+          
+            if(hasDuplicate) break;
           }
-          if(double(matchedHits) / double(::reco::nHits(inpTrack_view,i)) > matchFraction) hasDuplicate = true;
+          alpaka::syncBlockThreads(acc);
+          
+          if(hasDuplicate) continue;
+        
+          track_view[auxOutputTkIndex].quality() = inpTrack_view[i].quality();
+          track_view[auxOutputTkIndex].chi2() = inpTrack_view[i].chi2();
+          track_view[auxOutputTkIndex].nLayers() = inpTrack_view[i].nLayers();
+          track_view[auxOutputTkIndex].eta() = inpTrack_view[i].eta();
+          track_view[auxOutputTkIndex].pt() = inpTrack_view[i].pt();
+          for(uint32_t k = 0; k < 5; ++k) track_view[auxOutputTkIndex].state()[k] = inpTrack_view[i].state()[k];
+          for(uint32_t k = 0; k < 15; ++k) track_view[auxOutputTkIndex].covariance()[k] = inpTrack_view[i].covariance()[k];
+          if (auxOutputTkIndex != 0) {track_view[auxOutputTkIndex].hitOffsets() = track_view[auxOutputTkIndex - 1].hitOffsets() + ::reco::nHits(inpTrack_view,i);}
+          else {track_view[auxOutputTkIndex].hitOffsets() = ::reco::nHits(inpTrack_view,i);}
+        
+          uint32_t auxHitOffsetsIdBegin = 0;
+          if (i > 0) auxHitOffsetsIdBegin = inpTrack_view[i - 1].hitOffsets();
+        
+          uint32_t auxHitOffsetsIdEnd = inpTrack_view[i].hitOffsets();
+          if (i > 0) auxHitOffsetsIdEnd = inpTrack_view[i].hitOffsets();
+        
+          for(uint32_t k = auxHitOffsetsIdBegin; k < auxHitOffsetsIdEnd; ++k){
+            trackHit_view[auxOutputHitIndex].id() = inpTrackHit_view[k].id();
+            trackHit_view[auxOutputHitIndex].detId() = inpTrackHit_view[k].detId();
+            ++auxOutputHitIndex;
+          }
+        
+          ++auxOutputTkIndex;
         }
-
-        if(hasDuplicate) break;
+        alpaka::syncBlockThreads(acc);
+        track_view.nTracks() = auxOutputTkIndex;
       }
-      if(hasDuplicate) continue;
-
-      track_view[auxOutputTkIndex].quality() = inpTrack_view[i].quality();
-      track_view[auxOutputTkIndex].chi2() = inpTrack_view[i].chi2();
-      track_view[auxOutputTkIndex].nLayers() = inpTrack_view[i].nLayers();
-      track_view[auxOutputTkIndex].eta() = inpTrack_view[i].eta();
-      track_view[auxOutputTkIndex].pt() = inpTrack_view[i].pt();
-      for(int k = 0; k < 5; ++k) track_view[auxOutputTkIndex].state()[k] = inpTrack_view[i].state()[k];
-      for(int k = 0; k < 15; ++k) track_view[auxOutputTkIndex].covariance()[k] = inpTrack_view[i].covariance()[k];
-      if (auxOutputTkIndex != 0) {track_view[auxOutputTkIndex].hitOffsets() = track_view[auxOutputTkIndex - 1].hitOffsets() + ::reco::nHits(inpTrack_view,i);}
-      else {track_view[auxOutputTkIndex].hitOffsets() = ::reco::nHits(inpTrack_view,i);}
-
-      int auxHitOffsetsIdBegin = 0;
-      if (i > 0) auxHitOffsetsIdBegin = inpTrack_view[i - 1].hitOffsets();
-
-      int auxHitOffsetsIdEnd = inpTrack_view[i].hitOffsets();
-      if (i > 0) auxHitOffsetsIdEnd = inpTrack_view[i].hitOffsets();
-
-      for(int k = int(auxHitOffsetsIdBegin); k < int(auxHitOffsetsIdEnd); ++k){
-        trackHit_view[auxOutputHitIndex].id() = inpTrackHit_view[k].id();
-        trackHit_view[auxOutputHitIndex].detId() = inpTrackHit_view[k].detId();
-        ++auxOutputHitIndex;
-      }
-
-      ++auxOutputTkIndex;
     }
-    track_view.nTracks() = auxOutputTkIndex;
-    alpaka::syncBlockThreads(acc);
+  };
+
+  class Kernel_calculateNHits {
+  public:
+    ALPAKA_FN_ACC void operator()(Acc1D const& acc,
+                                  const ::reco::TrackSoAConstView& tracks,
+                                  const int& nTksAux,
+                                  ::reco::TrackSoAView nHits) const {
+      if (alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0] == 0) {
+        nHits.nTracks() = 0;
+        for(int i = 0; i < nTksAux; ++i) {
+          nHits.nTracks() += reco::nHits(tracks, i);
+        }
+      }
+      alpaka::syncBlockThreads(acc);
     }
   };
 

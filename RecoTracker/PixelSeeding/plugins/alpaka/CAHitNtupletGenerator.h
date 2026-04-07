@@ -102,6 +102,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                  double const& matchFraction,
                                  Queue& queue) const;
 
+    TkSoADevice calculateNHits(TkSoADevice const& tracks,
+                            int const& nTksAux,
+                            Queue& queue) const;
+
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
