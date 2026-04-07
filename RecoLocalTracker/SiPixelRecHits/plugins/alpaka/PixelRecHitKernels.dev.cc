@@ -83,7 +83,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         Queue queue) const {
       using namespace pixelRecHits;
 
-      TrackingRecHitsMaskingCollection mask_d(nHits, queue);
+      TrackingRecHitsMaskingCollection mask_d(queue, nHits);
 
       // protect from empty events
         int threadsPerBlock = 128;

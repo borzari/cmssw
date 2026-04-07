@@ -130,14 +130,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       int nTksAux;
       alpaka::memcpy(queue,
                      cms::alpakatools::make_host_view(nTksAux),
-                     cms::alpakatools::make_device_view(queue, it->view().nTracks()));
+                     cms::alpakatools::make_device_view(queue, it->view().tracks().nTracks()));
 
       nTks.push_back(nTksAux);
 
       [[maybe_unused]] int nHitsAux = 0;
       alpaka::memcpy(queue,
                      cms::alpakatools::make_host_view(nHitsAux),
-                     cms::alpakatools::make_device_view(queue,(deviceAlgo_.calculateNHits(*it,nTksAux,queue)).view().nTracks()));
+                     cms::alpakatools::make_device_view(queue,(deviceAlgo_.calculateNHits(*it,nTksAux,queue)).view().tracks().nTracks()));
       nHits.push_back(nHitsAux);
     }
 
@@ -155,19 +155,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     // the outputTemp is also a SoA collection with the same layout as the input ones
-    auto outputTemp = reco::TracksSoACollection({std::reduce(nTks.begin(), nTks.end()), std::reduce(nHits.begin(), nHits.end())}, queue);
+    auto outputTemp = reco::TracksSoACollection(queue, std::reduce(nTks.begin(), nTks.end()), std::reduce(nHits.begin(), nHits.end()));
 
 #ifdef NTRACKS_DEBUG
     std::cout << "----------------- Merging Input Tracks -----------------\n";
     for(int i = 0; i < int(nTks.size()); ++i) std::cout << "Number of tracks input " << i+1 << ": " << nTks[i] << '\n';
-    std::cout << "Total number of tracks: " << outputTemp.view().metadata().size() << '\n';
+    std::cout << "Total number of tracks: " << outputTemp.view().tracks().metadata().size() << '\n';
     for(int i = 0; i < int(nHits.size()); ++i) std::cout << "Number of hits input " << i+1 << ": " << nHits[i] << '\n';
-    std::cout << "Total number of hits: " << outputTemp.view<::reco::TrackHitSoA>().metadata().size() << '\n'
+    std::cout << "Total number of hits: " << outputTemp.view().trackHits().metadata().size() << '\n'
     << "---------------------------------------------------------------------\n";
 #endif
 
     // start from the tracks SoA, use metarecords to loop over all the columns
-    auto outView = outputTemp.view();
+    auto outView = outputTemp.view().tracks();
 
     // start a loop here over the input SoAs to be easier to access each object
     int nSoAsAux = 0; // auxiliar index to correctly access nTks and nHits
@@ -178,7 +178,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         continue;
       }
 
-      auto inpTkView = it->view();
+      auto inpTkView = it->view().tracks();
 
       // auxiliar for correctly memcpy-ing eigen columns
       int nEigenAux = 5; 
@@ -240,7 +240,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const int nTotal = cumulNTks[cumulNTks.size() - 1];
 
       alpaka::memcpy(queue,
-                     cms::alpakatools::make_device_view(queue, outputTemp.view().nTracks()),
+                     cms::alpakatools::make_device_view(queue, outputTemp.view().tracks().nTracks()),
                      cms::alpakatools::make_host_view(nTotal));
 
       // update outputTemp hitOffsets to take into account the previous SoAs
@@ -249,12 +249,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // copy track hits information for inp1 hits
       alpaka::memcpy(
           queue,
-          cms::alpakatools::make_device_view(queue, outputTemp.view<::reco::TrackHitSoA>().id().data() + cumulNHits[nSoAsAux], nHits[nSoAsAux]),
-          cms::alpakatools::make_device_view(queue, it->view<::reco::TrackHitSoA>().id().data(), nHits[nSoAsAux]));
+          cms::alpakatools::make_device_view(queue, outputTemp.view().trackHits().id().data() + cumulNHits[nSoAsAux], nHits[nSoAsAux]),
+          cms::alpakatools::make_device_view(queue, it->view().trackHits().id().data(), nHits[nSoAsAux]));
       alpaka::memcpy(
           queue,
-          cms::alpakatools::make_device_view(queue, outputTemp.view<::reco::TrackHitSoA>().detId().data() + cumulNHits[nSoAsAux], nHits[nSoAsAux]),
-          cms::alpakatools::make_device_view(queue, it->view<::reco::TrackHitSoA>().detId().data(), nHits[nSoAsAux]));
+          cms::alpakatools::make_device_view(queue, outputTemp.view().trackHits().detId().data() + cumulNHits[nSoAsAux], nHits[nSoAsAux]),
+          cms::alpakatools::make_device_view(queue, it->view().trackHits().detId().data(), nHits[nSoAsAux]));
 #ifdef GPU_DEBUG
       alpaka::wait(queue);
       std::cout << "Copied track hits\n";
@@ -268,7 +268,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef GPU_DEBUG
     for(int i = 0; i < std::min(int(*(std::min_element(nTks.begin(), nTks.end()))),10); ++i) {
 
-      std::cout << "track number: " << outView.nTracks() << std::endl;
+      std::cout << "track number: " << outView.tracks().nTracks() << std::endl;
       std::cout << "------------------------------------------------------------------------------------------" << std::endl;
 
       std::cout << "track quality (";

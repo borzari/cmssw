@@ -24,10 +24,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::reco {
                                                           ::reco::TrackingRecHitHost,
                                                           ::reco::TrackingRecHitDevice<Device>>;
 
-  using ::reco::TrackingRecHitsMaskingDevice;
-  using ::reco::TrackingRecHitsMaskingHost;
+  // using ::reco::TrackingRecHitsMaskingDevice;
+  // using ::reco::TrackingRecHitsMaskingHost;
   using TrackingRecHitsMaskingCollection =
-      std::conditional_t<std::is_same_v<Device, alpaka::DevCpu>, TrackingRecHitsMaskingHost, TrackingRecHitsMaskingDevice<Device>>;
+      std::conditional_t<std::is_same_v<Device, alpaka::DevCpu>, ::reco::TrackingRecHitsMaskingHost, ::reco::TrackingRecHitsMaskingDevice<Device>>;
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::reco
 
 namespace cms::alpakatools {

@@ -447,7 +447,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const int nHits = mask_d.view().metadata().size();
 
-    reco::TrackingRecHitsMaskingCollection mask(static_cast<uint32_t>(nHits), queue);
+    reco::TrackingRecHitsMaskingCollection mask(queue, static_cast<uint32_t>(nHits));
 
     alpaka::memcpy(
           queue,
@@ -456,9 +456,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     CAHitMaskingAndMergerKernels kernels;
 
+    auto tracksd_view = tracks_d.view().tracks();
+    auto tracks_hitsd_view = tracks_d.view().trackHits();
+
     kernels.updateMasking(mask.view(),
-                          tracks_d.view(),
-                          tracks_d.view<::reco::TrackHitSoA>(),
+                          tracksd_view,
+                          tracks_hitsd_view,
                           minQuality,
                           queue);
 #ifdef GPU_DEBUG
@@ -477,10 +480,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     CAHitMaskingAndMergerKernels kernels;
 
+    auto tracksd_view = tracks_d.view().tracks();
+
     kernels.updateHitOffsets(tksBeg,
                              tksEnd,
                              nHits,
-                             tracks_d.view(),
+                             tracksd_view,
                              queue);
 #ifdef GPU_DEBUG
     alpaka::wait(queue);
@@ -495,13 +500,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                  int const& nTksAux,
                                                  Queue& queue) const {
 
-    reco::TracksSoACollection nHits({{int(1), int(1)}}, queue);
+    reco::TracksSoACollection nHits(queue, 1u, 1u);
 
     CAHitMaskingAndMergerKernels kernels;
 
-    kernels.calculateNHits(tracks.view(),
+    auto nHits_view = nHits.view().tracks();
+    auto tracksd_view = tracks.view().tracks();
+
+    kernels.calculateNHits(tracksd_view,
                            nTksAux,
-                           nHits.view(),
+                           nHits_view,
                            queue);
 #ifdef GPU_DEBUG
     alpaka::wait(queue);
@@ -521,12 +529,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     CAHitMaskingAndMergerKernels kernels;
 
-    reco::TracksSoACollection tracks({{int(nTracks), int(nHits)}}, queue);
+    reco::TracksSoACollection tracks(queue, nTracks, nHits);
 
-    kernels.filterTracks(tracks.view(),
-                         tracks.view<::reco::TrackHitSoA>(),
-                         inpTracks.view(),
-                         inpTracks.view<::reco::TrackHitSoA>(),
+    auto tracksd_view = tracks.view().tracks();
+    auto tracks_hitsd_view = tracks.view().trackHits();
+    auto inptracksd_view = inpTracks.view().tracks();
+    auto inptracks_hitsd_view = inpTracks.view().trackHits();
+
+    kernels.filterTracks(tracksd_view,
+                         tracks_hitsd_view,
+                         inptracksd_view,
+                         inptracks_hitsd_view,
                          minQuality,
                          matchFraction,
                          queue);

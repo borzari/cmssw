@@ -2,7 +2,7 @@
   <class name="alpaka_cuda_async::reco::TrackingRecHitsSoACollection" persistent="false"/>
   <class name="edm::DeviceProduct<alpaka_cuda_async::reco::TrackingRecHitsSoACollection>" persistent="false"/>
   <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::reco::TrackingRecHitsSoACollection>>" persistent="false"/>
-  <class name="edm::DeviceProduct<PortableDeviceCollection<reco::TrackingRecHitsMaskingLayout<128,false>,alpaka::DevUniformCudaHipRt<alpaka::ApiCudaRt>,void> >" persistent="false"/>
-  <class name="edm::Wrapper<edm::DeviceProduct<PortableDeviceCollection<reco::TrackingRecHitsMaskingLayout<128,false>,alpaka::DevUniformCudaHipRt<alpaka::ApiCudaRt>,void> > >" persistent="false"/>
+  <class name="edm::DeviceProduct<alpaka_cuda_async::reco::TrackingRecHitsMaskingCollection>" persistent="false"/>
+  <class name="edm::Wrapper<edm::DeviceProduct<alpaka_cuda_async::reco::TrackingRecHitsMaskingCollection>>" persistent="false"/>
 </lcgdict>
 

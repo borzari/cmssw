@@ -107,7 +107,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     //   if(inpTkColl.view()[i].quality() < minQuality_) continue;
       
     //   for(int j = 0; j < ::reco::nHits(inpTkColl.view(),i); ++j){
-    //     TrackingRecHitsMasking.view()[inpTkColl.view<::reco::TrackHitSoA>()[getHit - j - 1].id()].recHitMask() = 1;
+    //     TrackingRecHitsMasking.view()[inpTkColl.view().trackHits()[getHit - j - 1].id()].recHitMask() = 1;
     //   }
     // }
 
