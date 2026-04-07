@@ -109,7 +109,7 @@ pixelTracksAlpaka = _pixelTracksAlpakaPhase1.clone(
     avgCellsPerHit     = 13,
     avgCellsPerCell    = 0.0268, 
     avgTracksPerCell   = 0.0123, 
-    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
@@ -189,7 +189,7 @@ pixelTracksHighPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     avgCellsPerHit     = 13,
     avgCellsPerCell    = 0.0268, 
     avgTracksPerCell   = 0.0123, 
-    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
@@ -197,7 +197,7 @@ from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
 (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksHighPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone(
     hitMask = "siPixelRecHitsExtendedPreSplittingAlpaka",
     pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
-    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
     ptmin = 2.0,
     trackQualityCuts = cms.PSet(
@@ -431,7 +431,7 @@ pixelTracksHighPtAlpakaSerial = makeSerialClone(pixelTracksHighPtAlpaka,
 
 (pixelTrackMask & phase2CAExtension).toModify(pixelTracksHighPtAlpakaSerial,
                            pixelRecHitSrc = 'siPixelRecHitsExtendedPreSplittingAlpakaSerial',
-                           maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+                           maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
                            maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
                            )
 
@@ -448,7 +448,7 @@ pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     avgCellsPerHit     = 13,
     avgCellsPerCell    = 0.0268,
     avgTracksPerCell   = 0.0123,
-    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
@@ -464,7 +464,7 @@ pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
         maxZip = cms.double(12),
         minPt = cms.double(0.45)
     ),
-    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
     cellZ0Cut = cms.double(13.5),
     hardCurvCut = cms.double(0.035),
@@ -699,7 +699,7 @@ pixelTracksLowPtAlpakaSerial = makeSerialClone(pixelTracksLowPtAlpaka,
                                 maxZip = cms.double(12),
                                 minPt = cms.double(0.3)
                             ),
-                            maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+                            maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
                             maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
                            )
 
@@ -724,7 +724,7 @@ pixelTracksDisplHighPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     avgCellsPerHit     = 13,
     avgCellsPerCell    = 0.0268,
     avgTracksPerCell   = 0.0123,
-    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
@@ -739,7 +739,7 @@ pixelTracksDisplHighPtAlpaka = _pixelTracksAlpakaPhase1.clone(
         maxZip = cms.double(12),
         minPt = cms.double(0.9)
     ),
-    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 ))
 
@@ -758,7 +758,7 @@ pixelTracksDisplHighPtAlpakaSerial = makeSerialClone(pixelTracksDisplHighPtAlpak
                                maxZip = cms.double(12),
                                minPt = cms.double(0.9)
                            ),
-                           maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+                           maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
                            maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
                            )
 
@@ -775,7 +775,7 @@ pixelTracksDisplLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     avgCellsPerHit     = 13,
     avgCellsPerCell    = 0.0268,
     avgTracksPerCell   = 0.0123,
-    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
@@ -791,7 +791,7 @@ pixelTracksDisplLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
         maxZip = cms.double(12),
         minPt = cms.double(0.3)
     ),
-    maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 ))
 
@@ -811,7 +811,7 @@ pixelTracksDisplLowPtAlpakaSerial = makeSerialClone(pixelTracksDisplLowPtAlpaka,
                                maxZip = cms.double(12),
                                minPt = cms.double(0.3)
                            ),
-                           maxNumberOfDoublets = str(32*512*1024),    # could be lowered to 315k, keeping the same for a fair comparison with master
+                           maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
                            maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
                            )
 

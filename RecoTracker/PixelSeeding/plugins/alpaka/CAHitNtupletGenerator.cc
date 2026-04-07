@@ -457,10 +457,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     reco::TrackingRecHitsMaskingCollection mask(static_cast<uint32_t>(nHits), queue);
 
+    alpaka::memcpy(
+          queue,
+          cms::alpakatools::make_device_view(queue, mask.view().recHitMask(), nHits),
+          cms::alpakatools::make_device_view(queue, mask_d.view().recHitMask(), nHits));
+
     CAHitMaskingAndMergerKernels kernels;
 
     kernels.updateMasking(mask.view(),
-                          mask_d.view(),
                           tracks_d.view(),
                           tracks_d.view<::reco::TrackHitSoA>(),
                           minQuality,
@@ -492,6 +496,27 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
     return;
+
+  }
+
+  reco::TracksSoACollection CAHitMaskingAndMerger::calculateNHits(TkSoADevice const& tracks,
+                                                 int const& nTksAux,
+                                                 Queue& queue) const {
+
+    reco::TracksSoACollection nHits({{int(1), int(1)}}, queue);
+
+    CAHitMaskingAndMergerKernels kernels;
+
+    kernels.calculateNHits(tracks.view(),
+                           nTksAux,
+                           nHits.view(),
+                           queue);
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "finished calculating nHits on GPU" << std::endl;
+#endif
+
+    return nHits;
 
   }
 

@@ -259,7 +259,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     CAHitMaskingAndMergerKernels& operator=(CAHitMaskingAndMergerKernels&&) = delete;
 
     void updateMasking(::reco::TrackingRecHitsMaskingView& mask_view,
-                       const ::reco::TrackingRecHitsMaskingConstView& maskd_view,
                        const ::reco::TrackSoAConstView& trackd_view,
                        const ::reco::TrackHitSoAConstView& trackhitd_view,
                        const pixelTrack::Quality minQuality,
@@ -278,6 +277,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                       const pixelTrack::Quality minQuality,
                       const double matchFraction,
                       Queue& queue);
+
+    void calculateNHits(const ::reco::TrackSoAConstView& tracks,
+                        int const& nTksAux,
+                        ::reco::TrackSoAView& nHits,
+                        Queue& queue);
 
   };
 
