@@ -47,7 +47,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     void produce(edm::StreamID streamID, device::Event& iEvent, const device::EventSetup& iSetup) const override;
-    // bool checkForDuplicate(const reco::TracksSoACollection& trks, int i, int j) const;
 
     pixelTrack::Quality const minQuality_;
     double const matchFraction_;

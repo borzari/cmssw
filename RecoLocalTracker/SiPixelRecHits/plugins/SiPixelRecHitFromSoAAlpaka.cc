@@ -174,7 +174,6 @@ void SiPixelRecHitFromSoAAlpaka::produce(edm::StreamID streamID,
       edm::Ref<edmNew::DetSetVector<SiPixelCluster>, SiPixelCluster> cluster = edmNew::makeRefTo(hclusters, &clust);
 
       if(dumpForMasking_)
-        // mapToHit.emplace_back(std::vector<std::pair<uint16_t,uint16_t>>(cluster.key(),ij));
         mapToHit.emplace_back(std::pair<uint32_t,uint32_t>(cluster.key(),ij));
 
       // Make a RecHit and add it to the DetSet

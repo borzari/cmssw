@@ -811,10 +811,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::cout << "Starting CAHitMaskingAndMergerKernels::updateMasking" << std::endl;
 #endif
 
-    // int threadsPerBlock = 1;
     int threadsPerBlock = 128;
-    // int threadsPerBlock = trackd_view.metadata().size();
-    // int blocks = nHits;
     int blocks = int((trackd_view.metadata().size() + threadsPerBlock -1)/threadsPerBlock);
     const auto workDiv1D = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlock);
     auto start = std::chrono::high_resolution_clock::now();
@@ -832,6 +829,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::wait(queue);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    // This kernel is a bit slow and still don't know why
     std::cout << "Tempo do kernel updateMasking: " << duration.count() << " us" << std::endl;
 
   }
@@ -852,7 +850,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     int threadsPerBlock = 1;
     int blocks = 1;
     const auto workDiv1D = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlock);
-    // auto start = std::chrono::high_resolution_clock::now();
     alpaka::exec<Acc1D>(queue,
                         workDiv1D,
                         Kernel_updateHitOffsets{},
@@ -864,10 +861,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::wait(queue);
     std::cout << "Kernel_updateHitOffsets -> done!" << std::endl;
 #endif
-    // alpaka::wait(queue);
-    // auto end = std::chrono::high_resolution_clock::now();
-    // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    // std::cout << "Tempo do kernel updateHitOffsets: " << duration.count() << " us" << std::endl;
 
   }
 
@@ -886,7 +879,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     int threadsPerBlock = 1;
     int blocks = 1;
     const auto workDiv1D = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlock);
-    // auto start = std::chrono::high_resolution_clock::now();
     alpaka::exec<Acc1D>(queue,
                         workDiv1D,
                         Kernel_calculateNHits{},
@@ -897,10 +889,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::wait(queue);
     std::cout << "Kernel_calculateNHits -> done!" << std::endl;
 #endif
-    // alpaka::wait(queue);
-    // auto end = std::chrono::high_resolution_clock::now();
-    // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    // std::cout << "Tempo do kernel calculateNHits: " << duration.count() << " us" << std::endl;
 
   }
 
@@ -920,11 +908,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
     int threadsPerBlock = 128;
-    // int threadsPerBlock = 1;
     int blocks = inpTrack_view.metadata().size();
-    // int blocks = 1;
     const auto workDiv1D = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlock);
-    // auto start = std::chrono::high_resolution_clock::now();
     alpaka::exec<Acc1D>(queue,
                         workDiv1D,
                         Kernel_filterTracks{},
@@ -938,10 +923,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::wait(queue);
     std::cout << "Kernel_filterTracks -> done!" << std::endl;
 #endif
-    // alpaka::wait(queue);
-    // auto end = std::chrono::high_resolution_clock::now();
-    // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    // std::cout << "Tempo do kernel filterTracks: " << duration.count() << " us" << std::endl;
 
   }
 

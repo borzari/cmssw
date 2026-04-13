@@ -230,7 +230,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             {
               hindex_type hits[TrackerTraits::maxDepth + 6];
               auto nh = 0U;
-              constexpr int maxFB = 6;  // changed to 6 because of OT extended CA tracks
+              constexpr int maxFB = 6;  // changed to 6 because of OT extended CA tracks; could be higher
               int nfb = 0;
               for (auto c : tmpNtuplet) {
                 hits[nh++] = cells[c].theInnerHitId_;

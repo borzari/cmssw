@@ -221,10 +221,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caPixelDoublets {
         ;
       --pairLayerId;
 
-      // printf("This is in j -- %u -- %u\n",j,maskView[j].recHitMask());
-      // if(maskView[j].recHitMask())
-      //       continue;
-
       ALPAKA_ASSERT_ACC(pairLayerId < nPairs);
       ALPAKA_ASSERT_ACC(j < innerLayerCumulativeSize[pairLayerId]);
       ALPAKA_ASSERT_ACC(0 == pairLayerId || j >= innerLayerCumulativeSize[pairLayerId - 1]);
@@ -237,8 +233,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caPixelDoublets {
       auto i = (0 == pairLayerId) ? j : j - innerLayerCumulativeSize[pairLayerId - 1];
       i += offsets[inner];
 
-      // Is this the correct index to look into for the masking?
-      // printf("This is in i -- %u -- %u\n",i,maskView[i].recHitMask());
       if(maskView[i].recHitMask())
         continue;
 
@@ -351,7 +345,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caPixelDoublets {
         for (uint32_t pIndex : cms::alpakatools::independent_group_elements_x(acc, maxpIndex)) {
           // FIXME implement alpaka::ldg and use it here? or is it const* __restrict__ enough?
           auto oi = p[pIndex];
-          // printf("This is in oi -- %u -- %u\n",oi,maskView[oi].recHitMask());
           if(maskView[oi].recHitMask())
             continue;
           ALPAKA_ASSERT_ACC(oi >= offsets[outer]);

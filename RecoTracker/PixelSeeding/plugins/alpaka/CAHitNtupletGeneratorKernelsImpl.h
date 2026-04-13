@@ -656,37 +656,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caHitNtupletGeneratorKernels {
 
       if (alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0] == 0) {
 
-      // auto& getHit = alpaka::declareSharedVar<uint32_t, __COUNTER__>(acc);
+      int getHit = 0;
+      // loop over tracks hits IDs to change masking to 1
+        for(int j = 0; j < int(trackd_view.nTracks()); ++j){
 
-      // if (alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0] == 0) {
-      //     getHit = 0;
-      // }
-      // alpaka::syncBlockThreads(acc);
-      // // printf("oiaaa getHit: %u\n",getHit);
+          getHit = getHit + ::reco::nHits(trackd_view,j);
 
-      // int local = 0;
+          if(trackd_view[j].quality() < minQuality) continue;
 
-        int getHit = 0;
-        // loop over tracks hits IDs to change masking to 1
-        // for(int i = 0; i < trackd_view.nTracks(); ++i){
-          for(int j = 0; j < int(trackd_view.nTracks()); ++j){
-          // printf("trackd_view.nTracks(): %u\n",trackd_view.nTracks());
-          // for(uint32_t j : cms::alpakatools::uniform_elements(acc, trackd_view.nTracks())){
-            // printf("oiaaa i: %u\n",j);
-            // if(getHit >= uint32_t(trackhitd_view.metadata().size())) continue;
-            // if(*counter >= uint32_t(trackhitd_view.metadata().size())) continue;
-
-            getHit = getHit + ::reco::nHits(trackd_view,j);
-
-            if(trackd_view[j].quality() < minQuality) continue;
-
-            for(uint32_t k = 0; k < uint32_t(::reco::nHits(trackd_view,j)); ++k){
-              mask_view[trackhitd_view[getHit - k - 1].id()].recHitMask() = 1;
-            }
+          for(uint32_t k = 0; k < uint32_t(::reco::nHits(trackd_view,j)); ++k){
+            mask_view[trackhitd_view[getHit - k - 1].id()].recHitMask() = 1;
           }
-          // alpaka::syncBlockThreads(acc);
-
-        // }
+        }
       }
     }
   };
