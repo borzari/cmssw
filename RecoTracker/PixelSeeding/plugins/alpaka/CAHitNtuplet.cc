@@ -102,6 +102,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using HitsOnDevice = reco::TrackingRecHitsSoACollection;
     using HitsOnHost = ::reco::TrackingRecHitHost;
 
+    using MapToHit = reco::TrackingRecHitsMaskingCollection;
+
     using TkSoAHost = ::reco::TracksHost;
     using TkSoADevice = reco::TracksSoACollection;
 
@@ -331,6 +333,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> tokenField_;
     const device::EDGetToken<HitsOnDevice> tokenHit_;
     const device::EDPutToken<TkSoADevice> tokenTrack_;
+    const device::EDGetToken<MapToHit> tokenHitMask_;
 
     const ::reco::FormulaEvaluator maxNumberOfDoublets_;
     const ::reco::FormulaEvaluator maxNumberOfTuples_;
@@ -345,6 +348,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         tokenField_(esConsumes()),
         tokenHit_(consumes(iConfig.getParameter<edm::InputTag>("pixelRecHitSrc"))),
         tokenTrack_(produces()),
+        tokenHitMask_(consumes(iConfig.getParameter<edm::InputTag>("hitMask"))),
         maxNumberOfDoublets_(iConfig.getParameter<std::string>("maxNumberOfDoublets")),
         maxNumberOfTuples_(iConfig.getParameter<std::string>("maxNumberOfTuples")),
         deviceAlgo_(iConfig) {
@@ -357,6 +361,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::ParameterSetDescription desc;
 
     desc.add<edm::InputTag>("pixelRecHitSrc", edm::InputTag("siPixelRecHitsPreSplittingAlpaka"));
+    desc.add<edm::InputTag>("hitMask", edm::InputTag("hltPhase2PixelRecHitsExtendedSoA")); // This is just an example, it has to be changed for each tracking iteration
 
     Algo::fillPSetDescription(desc);
     descriptions.addWithDefaultLabel(desc);
@@ -381,8 +386,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       uint32_t const maxTuples = maxNumberOfTuples_.evaluate(nHitsV, emptyV);
       uint32_t const maxDoublets = maxNumberOfDoublets_.evaluate(nHitsV, emptyV);
 
+      auto const& mask = iEvent.get(tokenHitMask_);
+
       iEvent.emplace(tokenTrack_,
-                     deviceAlgo_.makeTuplesAsync(hits, geometry, bf, maxDoublets, maxTuples, iEvent.queue()));
+                     deviceAlgo_.makeTuplesAsync(hits, geometry, bf, maxDoublets, maxTuples, mask, iEvent.queue()));
 
     } else {
       edm::LogWarning("CAHitNtupletAlpaka") << "No hit on BPix1 (" << hits.offsetBPIX2()
