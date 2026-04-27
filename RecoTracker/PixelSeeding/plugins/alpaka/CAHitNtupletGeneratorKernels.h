@@ -174,6 +174,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                        const ::reco::CAGraphSoAConstView& cc,
                        const ::reco::CALayersSoAConstView& ll,
                        uint32_t offsetBPIX2,
+                       const MapToHitConstView& maskView,
                        Queue& queue);
 
     static void printCounters();
@@ -240,6 +241,44 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // this could be inferred from the above buffers
     // but seems cleaner to have a dedicate variable
     uint32_t maxNumberOfDoublets_;
+  };
+
+  class CAHitMaskingAndMergerKernels {
+  public:
+    CAHitMaskingAndMergerKernels() = default;
+    ~CAHitMaskingAndMergerKernels() = default;
+
+    CAHitMaskingAndMergerKernels(const CAHitMaskingAndMergerKernels&) = delete;
+    CAHitMaskingAndMergerKernels(CAHitMaskingAndMergerKernels&&) = delete;
+    CAHitMaskingAndMergerKernels& operator=(const CAHitMaskingAndMergerKernels&) = delete;
+    CAHitMaskingAndMergerKernels& operator=(CAHitMaskingAndMergerKernels&&) = delete;
+
+    void updateMasking(::reco::TrackingRecHitsMaskingView& mask_view,
+                       const ::reco::TrackSoAConstView& trackd_view,
+                       const ::reco::TrackHitSoAConstView& trackhitd_view,
+                       const pixelTrack::Quality minQuality,
+                       uint32_t const& iterationIndex,
+                       Queue& queue);
+
+    void updateHitOffsets(int const& tksBeg,
+                          int const& tksEnd,
+                          int const& nHits,
+                          ::reco::TrackSoAView& trackd_view,
+                          Queue& queue);
+
+    void filterTracks(::reco::TrackSoAView& track_view,
+                      ::reco::TrackHitSoAView& trackHit_view,
+                      const ::reco::TrackSoAConstView& inpTrack_view,
+                      const ::reco::TrackHitSoAConstView& inpTrackHit_view,
+                      const pixelTrack::Quality minQuality,
+                      const double matchFraction,
+                      Queue& queue);
+
+    void calculateNHits(const ::reco::TrackSoAConstView& tracks,
+                        int const& nTksAux,
+                        ::reco::TrackSoAView& nHits,
+                        Queue& queue);
+
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
