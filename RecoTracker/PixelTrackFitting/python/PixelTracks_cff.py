@@ -205,6 +205,7 @@ from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
     ),
     hardCurvCut = cms.double(0.010),
     dzdrFact = cms.double(15.199999809265137),
+    iterationName = "promptHighPt",
     geometry = cms.PSet(
         caDCACuts = cms.vdouble(
             0.15000000596046448, 0.25, 0.20000000298023224, 0.20000000298023224, 0.25,
@@ -464,6 +465,7 @@ pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
     cellZ0Cut = cms.double(13.5),
     hardCurvCut = cms.double(0.035),
+    iterationName = "promptLowPt",
     geometry = cms.PSet(
         caDCACuts = cms.vdouble(
             0.16000000596046448, 0.30, 0.25000000298023224, 0.25000000298023224, 0.25,

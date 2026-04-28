@@ -554,6 +554,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   template <typename TrackerTraits>
   void CAHitNtupletGeneratorKernels<TrackerTraits>::classifyTuples(const HitsConstView &hh,
                                                                    TkSoAView &tracks_view,
+                                                                   pixelTrack::Iteration const iterationName,
                                                                    Queue &queue) {
     using namespace caHitNtupletGeneratorKernels;
 
@@ -579,6 +580,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef GPU_DEBUG
     alpaka::wait(queue);
     std::cout << "Kernel_classifyTracks -> done!" << std::endl;
+#endif
+
+    alpaka::exec<Acc1D>(queue,
+                        workDiv1D,
+                        Kernel_assignIteration{},
+                        tracks_view,
+                        this->device_hitContainer_->data(),
+                        iterationName);
+#ifdef GPU_DEBUG
+    alpaka::wait(queue);
+    std::cout << "Kernel_assignIteration -> done!" << std::endl;
 #endif
 
     if (this->m_params.algoParams_.lateFishbone_) {
