@@ -646,6 +646,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caHitNtupletGeneratorKernels {
     }
   };
 
+  class Kernel_assignIteration {
+  public:
+    ALPAKA_FN_ACC void operator()(Acc1D const &acc,
+                                  TkSoAView tracks_view,
+                                  HitContainer const *__restrict__ foundNtuplets,
+                                  pixelTrack::Iteration iterationName) const {
+      for (auto it : cms::alpakatools::uniform_elements(acc, foundNtuplets->nOnes())) {
+        tracks_view[it].iteration() = iterationName;
+      }
+    }
+  };
+
   class Kernel_updateMasking {
   public:
     ALPAKA_FN_ACC void operator()(Acc1D const &acc,

@@ -64,6 +64,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                 uint32_t maxDoublets,
                                 uint32_t maxTuples,
                                 MapToHit const& mask,
+                                const pixelTrack::Iteration iterationName,
                                 Queue& queue) const;
 
   private:

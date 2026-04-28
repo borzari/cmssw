@@ -388,6 +388,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                                                   uint32_t nDoublets,
                                                                                   uint32_t nTracks,
                                                                                   MapToHit const& mask,
+                                                                                  const pixelTrack::Iteration iterationName,
                                                                                   Queue& queue) const {
     using HelixFit = HelixFit<TrackerTraits>;
     using GPUKernels = CAHitNtupletGeneratorKernels<TrackerTraits>;
@@ -431,7 +432,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       fitter.launchBrokenLineKernels(
           trackingHits, modules, trackingHits.metadata().size(), TrackerTraits::maxNumberOfQuadruplets, queue);
     }
-    kernels.classifyTuples(trackingHits, tracks, queue);
+    kernels.classifyTuples(trackingHits, tracks, iterationName, queue);
 #ifdef GPU_DEBUG
     alpaka::wait(queue);
     std::cout << "finished building pixel tracks on GPU" << std::endl;

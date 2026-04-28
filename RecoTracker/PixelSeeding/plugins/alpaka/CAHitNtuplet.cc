@@ -338,6 +338,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const ::reco::FormulaEvaluator maxNumberOfDoublets_;
     const ::reco::FormulaEvaluator maxNumberOfTuples_;
 
+    const pixelTrack::Iteration iterationName_;
+
     Algo deviceAlgo_;
   };
 
@@ -351,6 +353,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         tokenHitMask_(consumes(iConfig.getParameter<edm::InputTag>("hitMask"))),
         maxNumberOfDoublets_(iConfig.getParameter<std::string>("maxNumberOfDoublets")),
         maxNumberOfTuples_(iConfig.getParameter<std::string>("maxNumberOfTuples")),
+        iterationName_(pixelTrack::iterationByName(iConfig.getParameter<std::string>("iterationName"))),
         deviceAlgo_(iConfig) {
     iCache->tokenGeometry_ = esConsumes<edm::Transition::BeginRun>();
     iCache->tokenTopology_ = esConsumes<edm::Transition::BeginRun>();
@@ -362,6 +365,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     desc.add<edm::InputTag>("pixelRecHitSrc", edm::InputTag("siPixelRecHitsPreSplittingAlpaka"));
     desc.add<edm::InputTag>("hitMask", edm::InputTag("hltPhase2PixelRecHitsExtendedSoA")); // This is just an example, it has to be changed for each tracking iteration
+    desc.add<std::string>("iterationName", std::string("notIteration")); // This is just an example, it has to be changed for each tracking iteration
 
     Algo::fillPSetDescription(desc);
     descriptions.addWithDefaultLabel(desc);
@@ -389,7 +393,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto const& mask = iEvent.get(tokenHitMask_);
 
       iEvent.emplace(tokenTrack_,
-                     deviceAlgo_.makeTuplesAsync(hits, geometry, bf, maxDoublets, maxTuples, mask, iEvent.queue()));
+                     deviceAlgo_.makeTuplesAsync(hits, geometry, bf, maxDoublets, maxTuples, mask, iterationName_, iEvent.queue()));
 
     } else {
       edm::LogWarning("CAHitNtupletAlpaka") << "No hit on BPix1 (" << hits.offsetBPIX2()
