@@ -843,7 +843,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     // This kernel is a bit slow and still don't know why
-    std::cout << "Tempo do kernel updateMasking: " << duration.count() << " us" << std::endl;
+    std::cout << "Time of kernel updateMasking: " << duration.count() << " us" << std::endl;
 
   }
 
@@ -877,33 +877,33 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   }
 
-  void CAHitMaskingAndMergerKernels::calculateNHits(const ::reco::TrackSoAConstView& tracks,
-                                                    int const& nTksAux,
-                                                    ::reco::TrackSoAView& nHits,
-                                                    Queue& queue) {
+//   void CAHitMaskingAndMergerKernels::calculateNHits(const ::reco::TrackSoAConstView& tracks,
+//                                                     int const& nTksAux,
+//                                                     ::reco::TrackSoAView& nHits,
+//                                                     Queue& queue) {
 
-    using namespace caHitNtupletGeneratorKernels;
+//     using namespace caHitNtupletGeneratorKernels;
 
-#ifdef GPU_DEBUG
-    alpaka::wait(queue);
-    std::cout << "Starting CAHitMaskingAndMergerKernels::calculateNHits" << std::endl;
-#endif
+// #ifdef GPU_DEBUG
+//     alpaka::wait(queue);
+//     std::cout << "Starting CAHitMaskingAndMergerKernels::calculateNHits" << std::endl;
+// #endif
 
-    int threadsPerBlock = 1;
-    int blocks = 1;
-    const auto workDiv1D = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlock);
-    alpaka::exec<Acc1D>(queue,
-                        workDiv1D,
-                        Kernel_calculateNHits{},
-                        tracks,
-                        nTksAux,
-                        nHits);
-#ifdef GPU_DEBUG
-    alpaka::wait(queue);
-    std::cout << "Kernel_calculateNHits -> done!" << std::endl;
-#endif
+//     int threadsPerBlock = 1;
+//     int blocks = 1;
+//     const auto workDiv1D = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlock);
+//     alpaka::exec<Acc1D>(queue,
+//                         workDiv1D,
+//                         Kernel_calculateNHits{},
+//                         tracks,
+//                         nTksAux,
+//                         nHits);
+// #ifdef GPU_DEBUG
+//     alpaka::wait(queue);
+//     std::cout << "Kernel_calculateNHits -> done!" << std::endl;
+// #endif
 
-  }
+//   }
 
   void CAHitMaskingAndMergerKernels::filterTracks(::reco::TrackSoAView& track_view,
                                                   ::reco::TrackHitSoAView& trackHit_view,

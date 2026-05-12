@@ -365,7 +365,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     desc.add<edm::InputTag>("pixelRecHitSrc", edm::InputTag("siPixelRecHitsPreSplittingAlpaka"));
     desc.add<edm::InputTag>("hitMask", edm::InputTag("hltPhase2PixelRecHitsExtendedSoA")); // This is just an example, it has to be changed for each tracking iteration
-    desc.add<std::string>("iterationName", std::string("notIteration")); // This is just an example, it has to be changed for each tracking iteration
+    desc.add<std::string>("iterationName", std::string("promptHighPt")); // This is just an example, it has to be changed for each tracking iteration
 
     Algo::fillPSetDescription(desc);
     descriptions.addWithDefaultLabel(desc);

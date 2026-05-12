@@ -449,17 +449,20 @@ pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
+lowPtPtMinCut = 0.45 # 0.45 works, but 0.40 starts showing too many tracks with "zero" eta and phi
+                     # Maybe there is another cell cut that balances this, but need to check
+
 (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksLowPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone(
     hitMask = "pixelTracksHighPtMaskingSoA",
     pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
-    ptmin              = 0.45,
+    ptmin              = lowPtPtMinCut + 0.05,
     trackQualityCuts = cms.PSet(
         maxChi2 = cms.double(5),
         maxChi2Quintuplets = cms.double(3),
         maxChi2TripletsOrQuadruplets = cms.double(1),
         maxTip = cms.double(0.3),
         maxZip = cms.double(12),
-        minPt = cms.double(0.45)
+        minPt = cms.double(lowPtPtMinCut + 0.05)
     ),
     maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
@@ -654,21 +657,21 @@ pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
             int(1.0*1000), int(1.0*1100), int(1.0*1250)
         ),
         ptCuts = cms.vdouble(
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40, 0.40, 0.40,
-            0.40, 0.40, 0.40
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut
         ),
         startingPairs = cms.vuint32(
             0, 1, 2, 3, 4,

@@ -771,21 +771,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::caHitNtupletGeneratorKernels {
     }
   };
 
-  class Kernel_calculateNHits {
-  public:
-    ALPAKA_FN_ACC void operator()(Acc1D const& acc,
-                                  const ::reco::TrackSoAConstView& tracks,
-                                  const int& nTksAux,
-                                  ::reco::TrackSoAView nHits) const {
-      if (alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0] == 0) {
-        nHits.nTracks() = 0;
-        for(int i = 0; i < nTksAux; ++i) {
-          nHits.nTracks() += reco::nHits(tracks, i);
-        }
-      }
-      alpaka::syncBlockThreads(acc);
-    }
-  };
+  // class Kernel_calculateNHits {
+  // public:
+  //   ALPAKA_FN_ACC void operator()(Acc1D const& acc,
+  //                                 const ::reco::TrackSoAConstView& tracks,
+  //                                 const int& nTksAux,
+  //                                 ::reco::TrackSoAView nHits) const {
+  //     if (alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0] == 0) {
+  //       nHits.nTracks() = 0;
+  //       for(int i = 0; i < nTksAux; ++i) {
+  //         nHits.nTracks() += reco::nHits(tracks, i);
+  //       }
+  //     }
+  //     alpaka::syncBlockThreads(acc);
+  //   }
+  // };
 
   template <typename TrackerTraits>
   class Kernel_doStatsForTracks {

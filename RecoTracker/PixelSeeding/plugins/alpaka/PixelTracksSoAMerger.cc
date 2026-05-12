@@ -126,17 +126,31 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::vector<int> nHits;
 
     for(const auto& it : inputTkSoAs) {
-      int nTksAux;
-      alpaka::memcpy(queue,
-                     cms::alpakatools::make_host_view(nTksAux),
-                     cms::alpakatools::make_device_view(queue, it->view().tracks().nTracks()));
+
+      auto nTksAuxDev = it->view().tracks().metadata().size();
+      auto nHitsAuxDev = it->view().trackHits().metadata().size();
+
+      reco::TracksHost itHost(queue, nTksAuxDev, nHitsAuxDev);
+
+      alpaka::memcpy(queue, itHost.buffer(), it->buffer());
+      alpaka::wait(queue);
+
+      int nTksAux = itHost.view().tracks().nTracks();
+      // alpaka::memcpy(queue,
+      //                cms::alpakatools::make_host_view(nTksAux),
+      //                cms::alpakatools::make_device_view(queue, it->view().tracks().nTracks()));
 
       nTks.push_back(nTksAux);
 
-      [[maybe_unused]] int nHitsAux = 0;
-      alpaka::memcpy(queue,
-                     cms::alpakatools::make_host_view(nHitsAux),
-                     cms::alpakatools::make_device_view(queue,(deviceAlgo_.calculateNHits(*it,nTksAux,queue)).view().tracks().nTracks()));
+      int nHitsAux = 0;
+      for(int i = 0; i < nTksAux; ++i) {
+        nHitsAux += ::reco::nHits(itHost.view().tracks(), i);
+      }
+
+      // [[maybe_unused]] int nHitsAux = 0;
+      // alpaka::memcpy(queue,
+      //                cms::alpakatools::make_host_view(nHitsAux),
+      //                cms::alpakatools::make_device_view(queue,(deviceAlgo_.calculateNHits(*it,nTksAux,queue)).view().tracks().nTracks()));
       nHits.push_back(nHitsAux);
     }
 
