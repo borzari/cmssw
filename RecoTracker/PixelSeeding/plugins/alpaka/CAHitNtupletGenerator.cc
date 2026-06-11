@@ -499,30 +499,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   }
 
-//   reco::TracksSoACollection CAHitMaskingAndMerger::calculateNHits(TkSoADevice const& tracks,
-//                                                  int const& nTksAux,
-//                                                  Queue& queue) const {
-
-//     reco::TracksSoACollection nHits(queue, 1u, 1u);
-
-//     CAHitMaskingAndMergerKernels kernels;
-
-//     auto nHits_view = nHits.view().tracks();
-//     auto tracksd_view = tracks.view().tracks();
-
-//     kernels.calculateNHits(tracksd_view,
-//                            nTksAux,
-//                            nHits_view,
-//                            queue);
-// #ifdef GPU_DEBUG
-//     alpaka::wait(queue);
-//     std::cout << "finished calculating nHits on GPU" << std::endl;
-// #endif
-
-//     return nHits;
-
-//   }
-
   reco::TracksSoACollection CAHitMaskingAndMerger::makeFilteredTracks(int const& nTracks,
                                                                       int const& nHits,
                                                                       TkSoADevice const& inpTracks,

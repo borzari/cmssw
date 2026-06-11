@@ -136,9 +136,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::wait(queue);
 
       int nTksAux = itHost.view().tracks().nTracks();
-      // alpaka::memcpy(queue,
-      //                cms::alpakatools::make_host_view(nTksAux),
-      //                cms::alpakatools::make_device_view(queue, it->view().tracks().nTracks()));
 
       nTks.push_back(nTksAux);
 
@@ -147,10 +144,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         nHitsAux += ::reco::nHits(itHost.view().tracks(), i);
       }
 
-      // [[maybe_unused]] int nHitsAux = 0;
-      // alpaka::memcpy(queue,
-      //                cms::alpakatools::make_host_view(nHitsAux),
-      //                cms::alpakatools::make_device_view(queue,(deviceAlgo_.calculateNHits(*it,nTksAux,queue)).view().tracks().nTracks()));
       nHits.push_back(nHitsAux);
     }
 
@@ -214,7 +207,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // distinguish between scalar and column types
         if constexpr (std::get<columnIndex>(outDesc.columnTypes) == cms::soa::SoAColumnType::scalar) {
           // scalar type, copy the value directly
-          // for some reason this doesn't work on device, so it is done after mergeSoAColumns finishes
+          // for some reason this doesn't work on device, so it is done after the loop in the iterations finishes
           // alpaka::memcpy(queue,
           //                cms::alpakatools::make_device_view(queue, outCol.data(), 1),
           //                cms::alpakatools::make_device_view(queue, &nTotal, 1));
@@ -249,17 +242,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       });
 
-      // correctly copy total of nTracks
-      const int nTotal = cumulNTks[cumulNTks.size() - 1];
-
-      alpaka::memcpy(queue,
-                     cms::alpakatools::make_device_view(queue, outputTemp.view().tracks().nTracks()),
-                     cms::alpakatools::make_host_view(nTotal));
-
       // update outputTemp hitOffsets to take into account the previous SoAs
       deviceAlgo_.updateHitOffsets(cumulNTks[nSoAsAux],cumulNTks[nSoAsAux + 1],cumulNHits[nSoAsAux],outputTemp,queue);
 
-      // copy track hits information for inp1 hits
+      // copy track hits information
       alpaka::memcpy(
           queue,
           cms::alpakatools::make_device_view(queue, outputTemp.view().trackHits().id().data() + cumulNHits[nSoAsAux], nHits[nSoAsAux]),
@@ -277,6 +263,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         nSoAsAux = nSoAsAux + 1;
 
       }
+
+      // correctly copy total of nTracks
+      const int nTotal = cumulNTks[cumulNTks.size() - 1];
+      alpaka::memcpy(queue,
+                     cms::alpakatools::make_device_view(queue, outputTemp.view().tracks().nTracks()),
+                     cms::alpakatools::make_host_view(nTotal));
 
 #ifdef GPU_DEBUG
     for(int i = 0; i < std::min(int(*(std::min_element(nTks.begin(), nTks.end()))),10); ++i) {

@@ -86,7 +86,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       TrackingRecHitsMaskingCollection mask_d(queue, nHits);
 
       int threadsPerBlock = 128;
-      int blocks = nHits;
+      int blocks = cms::alpakatools::divide_up_by(nHits, threadsPerBlock);
       const auto workDiv1D = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlock);
 
 #ifdef GPU_DEBUG

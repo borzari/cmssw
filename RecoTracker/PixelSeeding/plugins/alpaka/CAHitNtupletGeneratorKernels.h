@@ -277,11 +277,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                       const double matchFraction,
                       Queue& queue);
 
-    // void calculateNHits(const ::reco::TrackSoAConstView& tracks,
-    //                     int const& nTksAux,
-    //                     ::reco::TrackSoAView& nHits,
-    //                     Queue& queue);
-
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
