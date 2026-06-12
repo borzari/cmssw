@@ -81,7 +81,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void PixelTracksSoAMerger::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
 
-    desc.add<std::vector<edm::InputTag>>("inputTkSoAs", {edm::InputTag("pixelTracksHighPtAlpaka"),edm::InputTag("pixelTracksLowPtAlpaka"),edm::InputTag("pixelTracksDisplHighPtAlpaka"),edm::InputTag("pixelTracksDisplLowPtAlpaka")});
+    desc.add<std::vector<edm::InputTag>>("inputTkSoAs", {edm::InputTag("pixelTracksHighPtAlpaka"),edm::InputTag("pixelTracksLowPtAlpaka")});
     desc.add<std::string>("minQuality", "highPurity");
     desc.add<double>("matchFraction", 0.0);
 
@@ -270,30 +270,64 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                      cms::alpakatools::make_device_view(queue, outputTemp.view().tracks().nTracks()),
                      cms::alpakatools::make_host_view(nTotal));
 
-#ifdef GPU_DEBUG
+#ifdef DUPLICATE_DEBUG
+
+    // This block copies all input and output collections to host to print quantities and ensure that outN = inpN
+    // "out1", "out2", ..., "outN" refer to the position of the input inside of the output collection, but there is only one output SoA
+    // It only prints at most the first 10 tracks of each input collection, defined in std::min_element(nTks.begin(), nTks.end()))),10)
+    // This is also useful to check for duplicate tracks in distinct input collections
+    
+    auto nTksOutDebug = outputTemp.view().tracks().metadata().size();
+    auto nHitsOutDebug = outputTemp.view().trackHits().metadata().size();
+
+    reco::TracksHost outputTempHost(queue, nTksOutDebug, nHitsOutDebug);
+
+    alpaka::memcpy(queue, outputTempHost.buffer(), outputTemp.buffer());
+    alpaka::wait(queue);
+
+    auto outViewHost = outputTempHost.view().tracks();
+
+    std::vector<reco::TracksHost> inputTkSoAsHost;
+
+    for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) {
+
+      auto nTksInpDebug = inputTkSoAs[k]->view().tracks().metadata().size();
+      auto nHitsInpDebug = inputTkSoAs[k]->view().trackHits().metadata().size();
+
+      reco::TracksHost inputTempHost(queue, nTksInpDebug, nHitsInpDebug);
+
+      alpaka::memcpy(queue, inputTempHost.buffer(), inputTkSoAs[k]->buffer());
+      alpaka::wait(queue);
+
+      inputTkSoAsHost.push_back(std::move(inputTempHost));
+
+    } 
+
+    std::cout << "Number of tracks: " << outViewHost.nTracks() << std::endl;
+
     for(int i = 0; i < std::min(int(*(std::min_element(nTks.begin(), nTks.end()))),10); ++i) {
 
-      std::cout << "track number: " << outView.tracks().nTracks() << std::endl;
+      std::cout << "Number of tracks: " << outViewHost.nTracks() << std::endl;
       std::cout << "------------------------------------------------------------------------------------------" << std::endl;
 
       std::cout << "track quality (";
       for(int k = 1; k < int(cumulNTks.size()); ++k) std::cout << "inp" << k << " - out" << k << " -- ";
       std::cout << "): ";
-      for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout << pixelTrack::qualityName[int(inputTkSoAs[k]->view()[i].quality())] << " - " << pixelTrack::qualityName[int(outView[i + cumulNTks[k]].quality())] << " -- ";
+      for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout << pixelTrack::qualityName[int(inputTkSoAsHost[k].view().tracks()[i].quality())] << " - " << pixelTrack::qualityName[int(outViewHost[i + cumulNTks[k]].quality())] << " -- ";
       std::cout << std::endl;
       std::cout << "------------------------------------------------------------------------------------------" << std::endl;
 
       std::cout << "track pt (";
       for(int k = 1; k < int(cumulNTks.size()); ++k) std::cout << "inp" << k << " - out" << k << " -- ";
       std::cout << "): ";
-      for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout << inputTkSoAs[k]->view()[i].pt() << " - " << outView[i + cumulNTks[k]].pt() << " -- ";
+      for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout << inputTkSoAsHost[k].view().tracks()[i].pt() << " - " << outViewHost[i + cumulNTks[k]].pt() << " -- ";
       std::cout << std::endl;
       std::cout << "------------------------------------------------------------------------------------------" << std::endl;
 
       std::cout << "track eta (";
       for(int k = 1; k < int(cumulNTks.size()); ++k) std::cout << "inp" << k << " - out" << k << " -- ";
       std::cout << "): ";
-      for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout << inputTkSoAs[k]->view()[i].eta() << " - " << outView[i + cumulNTks[k]].eta() << " -- ";
+      for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout << inputTkSoAsHost[k].view().tracks()[i].eta() << " - " << outViewHost[i + cumulNTks[k]].eta() << " -- ";
       std::cout << std::endl;
       std::cout << "------------------------------------------------------------------------------------------" << std::endl;
       
@@ -301,7 +335,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         std::cout << "track state " << j << "(";
         for(int k = 1; k < int(cumulNTks.size()); ++k) std::cout << "inp" << k << " - out" << k << " -- ";
         std::cout << "): ";
-        for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout <<  inputTkSoAs[k]->view()[i].state()(j) << " - " << outView[i + cumulNTks[k]].state()(j) << " -- ";
+        for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout <<  inputTkSoAsHost[k].view().tracks()[i].state()(j) << " - " << outViewHost[i + cumulNTks[k]].state()(j) << " -- ";
         std::cout << std::endl;
       }
       std::cout << "------------------------------------------------------------------------------------------" << std::endl;
@@ -310,7 +344,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         std::cout << "track covariance " << j << "(";
         for(int k = 1; k < int(cumulNTks.size()); ++k) std::cout << "inp" << k << " - out" << k << " -- ";
         std::cout << "): ";
-        for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout <<  inputTkSoAs[k]->view()[i].covariance()(j) << " - " << outView[i + cumulNTks[k]].covariance()(j) << " -- ";
+        for(int k = 0; k < int(cumulNTks.size()) - 1; ++k) std::cout <<  inputTkSoAsHost[k].view().tracks()[i].covariance()(j) << " - " << outViewHost[i + cumulNTks[k]].covariance()(j) << " -- ";
         std::cout << std::endl;
       }
       std::cout << "==========================================================================================" << std::endl;

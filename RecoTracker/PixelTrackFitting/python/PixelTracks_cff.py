@@ -188,8 +188,8 @@ pixelTracksHighPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
-highPtPtMinCut = 0.85
-# highPtPtMinCut = 1.9
+# highPtPtMinCut = 0.85
+highPtPtMinCut = 1.9
 
 from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
 (pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksHighPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone(
@@ -197,14 +197,14 @@ from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
     pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
     maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
-    ptmin = highPtPtMinCut + 0.05,
+    ptmin = highPtPtMinCut + 0.1,
     trackQualityCuts = cms.PSet(
         maxChi2 = cms.double(5),
         maxChi2Quintuplets = cms.double(3),
         maxChi2TripletsOrQuadruplets = cms.double(1),
         maxTip = cms.double(0.3),
         maxZip = cms.double(12),
-        minPt = cms.double(highPtPtMinCut + 0.05)
+        minPt = cms.double(highPtPtMinCut + 0.1)
     ),
     hardCurvCut = cms.double(0.010),
     dzdrFact = cms.double(15.199999809265137),
@@ -379,40 +379,40 @@ from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
             20, 28, 28, 29, 29,
             30
         ),
-        # phiCuts = cms.vint32(
-        #     int(0.8*350), int(0.8*600), int(0.8*450), int(0.8*522), int(0.8*450),
-        #     int(0.8*522), int(0.8*400), int(0.8*650), int(0.8*500), int(0.8*730),
-        #     int(0.8*500), int(0.8*730), int(0.8*350), int(0.8*400), int(0.8*400),
-        #     int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*250),
-        #     int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522),
-        #     int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650), int(0.8*300),
-        #     int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250), int(0.8*250),
-        #     int(0.8*250), int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522),
-        #     int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250),
-        #     int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650),
-        #     int(0.8*300), int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250),
-        #     int(0.8*250), int(0.8*250), int(0.8*1200), int(0.8*1200), int(0.8*1200),
-        #     int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
-        #     int(0.8*850), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
-        #     int(0.8*1000), int(0.8*1100), int(0.8*1250)
-        # ),
         phiCuts = cms.vint32(
-            int(1.0*350), int(1.0*600), int(1.0*450), int(1.0*522), int(1.0*450),
-            int(1.0*522), int(1.0*400), int(1.0*650), int(1.0*500), int(1.0*730),
-            int(1.0*500), int(1.0*730), int(1.0*350), int(1.0*400), int(1.0*400),
-            int(1.0*300), int(1.0*522), int(1.0*300), int(1.0*522), int(1.0*250),
-            int(1.0*522), int(1.0*250), int(1.0*522), int(1.0*250), int(1.0*522),
-            int(1.0*300), int(1.0*522), int(1.0*240), int(1.0*650), int(1.0*300),
-            int(1.0*200), int(1.0*220), int(1.0*250), int(1.0*250), int(1.0*250),
-            int(1.0*250), int(1.0*300), int(1.0*522), int(1.0*300), int(1.0*522),
-            int(1.0*250), int(1.0*522), int(1.0*250), int(1.0*522), int(1.0*250),
-            int(1.0*522), int(1.0*300), int(1.0*522), int(1.0*240), int(1.0*650),
-            int(1.0*300), int(1.0*200), int(1.0*220), int(1.0*250), int(1.0*250),
-            int(1.0*250), int(1.0*250), int(1.0*1200), int(1.0*1200), int(1.0*1200),
-            int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000),
-            int(1.0*850), int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000),
-            int(1.0*1000), int(1.0*1100), int(1.0*1250)
+            int(0.8*350), int(0.8*600), int(0.8*450), int(0.8*522), int(0.8*450),
+            int(0.8*522), int(0.8*400), int(0.8*650), int(0.8*500), int(0.8*730),
+            int(0.8*500), int(0.8*730), int(0.8*350), int(0.8*400), int(0.8*400),
+            int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*250),
+            int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522),
+            int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650), int(0.8*300),
+            int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250), int(0.8*250),
+            int(0.8*250), int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522),
+            int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250),
+            int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650),
+            int(0.8*300), int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250),
+            int(0.8*250), int(0.8*250), int(0.8*1200), int(0.8*1200), int(0.8*1200),
+            int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
+            int(0.8*850), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
+            int(0.8*1000), int(0.8*1100), int(0.8*1250)
         ),
+        # phiCuts = cms.vint32(
+        #     int(1.0*350), int(1.0*600), int(1.0*450), int(1.0*522), int(1.0*450),
+        #     int(1.0*522), int(1.0*400), int(1.0*650), int(1.0*500), int(1.0*730),
+        #     int(1.0*500), int(1.0*730), int(1.0*350), int(1.0*400), int(1.0*400),
+        #     int(1.0*300), int(1.0*522), int(1.0*300), int(1.0*522), int(1.0*250),
+        #     int(1.0*522), int(1.0*250), int(1.0*522), int(1.0*250), int(1.0*522),
+        #     int(1.0*300), int(1.0*522), int(1.0*240), int(1.0*650), int(1.0*300),
+        #     int(1.0*200), int(1.0*220), int(1.0*250), int(1.0*250), int(1.0*250),
+        #     int(1.0*250), int(1.0*300), int(1.0*522), int(1.0*300), int(1.0*522),
+        #     int(1.0*250), int(1.0*522), int(1.0*250), int(1.0*522), int(1.0*250),
+        #     int(1.0*522), int(1.0*300), int(1.0*522), int(1.0*240), int(1.0*650),
+        #     int(1.0*300), int(1.0*200), int(1.0*220), int(1.0*250), int(1.0*250),
+        #     int(1.0*250), int(1.0*250), int(1.0*1200), int(1.0*1200), int(1.0*1200),
+        #     int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000),
+        #     int(1.0*850), int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000),
+        #     int(1.0*1000), int(1.0*1100), int(1.0*1250)
+        # ),
         ptCuts = cms.vdouble(
             highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
             highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,

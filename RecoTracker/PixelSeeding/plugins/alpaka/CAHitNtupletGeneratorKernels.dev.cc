@@ -5,7 +5,6 @@
 
 // Alpaka headers
 #include <alpaka/alpaka.hpp>
-#include <chrono>
 
 // CMSSW headers
 #include "HeterogeneousCore/AlpakaInterface/interface/HistoContainer.h"
