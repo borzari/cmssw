@@ -1,34 +1,20 @@
 #include <alpaka/alpaka.hpp>
 
-#include <TFormula.h>
-#include "CommonTools/Utils/interface/FormulaEvaluator.h"
-
 #include "DataFormats/TrackSoA/interface/TracksHost.h"
 #include "DataFormats/TrackSoA/interface/alpaka/TracksSoACollection.h"
 #include "DataFormats/TrackSoA/interface/TracksDevice.h"
 #include "DataFormats/TrackingRecHitSoA/interface/alpaka/TrackingRecHitsSoACollection.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
-#include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
-#include "HeterogeneousCore/AlpakaCore/interface/alpaka/global/EDProducer.h"
-#include "FWCore/Utilities/interface/ESGetToken.h"
 #include "FWCore/Utilities/interface/InputTag.h"
-#include "FWCore/Utilities/interface/RunningAverage.h"
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/global/EDProducer.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDGetToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
-#include "HeterogeneousCore/AlpakaCore/interface/alpaka/EventSetup.h"
-#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
-#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
-#include "RecoTracker/TkMSParametrization/interface/PixelRecoUtilities.h"
-#include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 
 #include "CAHitNtupletGenerator.h"
-
-#define GPU_DEBUG
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

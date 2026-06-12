@@ -170,9 +170,9 @@ alpaka.toReplaceWith(pixelTracksTask, cms.Task(
     pixelTracksAlpaka,
     # Build the pixel ntuplets and the pixel tracks in SoA format with alpaka on the cpu (if requested by the validation)
     pixelTracksAlpakaSerial,
-    # Just to validate
+    # Just to validate recHits masking machinery
     pixelTracksHighPt,
-    # Just to validate
+    # Just to validate recHits masking machinery
     pixelTracksLowPt,
     # Convert the pixel tracks from SoA to legacy format
     pixelTracks)
@@ -188,257 +188,54 @@ pixelTracksHighPtAlpaka = _pixelTracksAlpakaPhase1.clone(
     maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
 )
 
-# highPtPtMinCut = 0.85
 highPtPtMinCut = 1.9
 
 from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
-(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksHighPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone(
-    hitMask = "siPixelRecHitsExtendedPreSplittingAlpaka",
-    pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
-    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
-    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
-    ptmin = highPtPtMinCut + 0.1,
-    trackQualityCuts = cms.PSet(
-        maxChi2 = cms.double(5),
-        maxChi2Quintuplets = cms.double(3),
-        maxChi2TripletsOrQuadruplets = cms.double(1),
-        maxTip = cms.double(0.3),
-        maxZip = cms.double(12),
-        minPt = cms.double(highPtPtMinCut + 0.1)
-    ),
-    hardCurvCut = cms.double(0.010),
-    dzdrFact = cms.double(15.199999809265137),
-    iterationName = "promptHighPt",
-    geometry = cms.PSet(
-        caDCACuts = cms.vdouble(
-            0.15000000596046448, 0.25, 0.20000000298023224, 0.20000000298023224, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.25,
-            0.25, 0.25, 0.25, 0.10000000149011612, 0.10000000149011612,
-            0.10000000149011612
-        ),
-        caThetaCuts = cms.vdouble(
-            0.0020000000949949026, 0.0020000000949949026, 0.0020000000949949026, 0.0020000000949949026, 0.003000000026077032,
-            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
-            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
-            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
-            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
-            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
-            0.003000000026077032
-        ),
-        maxDR = cms.vdouble(
-            5, 10, 8, 5, 8,
-            5, 7, 10, 8, 10,
-            8, 10, 7, 7, 7,
-            4.5, 9, 4.5, 9, 4.5,
-            9, 4.5, 8, 4, 8,
-            4.5, 8, 4, 10, 5,
-            3, 3, 4, 4, 4,
-            3.5, 4.5, 9, 4.5, 9,
-            4.5, 9, 4.5, 8, 4,
-            8, 4.5, 8, 4, 10,
-            5, 3, 3, 4, 4,
-            4, 3.5, 10000, 10000, 10000,
-            10000, 16, 16, 16, 16,
-            14, 16, 16, 16, 16,
-            14, 10000, 10000
-        ),
-        maxDZ = cms.vdouble(
-            16, 16, 25, 25, 0,
-            0, 13, 15, 19, 21,
-            0, 0, 9, 13, 0,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 15, -10, 35,
-            22, 32.5, 50, 50, 70,
-            70, -5, -10, -5, -15,
-            -25, 50, 40
-        ),
-        maxInner = cms.vdouble(
-            17, 14, 10000, 10000, -4,
-            -7, 17, 15, 10000, 10000,
-            -6, -9, 18, 10000, -11,
-            14, 14, 13, 13, 13,
-            13, 13, 13, 13, 13,
-            13, 13, 13, 16, 16,
-            6, 4, 6, 22, 22,
-            22, 14, 14, 13, 13,
-            13, 13, 13, 13, 13,
-            13, 13, 13, 13, 16,
-            16, 6, 4, 6, 22,
-            22, 22, 10, -10, 20,
-            20, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 1200, 1200
-        ),
-        maxOuter = cms.vdouble(
-            10000, 10000, 10, 10000, 10,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 21,
-            7, 7, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            21, 7, 7, 10000, 10000,
-            10000, 10000, 30, -25, 50,
-            45, 57, 80, 95, 110,
-            10000, -30, -40, -55, -70,
-            -80, 10000, 10000
-        ),
-        minDZ = cms.vdouble(
-            -16, -16, 0, 0, -25,
-            -25, -13, -15, 0, 0,
-            -19, -21, -9, 0, -13,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -15, -35, 10,
-            -22, 5, -10, 5, 15,
-            25, -32.5, -50, -50, -70,
-            -70, -50, -40
-        ),
-        minInner = cms.vdouble(
-            -17, -14, 4, 7, -10000,
-            -10000, -17, -15, 6, 9,
-            -10000, -10000, -18, 11, -10000,
-            0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0,
-            0, 0, 0, 12, 0,
-            0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0,
-            0, 0, 0, 0, 12,
-            0, 0, 0, 0, 0,
-            0, 0, -10, -20, 10,
-            -20, 11, 11, 11, 11,
-            0, 11, 11, 11, 11,
-            0, -1200, -1200
-        ),
-        minOuter = cms.vdouble(
-            -10000, -10000, 0, 0, 0,
-            0, -10000, -10000, 6, 6,
-            6, 6, -10000, 11, 11,
-            3, 3, 3, 3, 3,
-            3, 3, 3, 3, 3,
-            4, 4, 3, 20, 6,
-            0, 0, 0, 7, 7,
-            7, 3, 3, 3, 3,
-            3, 3, 3, 3, 3,
-            3, 4, 4, 3, 20,
-            6, 0, 0, 0, 7,
-            7, 7, -30, -50, 25,
-            -45, 30, 40, 55, 70,
-            80, -57, -70, -95, -110,
-            -10000, -10000, -10000
-        ),
-        pairGraph = cms.vuint32(
-            0, 1, 0, 2, 0,
-            4, 0, 5, 0, 16,
-            0, 17, 1, 2, 1,
-            3, 1, 4, 1, 5,
-            1, 16, 1, 17, 2,
-            3, 2, 4, 2, 16,
-            4, 5, 4, 6, 5,
-            6, 5, 7, 6, 7,
-            6, 8, 7, 8, 7,
-            9, 8, 9, 8, 10,
-            9, 10, 9, 11, 10,
-            11, 10, 12, 11, 12,
-            11, 13, 11, 14, 11,
-            15, 12, 13, 13, 14,
-            14, 15, 16, 17, 16,
-            18, 17, 18, 17, 19,
-            18, 19, 18, 20, 19,
-            20, 19, 21, 20, 21,
-            20, 22, 21, 22, 21,
-            23, 22, 23, 22, 24,
-            23, 24, 23, 25, 23,
-            26, 23, 27, 24, 25,
-            25, 26, 26, 27, 2,
-            28, 2, 28, 2, 28,
-            3, 28, 4, 28, 5,
-            28, 6, 28, 7, 28,
-            8, 28, 16, 28, 17,
-            28, 18, 28, 19, 28,
-            20, 28, 28, 29, 29,
-            30
-        ),
-        phiCuts = cms.vint32(
-            int(0.8*350), int(0.8*600), int(0.8*450), int(0.8*522), int(0.8*450),
-            int(0.8*522), int(0.8*400), int(0.8*650), int(0.8*500), int(0.8*730),
-            int(0.8*500), int(0.8*730), int(0.8*350), int(0.8*400), int(0.8*400),
-            int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*250),
-            int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522),
-            int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650), int(0.8*300),
-            int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250), int(0.8*250),
-            int(0.8*250), int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522),
-            int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250),
-            int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650),
-            int(0.8*300), int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250),
-            int(0.8*250), int(0.8*250), int(0.8*1200), int(0.8*1200), int(0.8*1200),
-            int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
-            int(0.8*850), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
-            int(0.8*1000), int(0.8*1100), int(0.8*1250)
-        ),
-        # phiCuts = cms.vint32(
-        #     int(1.0*350), int(1.0*600), int(1.0*450), int(1.0*522), int(1.0*450),
-        #     int(1.0*522), int(1.0*400), int(1.0*650), int(1.0*500), int(1.0*730),
-        #     int(1.0*500), int(1.0*730), int(1.0*350), int(1.0*400), int(1.0*400),
-        #     int(1.0*300), int(1.0*522), int(1.0*300), int(1.0*522), int(1.0*250),
-        #     int(1.0*522), int(1.0*250), int(1.0*522), int(1.0*250), int(1.0*522),
-        #     int(1.0*300), int(1.0*522), int(1.0*240), int(1.0*650), int(1.0*300),
-        #     int(1.0*200), int(1.0*220), int(1.0*250), int(1.0*250), int(1.0*250),
-        #     int(1.0*250), int(1.0*300), int(1.0*522), int(1.0*300), int(1.0*522),
-        #     int(1.0*250), int(1.0*522), int(1.0*250), int(1.0*522), int(1.0*250),
-        #     int(1.0*522), int(1.0*300), int(1.0*522), int(1.0*240), int(1.0*650),
-        #     int(1.0*300), int(1.0*200), int(1.0*220), int(1.0*250), int(1.0*250),
-        #     int(1.0*250), int(1.0*250), int(1.0*1200), int(1.0*1200), int(1.0*1200),
-        #     int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000),
-        #     int(1.0*850), int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000),
-        #     int(1.0*1000), int(1.0*1100), int(1.0*1250)
-        # ),
-        ptCuts = cms.vdouble(
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut
-        ),
-        startingPairs = cms.vuint32(
-            0, 1, 2, 3, 4,
-            5, 6, 8, 10, 12,
-            15, 17, 19, 21, 23,
-            25, 27, 36, 38, 40,
-            42, 44, 46, 48
-        )
-    ),
-))
+(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksHighPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone())
+
+(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksHighPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone())
+pixelTracksHighPtAlpaka.hitMask = "siPixelRecHitsExtendedPreSplittingAlpaka"
+pixelTracksHighPtAlpaka.pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka"
+pixelTracksHighPtAlpaka.ptmin = highPtPtMinCut + 0.1
+pixelTracksHighPtAlpaka.trackQualityCuts.minPt = cms.double(highPtPtMinCut + 0.1)
+pixelTracksHighPtAlpaka.maxNumberOfDoublets = str(12400000)
+pixelTracksHighPtAlpaka.maxNumberOfTuples   = str(32 * 32 * 1024)
+pixelTracksHighPtAlpaka.hardCurvCut = cms.double(0.010)
+pixelTracksHighPtAlpaka.iterationName = "promptHighPt"
+pixelTracksHighPtAlpaka.geometry.ptCuts = cms.vdouble(
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut
+    )
+pixelTracksHighPtAlpaka.geometry.phiCuts = cms.vint32(
+        int(0.8*350), int(0.8*600), int(0.8*450), int(0.8*522), int(0.8*450),
+        int(0.8*522), int(0.8*400), int(0.8*650), int(0.8*500), int(0.8*730),
+        int(0.8*500), int(0.8*730), int(0.8*350), int(0.8*400), int(0.8*400),
+        int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*250),
+        int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522),
+        int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650), int(0.8*300),
+        int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250), int(0.8*250),
+        int(0.8*250), int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522),
+        int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250),
+        int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650),
+        int(0.8*300), int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250),
+        int(0.8*250), int(0.8*250), int(0.8*1200), int(0.8*1200), int(0.8*1200),
+        int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
+        int(0.8*850), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
+        int(0.8*1000), int(0.8*1100), int(0.8*1250)
+    )
 
 # pixel tracks SoA producer on the cpu, for validation
 pixelTracksHighPtAlpakaSerial = makeSerialClone(pixelTracksHighPtAlpaka,
@@ -460,248 +257,37 @@ pixelTracksHighPtMaskingSoA = _pixelTracksMaskingSoA.clone(
     tracksSoASrc = "pixelTracksHighPtAlpaka",
 )
 
-pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone(
-    avgHitsPerTrack    = 4.6,
-    avgCellsPerHit     = 13,
-    avgCellsPerCell    = 0.0268,
-    avgTracksPerCell   = 0.0123,
-    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
-    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
-)
+pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone()
 
 lowPtPtMinCut = 0.45 # 0.45 works, but 0.40 starts showing too many tracks with "zero" eta and phi
                      # Maybe there is another cell cut that balances this, but need to check
 
-(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksLowPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone(
-    hitMask = "pixelTracksHighPtMaskingSoA",
-    pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
-    ptmin              = lowPtPtMinCut + 0.05,
-    trackQualityCuts = cms.PSet(
-        maxChi2 = cms.double(5),
-        maxChi2Quintuplets = cms.double(3),
-        maxChi2TripletsOrQuadruplets = cms.double(1),
-        maxTip = cms.double(0.3),
-        maxZip = cms.double(12),
-        minPt = cms.double(lowPtPtMinCut + 0.05)
-    ),
-    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
-    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
-    cellZ0Cut = cms.double(13.5),
-    hardCurvCut = cms.double(0.035),
-    iterationName = "promptLowPt",
-    geometry = cms.PSet(
-        caDCACuts = cms.vdouble(
-            0.16000000596046448, 0.30, 0.25000000298023224, 0.25000000298023224, 0.25,
-            0.25, 0.25, 0.25, 0.25, 0.26,
-            0.26, 0.30, 0.30, 0.30, 0.25,
-            0.25, 0.25, 0.25, 0.26, 0.26,
-            0.25, 0.26, 0.25, 0.30, 0.30,
-            0.30, 0.25, 0.25, 0.20000000149011612, 0.10000000149011612,
-            0.10000000149011612
-        ),
-        caThetaCuts = cms.vdouble(
-            0.0020000000949949026, 0.0020000000949949026, 0.0020000000949949026, 0.0020000000949949026, 0.003000000026077032,
-            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
-            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
-            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
-            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
-            0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032, 0.003000000026077032,
-            0.003000000026077032
-        ),
-        maxDR = cms.vdouble(
-            5, 10, 8, 5, 8,
-            5, 7, 10, 8, 10,
-            8, 10, 7, 7, 7,
-            4.5, 9, 4.5, 9, 4.5,
-            9, 4.5, 8, 4, 8,
-            4.5, 8, 4, 10, 5,
-            3, 3, 4, 4, 4,
-            3.5, 4.5, 9, 4.5, 9,
-            4.5, 9, 4.5, 8, 4,
-            8, 4.5, 8, 4, 10,
-            5, 3, 3, 4, 4,
-            4, 3.5, 10000, 10000, 10000,
-            10000, 16, 16, 16, 16,
-            14, 16, 16, 16, 16,
-            14, 10000, 10000
-        ),
-        maxDZ = cms.vdouble(
-            16, 16, 25, 25, 0,
-            0, 13, 15, 19, 21,
-            0, 0, 9, 13, 0,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 15, -10, 35,
-            22, 32.5, 50, 50, 70,
-            70, -5, -10, -5, -15,
-            -25, 50, 40
-        ),
-        maxInner = cms.vdouble(
-            17, 14, 10000, 10000, -4,
-            -7, 17, 15, 10000, 10000,
-            -6, -9, 18, 10000, -11,
-            14, 14, 13, 13, 13,
-            13, 13, 13, 13, 13,
-            13, 13, 13, 16, 16,
-            6, 4, 6, 22, 22,
-            22, 14, 14, 13, 13,
-            13, 13, 13, 13, 13,
-            13, 13, 13, 13, 16,
-            16, 6, 4, 6, 22,
-            22, 22, 10, -10, 20,
-            20, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 1200, 1200
-        ),
-        maxOuter = cms.vdouble(
-            10000, 10000, 10, 10000, 10,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 21,
-            7, 7, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            10000, 10000, 10000, 10000, 10000,
-            21, 7, 7, 10000, 10000,
-            10000, 10000, 30, -25, 50,
-            45, 57, 80, 95, 110,
-            10000, -30, -40, -55, -70,
-            -80, 10000, 10000
-        ),
-        minDZ = cms.vdouble(
-            -16, -16, 0, 0, -25,
-            -25, -13, -15, 0, 0,
-            -19, -21, -9, 0, -13,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -10000, -10000, -10000,
-            -10000, -10000, -15, -35, 10,
-            -22, 5, -10, 5, 15,
-            25, -32.5, -50, -50, -70,
-            -70, -50, -40
-        ),
-        minInner = cms.vdouble(
-            -17, -14, 4, 7, -10000,
-            -10000, -17, -15, 6, 9,
-            -10000, -10000, -18, 11, -10000,
-            0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0,
-            0, 0, 0, 12, 0,
-            0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0,
-            0, 0, 0, 0, 12,
-            0, 0, 0, 0, 0,
-            0, 0, -10, -20, 10,
-            -20, 11, 11, 11, 11,
-            0, 11, 11, 11, 11,
-            0, -1200, -1200
-        ),
-        minOuter = cms.vdouble(
-            -10000, -10000, 0, 0, 0,
-            0, -10000, -10000, 6, 6,
-            6, 6, -10000, 11, 11,
-            3, 3, 3, 3, 3,
-            3, 3, 3, 3, 3,
-            4, 4, 3, 20, 6,
-            0, 0, 0, 7, 7,
-            7, 3, 3, 3, 3,
-            3, 3, 3, 3, 3,
-            3, 4, 4, 3, 20,
-            6, 0, 0, 0, 7,
-            7, 7, -30, -50, 25,
-            -45, 30, 40, 55, 70,
-            80, -57, -70, -95, -110,
-            -10000, -10000, -10000
-        ),
-        pairGraph = cms.vuint32(
-            0, 1, 0, 2, 0,
-            4, 0, 5, 0, 16,
-            0, 17, 1, 2, 1,
-            3, 1, 4, 1, 5,
-            1, 16, 1, 17, 2,
-            3, 2, 4, 2, 16,
-            4, 5, 4, 6, 5,
-            6, 5, 7, 6, 7,
-            6, 8, 7, 8, 7,
-            9, 8, 9, 8, 10,
-            9, 10, 9, 11, 10,
-            11, 10, 12, 11, 12,
-            11, 13, 11, 14, 11,
-            15, 12, 13, 13, 14,
-            14, 15, 16, 17, 16,
-            18, 17, 18, 17, 19,
-            18, 19, 18, 20, 19,
-            20, 19, 21, 20, 21,
-            20, 22, 21, 22, 21,
-            23, 22, 23, 22, 24,
-            23, 24, 23, 25, 23,
-            26, 23, 27, 24, 25,
-            25, 26, 26, 27, 2,
-            28, 2, 28, 2, 28,
-            3, 28, 4, 28, 5,
-            28, 6, 28, 7, 28,
-            8, 28, 16, 28, 17,
-            28, 18, 28, 19, 28,
-            20, 28, 28, 29, 29,
-            30
-        ),
-        phiCuts = cms.vint32(
-            int(1.0*350), int(1.0*600), int(1.0*450), int(1.0*522), int(1.0*450),
-            int(1.0*522), int(1.0*400), int(1.0*650), int(1.0*500), int(1.0*730),
-            int(1.0*500), int(1.0*730), int(1.0*350), int(1.0*400), int(1.0*400),
-            int(1.0*300), int(1.0*522), int(1.0*300), int(1.0*522), int(1.0*250),
-            int(1.0*522), int(1.0*250), int(1.0*522), int(1.0*250), int(1.0*522),
-            int(1.0*300), int(1.0*522), int(1.0*240), int(1.0*650), int(1.0*300),
-            int(1.0*200), int(1.0*220), int(1.0*250), int(1.0*250), int(1.0*250),
-            int(1.0*250), int(1.0*300), int(1.0*522), int(1.0*300), int(1.0*522),
-            int(1.0*250), int(1.0*522), int(1.0*250), int(1.0*522), int(1.0*250),
-            int(1.0*522), int(1.0*300), int(1.0*522), int(1.0*240), int(1.0*650),
-            int(1.0*300), int(1.0*200), int(1.0*220), int(1.0*250), int(1.0*250),
-            int(1.0*250), int(1.0*250), int(1.0*1200), int(1.0*1200), int(1.0*1200),
-            int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000),
-            int(1.0*850), int(1.0*1000), int(1.0*1000), int(1.0*1000), int(1.0*1000),
-            int(1.0*1000), int(1.0*1100), int(1.0*1250)
-        ),
-        ptCuts = cms.vdouble(
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut
-        ),
-        startingPairs = cms.vuint32(
-            0, 1, 2, 3, 4,
-            5, 6, 8, 10, 12,
-            15, 17, 19, 21, 23,
-            25, 27, 36, 38, 40,
-            42, 44, 46, 48
-        )
-    ),
-))
+(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksLowPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone())
+pixelTracksLowPtAlpaka.hitMask = "pixelTracksHighPtMaskingSoA"
+pixelTracksLowPtAlpaka.pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka"
+pixelTracksLowPtAlpaka.ptmin = lowPtPtMinCut + 0.05
+pixelTracksLowPtAlpaka.trackQualityCuts.minPt = cms.double(lowPtPtMinCut + 0.05)
+pixelTracksLowPtAlpaka.maxNumberOfDoublets = str(12400000)
+pixelTracksLowPtAlpaka.maxNumberOfTuples   = str(32 * 32 * 1024)
+pixelTracksLowPtAlpaka.hardCurvCut = cms.double(0.035)
+pixelTracksLowPtAlpaka.iterationName = "promptLowPt"
+pixelTracksLowPtAlpaka.geometry.ptCuts = cms.vdouble(
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut
+    )
 
 # pixel tracks SoA producer on the cpu, for validation
 pixelTracksLowPtAlpakaSerial = makeSerialClone(pixelTracksLowPtAlpaka,
