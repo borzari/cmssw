@@ -190,63 +190,61 @@ pixelTracksHighPtAlpaka = _pixelTracksAlpakaPhase1.clone(
 
 highPtPtMinCut = 1.9
 
-from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
-(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksHighPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone())
+pixelTracksHighPtAlpakaPhase2Extended = _pixelTracksAlpakaPhase2Extended.clone(
+    hitMask = "siPixelRecHitsExtendedPreSplittingAlpaka",
+    pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
+    ptmin = highPtPtMinCut + 0.1,
+    maxNumberOfDoublets = str(12400000),
+    maxNumberOfTuples   = str(32 * 32 * 1024),
+    hardCurvCut = cms.double(0.010),
+    iterationName = "promptHighPt",
+)
 
-(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksHighPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone())
-pixelTracksHighPtAlpaka.hitMask = "siPixelRecHitsExtendedPreSplittingAlpaka"
-pixelTracksHighPtAlpaka.pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka"
-pixelTracksHighPtAlpaka.ptmin = highPtPtMinCut + 0.1
-pixelTracksHighPtAlpaka.trackQualityCuts.minPt = cms.double(highPtPtMinCut + 0.1)
-pixelTracksHighPtAlpaka.maxNumberOfDoublets = str(12400000)
-pixelTracksHighPtAlpaka.maxNumberOfTuples   = str(32 * 32 * 1024)
-pixelTracksHighPtAlpaka.hardCurvCut = cms.double(0.010)
-pixelTracksHighPtAlpaka.iterationName = "promptHighPt"
-pixelTracksHighPtAlpaka.geometry.ptCuts = cms.vdouble(
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
-        highPtPtMinCut, highPtPtMinCut, highPtPtMinCut
-    )
-pixelTracksHighPtAlpaka.geometry.phiCuts = cms.vint32(
-        int(0.8*350), int(0.8*600), int(0.8*450), int(0.8*522), int(0.8*450),
-        int(0.8*522), int(0.8*400), int(0.8*650), int(0.8*500), int(0.8*730),
-        int(0.8*500), int(0.8*730), int(0.8*350), int(0.8*400), int(0.8*400),
-        int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*250),
-        int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522),
-        int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650), int(0.8*300),
-        int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250), int(0.8*250),
-        int(0.8*250), int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522),
-        int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250),
-        int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650),
-        int(0.8*300), int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250),
-        int(0.8*250), int(0.8*250), int(0.8*1200), int(0.8*1200), int(0.8*1200),
-        int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
-        int(0.8*850), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
-        int(0.8*1000), int(0.8*1100), int(0.8*1250)
-    )
+pixelTracksHighPtAlpakaPhase2Extended.trackQualityCuts.minPt = cms.double(highPtPtMinCut + 0.1)
+pixelTracksHighPtAlpakaPhase2Extended.geometry.ptCuts = cms.vdouble(
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut, highPtPtMinCut,
+            highPtPtMinCut, highPtPtMinCut, highPtPtMinCut
+        )
+pixelTracksHighPtAlpakaPhase2Extended.geometry.phiCuts = cms.vint32(
+            int(0.8*350), int(0.8*600), int(0.8*450), int(0.8*522), int(0.8*450),
+            int(0.8*522), int(0.8*400), int(0.8*650), int(0.8*500), int(0.8*730),
+            int(0.8*500), int(0.8*730), int(0.8*350), int(0.8*400), int(0.8*400),
+            int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*250),
+            int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522),
+            int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650), int(0.8*300),
+            int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250), int(0.8*250),
+            int(0.8*250), int(0.8*300), int(0.8*522), int(0.8*300), int(0.8*522),
+            int(0.8*250), int(0.8*522), int(0.8*250), int(0.8*522), int(0.8*250),
+            int(0.8*522), int(0.8*300), int(0.8*522), int(0.8*240), int(0.8*650),
+            int(0.8*300), int(0.8*200), int(0.8*220), int(0.8*250), int(0.8*250),
+            int(0.8*250), int(0.8*250), int(0.8*1200), int(0.8*1200), int(0.8*1200),
+            int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
+            int(0.8*850), int(0.8*1000), int(0.8*1000), int(0.8*1000), int(0.8*1000),
+            int(0.8*1000), int(0.8*1100), int(0.8*1250)
+        )
+
+pixelTracksHighPtAlpaka = _pixelTracksAlpakaPhase1.clone()
+
+from Configuration.ProcessModifiers.pixelTrackMask_cff import pixelTrackMask
+(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksHighPtAlpaka,pixelTracksHighPtAlpakaPhase2Extended.clone())
 
 # pixel tracks SoA producer on the cpu, for validation
 pixelTracksHighPtAlpakaSerial = makeSerialClone(pixelTracksHighPtAlpaka,
     pixelRecHitSrc = 'siPixelRecHitsPreSplittingAlpakaSerial'
 )
-
-(pixelTrackMask & phase2CAExtension).toModify(pixelTracksHighPtAlpakaSerial,
-                           pixelRecHitSrc = 'siPixelRecHitsExtendedPreSplittingAlpakaSerial',
-                           maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
-                           maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
-                           )
 
 # pixel tracks SoA merger
 from RecoTracker.PixelSeeding.pixelTracksMaskingSoA_cfi import pixelTracksMaskingSoA as _pixelTracksMaskingSoA
@@ -257,58 +255,46 @@ pixelTracksHighPtMaskingSoA = _pixelTracksMaskingSoA.clone(
     tracksSoASrc = "pixelTracksHighPtAlpaka",
 )
 
-pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone()
-
 lowPtPtMinCut = 0.45 # 0.45 works, but 0.40 starts showing too many tracks with "zero" eta and phi
                      # Maybe there is another cell cut that balances this, but need to check
 
-(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksLowPtAlpaka,_pixelTracksAlpakaPhase2Extended.clone())
-pixelTracksLowPtAlpaka.hitMask = "pixelTracksHighPtMaskingSoA"
-pixelTracksLowPtAlpaka.pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka"
-pixelTracksLowPtAlpaka.ptmin = lowPtPtMinCut + 0.05
-pixelTracksLowPtAlpaka.trackQualityCuts.minPt = cms.double(lowPtPtMinCut + 0.05)
-pixelTracksLowPtAlpaka.maxNumberOfDoublets = str(12400000)
-pixelTracksLowPtAlpaka.maxNumberOfTuples   = str(32 * 32 * 1024)
-pixelTracksLowPtAlpaka.hardCurvCut = cms.double(0.035)
-pixelTracksLowPtAlpaka.iterationName = "promptLowPt"
-pixelTracksLowPtAlpaka.geometry.ptCuts = cms.vdouble(
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
-        lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut
-    )
+pixelTracksLowPtAlpakaPhase2Extended = _pixelTracksAlpakaPhase2Extended.clone(
+    hitMask = "pixelTracksHighPtMaskingSoA",
+    pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
+    ptmin = lowPtPtMinCut + 0.05,
+    maxNumberOfDoublets = str(12400000),
+    maxNumberOfTuples   = str(32 * 32 * 1024),
+    hardCurvCut = cms.double(0.035),
+    iterationName = "promptLowPt",
+)
+
+pixelTracksLowPtAlpakaPhase2Extended.trackQualityCuts.minPt = cms.double(lowPtPtMinCut + 0.05)
+pixelTracksLowPtAlpakaPhase2Extended.geometry.ptCuts = cms.vdouble(
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut,
+            lowPtPtMinCut, lowPtPtMinCut, lowPtPtMinCut
+        )
+
+pixelTracksLowPtAlpaka = _pixelTracksAlpakaPhase1.clone()
+
+(pixelTrackMask & phase2CAExtension).toReplaceWith(pixelTracksLowPtAlpaka,pixelTracksLowPtAlpakaPhase2Extended.clone())
 
 # pixel tracks SoA producer on the cpu, for validation
 pixelTracksLowPtAlpakaSerial = makeSerialClone(pixelTracksLowPtAlpaka,
     pixelRecHitSrc = 'siPixelRecHitsPreSplittingAlpakaSerial'
 )
-
-(pixelTrackMask & phase2CAExtension).toModify(pixelTracksLowPtAlpakaSerial,
-                            hitMask = "pixelTracksHighPtMaskingSoA",
-                            pixelRecHitSrc = "siPixelRecHitsExtendedPreSplittingAlpaka",
-                            ptmin  = 0.3,
-                            trackQualityCuts = cms.PSet(
-                                maxChi2 = cms.double(5),
-                                maxChi2Quintuplets = cms.double(3),
-                                maxChi2TripletsOrQuadruplets = cms.double(1),
-                                maxTip = cms.double(0.3),
-                                maxZip = cms.double(12),
-                                minPt = cms.double(0.3)
-                            ),
-                            maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
-                            maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
-                           )
 
 # legacy pixel tracks from SoA
 from  RecoTracker.PixelTrackFitting.pixelTrackProducerFromSoAAlpaka_cfi import pixelTrackProducerFromSoAAlpaka as _pixelTrackProducerFromSoAAlpaka
