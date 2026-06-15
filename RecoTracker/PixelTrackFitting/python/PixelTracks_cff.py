@@ -178,17 +178,7 @@ alpaka.toReplaceWith(pixelTracksTask, cms.Task(
     pixelTracks)
 )
 
-
-pixelTracksHighPtAlpaka = _pixelTracksAlpakaPhase1.clone(
-    avgHitsPerTrack    = 4.6,      
-    avgCellsPerHit     = 13,
-    avgCellsPerCell    = 0.0268, 
-    avgTracksPerCell   = 0.0123, 
-    maxNumberOfDoublets = str(12400000),    # could be lowered to 315k, keeping the same for a fair comparison with master
-    maxNumberOfTuples   = str(32 * 32 * 1024),   # this couul be much lower (2.1k, these are quads)
-)
-
-highPtPtMinCut = 1.9
+highPtPtMinCut = 1.9 # Chosen to not overlap a lot with the lowPt iteration
 
 pixelTracksHighPtAlpakaPhase2Extended = _pixelTracksAlpakaPhase2Extended.clone(
     hitMask = "siPixelRecHitsExtendedPreSplittingAlpaka",
