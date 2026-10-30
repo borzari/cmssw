@@ -142,6 +142,7 @@ MTVHistoProducerAlgoForTracker::MTVHistoProducerAlgoForTracker(const edm::Parame
     : doSeedPlots_(doSeedPlots),
       doMTDPlots_(pset.getUntrackedParameter<bool>("doMTDPlots")),
       doDzPVcutPlots_(pset.getUntrackedParameter<bool>("doDzPVcutPlots")) {
+      // doTruthGraphPlots_(pset.getUntrackedParameter<bool>("doTruthGraphPlots")) {
   //parameters for _vs_eta plots
   minEta = pset.getParameter<double>("minEta");
   maxEta = pset.getParameter<double>("maxEta");
@@ -269,6 +270,10 @@ MTVHistoProducerAlgoForTracker::MTVHistoProducerAlgoForTracker(const edm::Parame
     sel = std::make_unique<TrackingParticleSelector>(
         ParameterAdapter<TrackingParticleSelector>::make(pset.getParameter<ParameterSet>(name)));
   };
+  auto initTGPselector = [&](auto& sel, auto& name) {
+    sel = std::make_unique<TruthGraphParticleSelector>(
+        ParameterAdapter<TruthGraphParticleSelector>::make(pset.getParameter<ParameterSet>(name)));
+  };
   auto initTrackSelector = [&](auto& sel, auto& name) {
     sel = makeRecoTrackSelectorFromTPSelectorParameters(pset.getParameter<ParameterSet>(name));
   };
@@ -283,6 +288,12 @@ MTVHistoProducerAlgoForTracker::MTVHistoProducerAlgoForTracker(const edm::Parame
   initTPselector(TpSelectorForEfficiencyVsPt, "TpSelectorForEfficiencyVsPt");
   initTPselector(TpSelectorForEfficiencyVsVTXR, "TpSelectorForEfficiencyVsVTXR");
   initTPselector(TpSelectorForEfficiencyVsVTXZ, "TpSelectorForEfficiencyVsVTXZ");
+
+  initTGPselector(TGpSelectorForEfficiencyVsEta, "TGpSelectorForEfficiencyVsEta");
+  initTGPselector(TGpSelectorForEfficiencyVsPhi, "TGpSelectorForEfficiencyVsPhi");
+  initTGPselector(TGpSelectorForEfficiencyVsPt, "TGpSelectorForEfficiencyVsPt");
+  initTGPselector(TGpSelectorForEfficiencyVsVTXR, "TGpSelectorForEfficiencyVsVTXR");
+  initTGPselector(TGpSelectorForEfficiencyVsVTXZ, "TGpSelectorForEfficiencyVsVTXZ");
 
   initTrackSelector(trackSelectorVsEta, "TpSelectorForEfficiencyVsEta");
   initTrackSelector(trackSelectorVsPhi, "TpSelectorForEfficiencyVsPhi");
@@ -393,7 +404,8 @@ std::unique_ptr<RecoTrackSelectorBase> MTVHistoProducerAlgoForTracker::makeRecoT
   return std::make_unique<RecoTrackSelectorBase>(psetTrack);
 }
 
-void MTVHistoProducerAlgoForTracker::bookSimHistos(DQMStore::IBooker& ibook, Histograms& histograms) {
+void MTVHistoProducerAlgoForTracker::bookSimHistos(DQMStore::IBooker& ibook,
+                                                   Histograms& histograms) {
   histograms.h_ptSIM = make1DIfLogX(ibook, useLogPt, "ptSIM", "generated p_{t}", nintPt, minPt, maxPt);
   histograms.h_etaSIM = ibook.book1D("etaSIM", "generated pseudorapidity", nintEta, minEta, maxEta);
   histograms.h_phiSIM = ibook.book1D("phiSIM", "generated phi", nintPhi, minPhi, maxPhi);
@@ -402,6 +414,17 @@ void MTVHistoProducerAlgoForTracker::bookSimHistos(DQMStore::IBooker& ibook, His
   histograms.h_vertposSIM =
       ibook.book1D("vertposSIM", "Transverse position of sim vertices", nintVertpos, minVertpos, maxVertpos);
   histograms.h_bunchxSIM = ibook.book1D("bunchxSIM", "bunch crossing", 21, -15.5, 5.5);
+
+  // if (doTruthGraphPlots_){
+  //   histograms.h_TG_ptSIM = make1DIfLogX(ibook, useLogPt, "TG_ptSIM", "(TG) generated p_{t}", nintPt, minPt, maxPt);
+  //   histograms.h_TG_etaSIM = ibook.book1D("TG_etaSIM", "(TG) generated pseudorapidity", nintEta, minEta, maxEta);
+  //   histograms.h_TG_phiSIM = ibook.book1D("TG_phiSIM", "(TG) generated phi", nintPhi, minPhi, maxPhi);
+  //   histograms.h_TG_tracksSIM =
+  //       ibook.book1D("TG_tracksSIM", "(TG) number of simulated tracks", nintTracks, minTracks, maxTracks * 10);
+  //   histograms.h_TG_vertposSIM =
+  //       ibook.book1D("TG_vertposSIM", "(TG) Transverse position of sim vertices", nintVertpos, minVertpos, maxVertpos);
+  //   histograms.h_TG_bunchxSIM = ibook.book1D("TG_bunchxSIM", "(TG) bunch crossing", 21, -15.5, 5.5);
+  // }
 }
 
 void MTVHistoProducerAlgoForTracker::bookSimTrackHistos(DQMStore::IBooker& ibook,
@@ -549,6 +572,151 @@ void MTVHistoProducerAlgoForTracker::bookSimTrackHistos(DQMStore::IBooker& ibook
                                                                     nalgos));
   setBinLabelsAlgo(histograms.h_duplicates_oriAlgo_vs_oriAlgo.back(), 1);
   setBinLabelsAlgo(histograms.h_duplicates_oriAlgo_vs_oriAlgo.back(), 2);
+
+  // if(doTruthGraphPlots_){
+    // histograms.h_TG_assoceta.push_back(
+        // ibook.book1D("TG_num_assoc(simToReco)_eta", "(TG) N of associated tracks (simToReco) vs eta", nintEta, minEta, maxEta));
+    // histograms.h_TG_simuleta.push_back(
+        // ibook.book1D("TG_num_simul_eta", "(TG) N of simulated tracks vs eta", nintEta, minEta, maxEta));
+
+    // histograms.h_TG_assocpT.push_back(make1DIfLogX(
+        // ibook, useLogPt, "TG_num_assoc(simToReco)_pT", "(TG) N of associated tracks (simToReco) vs pT", nintPt, minPt, maxPt));
+    // histograms.h_TG_simulpT.push_back(
+        // make1DIfLogX(ibook, useLogPt, "TG_num_simul_pT", "(TG) N of simulated tracks vs pT", nintPt, minPt, maxPt));
+
+    // histograms.h_TG_assocpTvseta.push_back(make2DIfLogY(ibook,
+                                                    //  useLogPt,
+                                                    //  "TG_num_assoc(simToReco)_pTvseta",
+                                                    //  "(TG) N of associated tracks (simToReco) in (pT-eta) please",
+                                                    //  nintEta,
+                                                    //  minEta,
+                                                    //  maxEta,
+                                                    //  nintPt,
+                                                    //  minPt,
+                                                    //  maxPt));
+    // histograms.h_TG_simulpTvseta.push_back(make2DIfLogY(ibook,
+                                                    //  useLogPt,
+                                                    //  "TG_num_simul_pTvseta",
+                                                    //  "(TG) N of simulated tracks in (pT-eta) plane",
+                                                    //  nintEta,
+                                                    //  minEta,
+                                                    //  maxEta,
+                                                    //  nintPt,
+                                                    //  minPt,
+                                                    //  maxPt));
+
+    // histograms.h_TG_assochit.push_back(
+        // ibook.book1D("TG_num_assoc(simToReco)_hit", "(TG) N of associated tracks (simToReco) vs hit", nintHit, minHit, maxHit));
+    // histograms.h_TG_simulhit.push_back(
+        // ibook.book1D("TG_num_simul_hit", "(TG) N of simulated tracks vs hit", nintHit, minHit, maxHit));
+
+    // histograms.h_TG_assoclayer.push_back(ibook.book1D(
+        // "TG_num_assoc(simToReco)_layer", "(TG) N of associated tracks (simToReco) vs layer", nintLayers, minLayers, maxLayers));
+    // histograms.h_TG_simullayer.push_back(
+        // ibook.book1D("TG_num_simul_layer", "(TG) N of simulated tracks vs layer", nintLayers, minLayers, maxLayers));
+
+    // histograms.h_TG_assocpixellayer.push_back(ibook.book1D("TG_num_assoc(simToReco)_pixellayer",
+                                                        // "(TG) N of associated tracks (simToReco) vs pixel layer",
+                                                        // nintLayers,
+                                                        // minLayers,
+                                                        // maxLayers));
+    // histograms.h_TG_simulpixellayer.push_back(
+        // ibook.book1D("TG_num_simul_pixellayer", "(TG) N of simulated tracks vs pixel layer", nintLayers, minLayers, maxLayers));
+
+    // histograms.h_TG_assoc3Dlayer.push_back(ibook.book1D("TG_num_assoc(simToReco)_3Dlayer",
+                                                    //  "(TG) N of associated tracks (simToReco) vs 3D layer",
+                                                    //  nintLayers,
+                                                    //  minLayers,
+                                                    //  maxLayers));
+    // histograms.h_TG_simul3Dlayer.push_back(
+        // ibook.book1D("TG_num_simul_3Dlayer", "(TG) N of simulated tracks vs 3D layer", nintLayers, minLayers, maxLayers));
+
+    // histograms.h_TG_assocpu.push_back(
+        // ibook.book1D("TG_num_assoc(simToReco)_pu", "(TG) N of associated tracks (simToReco) vs pu", nintPu, minPu, maxPu));
+    // histograms.h_TG_simulpu.push_back(ibook.book1D("TG_num_simul_pu", "(TG) N of simulated tracks vs pu", nintPu, minPu, maxPu));
+
+    // histograms.h_TG_assocphi.push_back(
+        // ibook.book1D("TG_num_assoc(simToReco)_phi", "(TG) N of associated tracks (simToReco) vs phi", nintPhi, minPhi, maxPhi));
+    // histograms.h_TG_simulphi.push_back(
+        // ibook.book1D("TG_num_simul_phi", "(TG) N of simulated tracks vs phi", nintPhi, minPhi, maxPhi));
+
+    // histograms.h_TG_assocdxy.push_back(
+        // ibook.book1D("TG_num_assoc(simToReco)_dxy", "(TG) N of associated tracks (simToReco) vs dxy", nintDxy, minDxy, maxDxy));
+    // histograms.h_TG_simuldxy.push_back(
+        // ibook.book1D("TG_num_simul_dxy", "(TG) N of simulated tracks vs dxy", nintDxy, minDxy, maxDxy));
+
+    // histograms.h_TG_assocdz.push_back(
+        // ibook.book1D("TG_num_assoc(simToReco)_dz", "(TG) N of associated tracks (simToReco) vs dz", nintDz, minDz, maxDz));
+    // histograms.h_TG_simuldz.push_back(ibook.book1D("TG_num_simul_dz", "(TG) N of simulated tracks vs dz", nintDz, minDz, maxDz));
+
+    // histograms.h_TG_assocvertpos.push_back(make1DIfLogX(ibook,
+                                                    //  useLogVertpos,
+                                                    //  "TG_num_assoc(simToReco)_vertpos",
+                                                    //  "(TG) N of associated tracks (simToReco) vs transverse vert position",
+                                                    //  nintVertpos,
+                                                    //  minVertpos,
+                                                    //  maxVertpos));
+    // histograms.h_TG_simulvertpos.push_back(make1DIfLogX(ibook,
+                                                    //  useLogVertpos,
+                                                    //  "TG_num_simul_vertpos",
+                                                    //  "(TG) N of simulated tracks vs transverse vert position",
+                                                    //  nintVertpos,
+                                                    //  minVertpos,
+                                                    //  maxVertpos));
+
+    // histograms.h_TG_assoczpos.push_back(ibook.book1D(
+        // "TG_num_assoc(simToReco)_zpos", "(TG) N of associated tracks (simToReco) vs z vert position", nintZpos, minZpos, maxZpos));
+    // histograms.h_TG_simulzpos.push_back(
+        // ibook.book1D("TG_num_simul_zpos", "(TG) N of simulated tracks vs z vert position", nintZpos, minZpos, maxZpos));
+
+    // histograms.h_TG_assocdr.push_back(make1DIfLogX(ibook,
+                                                // true,
+                                                // "TG_num_assoc(simToReco)_dr",
+                                                // "(TG) N of associated tracks (simToReco) vs dR",
+                                                // nintdr,
+                                                // log10(mindr),
+                                                // log10(maxdr)));
+    // histograms.h_TG_simuldr.push_back(
+        // make1DIfLogX(ibook, true, "TG_num_simul_dr", "(TG) N of simulated tracks vs dR", nintdr, log10(mindr), log10(maxdr)));
+
+    // histograms.h_TG_assocdrj.push_back(make1DIfLogX(ibook,
+                                                //  true,
+                                                //  "TG_num_assoc(simToReco)_drj",
+                                                //  "(TG) N of associated tracks (simToReco) vs dR(TP,jet)",
+                                                //  nintdrj,
+                                                //  log10(mindrj),
+                                                //  log10(maxdrj)));
+    // histograms.h_TG_simuldrj.push_back(make1DIfLogX(
+        // ibook, true, "TG_num_simul_drj", "(TG) N of simulated tracks vs dR(TP,jet)", nintdrj, log10(mindrj), log10(maxdrj)));
+
+    // histograms.h_TG_simul_simpvz.push_back(
+        // ibook.book1D("TG_num_simul_simpvz", "(TG) N of simulated tracks vs. sim PV z", nintPVz, minPVz, maxPVz));
+    // histograms.h_TG_assoc_simpvz.push_back(ibook.book1D(
+        // "TG_num_assoc(simToReco)_simpvz", "(TG) N of associated tracks (simToReco) vs. sim PV z", nintPVz, minPVz, maxPVz));
+
+    // histograms.nrecHit_vs_nsimHit_sim2rec.push_back(doResolutionPlots ? ibook.book2D("TG_nrecHit_vs_nsimHit_sim2rec",
+                                                                                    //  "(TG) nrecHit vs nsimHit (Sim2RecAssoc)",
+                                                                                    //  nintHit,
+                                                                                    //  minHit,
+                                                                                    //  maxHit,
+                                                                                    //  nintHit,
+                                                                                    //  minHit,
+                                                                                    //  maxHit)
+                                                                      // : nullptr);
+
+    // TODO: use the dynamic track algo priority order also here
+    // constexpr auto nalgos = reco::TrackBase::algoSize;
+    // histograms.h_TG_duplicates_oriAlgo_vs_oriAlgo.push_back(ibook.book2D("TG_duplicates_oriAlgo_vs_oriAlgo",
+                                                                      // "(TG) Duplicate tracks: originalAlgo vs originalAlgo",
+                                                                      // nalgos,
+                                                                      // 0,
+                                                                      // nalgos,
+                                                                      // nalgos,
+                                                                      // 0,
+                                                                      // nalgos));
+    // setBinLabelsAlgo(histograms.h_TG_duplicates_oriAlgo_vs_oriAlgo.back(), 1);
+    // setBinLabelsAlgo(histograms.h_TG_duplicates_oriAlgo_vs_oriAlgo.back(), 2);
+  // }
 }
 
 void MTVHistoProducerAlgoForTracker::bookSimTrackPVAssociationHistos(DQMStore::IBooker& ibook, Histograms& histograms) {
@@ -589,6 +757,46 @@ void MTVHistoProducerAlgoForTracker::bookSimTrackPVAssociationHistos(DQMStore::I
                                                        0,
                                                        maxDzpvCum));
   }
+
+  // if (doTruthGraphPlots_) {
+  //   histograms.h_TG_assocdxypv.push_back(ibook.book1D(
+  //     "TG_num_assoc(simToReco)_dxypv", "(TG) N of associated tracks (simToReco) vs dxy(PV)", nintDxy, minDxy, maxDxy));
+  //   histograms.h_TG_simuldxypv.push_back(
+  //       ibook.book1D("TG_num_simul_dxypv", "(TG) N of simulated tracks vs dxy(PV)", nintDxy, minDxy, maxDxy));
+
+  //   histograms.h_TG_assocdzpv.push_back(
+  //       ibook.book1D("TG_num_assoc(simToReco)_dzpv", "(TG) N of associated tracks (simToReco) vs dz(PV)", nintDz, minDz, maxDz));
+  //   histograms.h_TG_simuldzpv.push_back(
+  //       ibook.book1D("TG_num_simul_dzpv", "(TG) N of simulated tracks vs dz(PV)", nintDz, minDz, maxDz));
+
+  //   histograms.h_TG_assocdxypvzoomed.push_back(ibook.book1D("TG_num_assoc(simToReco)_dxypv_zoomed",
+  //                                                        "(TG) N of associated tracks (simToReco) vs dxy(PV)",
+  //                                                        nintDxy,
+  //                                                        minDxy / dxyDzZoom,
+  //                                                        maxDxy / dxyDzZoom));
+  //   histograms.h_TG_simuldxypvzoomed.push_back(ibook.book1D(
+  //       "TG_num_simul_dxypv_zoomed", "(TG) N of simulated tracks vs dxy(PV)", nintDxy, minDxy / dxyDzZoom, maxDxy / dxyDzZoom));
+
+  //   histograms.h_TG_assocdzpvzoomed.push_back(ibook.book1D("TG_num_assoc(simToReco)_dzpv_zoomed",
+  //                                                       "(TG) N of associated tracks (simToReco) vs dz(PV)",
+  //                                                       nintDz,
+  //                                                       minDz / dxyDzZoom,
+  //                                                       maxDz / dxyDzZoom));
+  //   histograms.h_TG_simuldzpvzoomed.push_back(ibook.book1D(
+  //       "TG_num_simul_dzpv_zoomed", "(TG) N of simulated tracks vs dz(PV)", nintDz, minDz / dxyDzZoom, maxDz / dxyDzZoom));
+
+  //   if (doDzPVcutPlots_) {
+  //     histograms.h_TG_assoc_dzpvcut.push_back(ibook.book1D(
+  //         "TG_num_assoc(simToReco)_dzpvcut", "(TG) N of associated tracks (simToReco) vs dz(PV)", nintDzpvCum, 0, maxDzpvCum));
+  //     histograms.h_TG_simul_dzpvcut.push_back(
+  //         ibook.book1D("TG_num_simul_dzpvcut", "(TG) N of simulated tracks from sim PV", nintDzpvCum, 0, maxDzpvCum));
+  //     histograms.h_TG_simul2_dzpvcut.push_back(ibook.book1D("TG_num_simul2_dzpvcut",
+  //                                                        "(TG) N of simulated tracks (associated to any track) from sim PV",
+  //                                                        nintDzpvCum,
+  //                                                        0,
+  //                                                        maxDzpvCum));
+  //   }
+  // }
 }
 
 void MTVHistoProducerAlgoForTracker::bookRecoHistos(DQMStore::IBooker& ibook,
@@ -1403,7 +1611,427 @@ void MTVHistoProducerAlgoForTracker::bookRecoHistos(DQMStore::IBooker& ibook,
                         nintHit,
                         minHit,
                         maxHit);
+
+  // if (doTruthGraphPlots_) {
+  // histograms.h_TG_fakes.push_back(ibook.book1D("TG_fakes", "(TG) number of fake reco tracks", nintTracks, minTracks, maxTracks));
+
+  // these are needed to calculate efficiency during the harvesting for the automated validation
+  // histograms.h_TG_reco2eta.push_back(
+      // ibook.book1D("TG_num_reco2_eta", "(TG) N of selected reco track vs eta", nintEta, minEta, maxEta));
+  // histograms.h_TG_assoc2eta.push_back(
+      // ibook.book1D("TG_num_assoc(recoToSim)_eta", "(TG) N of associated (recoToSim) tracks vs eta", nintEta, minEta, maxEta));
+  // histograms.h_TG_loopereta.push_back(ibook.book1D(
+      // "TG_num_duplicate_eta", "(TG) N of associated (recoToSim) duplicate tracks vs eta", nintEta, minEta, maxEta));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misideta.push_back(ibook.book1D(
+        // "TG_num_chargemisid_eta", "(TG) N of associated (recoToSim) charge misIDed tracks vs eta", nintEta, minEta, maxEta));
+  // histograms.h_TG_pileupeta.push_back(
+      // ibook.book1D("TG_num_pileup_eta", "(TG) N of associated (recoToSim) pileup tracks vs eta", nintEta, minEta, maxEta));
+  //
+  // histograms.h_TG_reco2pT.push_back(
+      // make1DIfLogX(ibook, useLogPt, "TG_num_reco2_pT", "(TG) N of selected reco track vs pT", nintPt, minPt, maxPt));
+  // histograms.h_TG_assoc2pT.push_back(make1DIfLogX(
+      // ibook, useLogPt, "TG_num_assoc(recoToSim)_pT", "(TG) N of associated (recoToSim) tracks vs pT", nintPt, minPt, maxPt));
+  // histograms.h_TG_looperpT.push_back(make1DIfLogX(
+      // ibook, useLogPt, "TG_num_duplicate_pT", "(TG) N of associated (recoToSim) duplicate tracks vs pT", nintPt, minPt, maxPt));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misidpT.push_back(make1DIfLogX(ibook,
+                                                // useLogPt,
+                                                // "TG_num_chargemisid_pT",
+                                                // "(TG) N of associated (recoToSim) charge misIDed tracks vs pT",
+                                                // nintPt,
+                                                // minPt,
+                                                // maxPt));
+  // histograms.h_TG_pileuppT.push_back(make1DIfLogX(
+      // ibook, useLogPt, "TG_num_pileup_pT", "(TG) N of associated (recoToSim) pileup tracks vs pT", nintPt, minPt, maxPt));
+  //
+  // histograms.h_TG_reco2pTvseta.push_back(make2DIfLogY(ibook,
+                                                  //  useLogPt,
+                                                  //  "TG_num_reco2_pTvseta",
+                                                  //  "(TG) N of selected reco track in (pT-eta) plane",
+                                                  //  nintEta,
+                                                  //  minEta,
+                                                  //  maxEta,
+                                                  //  nintPt,
+                                                  //  minPt,
+                                                  //  maxPt));
+  // histograms.h_TG_assoc2pTvseta.push_back(make2DIfLogY(ibook,
+                                                    // useLogPt,
+                                                    // "TG_num_assoc(recoToSim)_pTvseta",
+                                                    // "(TG) N of associated (recoToSim) tracks in (pT-eta) plane",
+                                                    // nintEta,
+                                                    // minEta,
+                                                    // maxEta,
+                                                    // nintPt,
+                                                    // minPt,
+                                                    // maxPt));
+  // histograms.h_TG_looperpTvseta.push_back(make2DIfLogY(ibook,
+                                                    // useLogPt,
+                                                    // "TG_num_duplicate_pTvseta",
+                                                    // "(TG) N of associated (recoToSim) duplicate tracks in (pT-eta) plane",
+                                                    // nintEta,
+                                                    // minEta,
+                                                    // maxEta,
+                                                    // nintPt,
+                                                    // minPt,
+                                                    // maxPt));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misidpTvseta.push_back(
+        // make2DIfLogY(ibook,
+                    //  useLogPt,
+                    //  "TG_num_chargemisid_pTvseta",
+                    //  "(TG) N of associated (recoToSim) charge misIDed tracks in (pT-eta) plane",
+                    //  nintEta,
+                    //  minEta,
+                    //  maxEta,
+                    //  nintPt,
+                    //  minPt,
+                    //  maxPt));
+  // histograms.h_TG_pileuppTvseta.push_back(make2DIfLogY(ibook,
+                                                    // useLogPt,
+                                                    // "TG_num_pileup_pTvseta",
+                                                    // "(TG) N of associated (recoToSim) pileup tracks in (pT-eta) plane",
+                                                    // nintEta,
+                                                    // minEta,
+                                                    // maxEta,
+                                                    // nintPt,
+                                                    // minPt,
+                                                    // maxPt));
+  //
+  // histograms.h_TG_assoc2hit.push_back(
+      // ibook.book1D("TG_num_assoc(recoToSim)_hit", "(TG) N of associated (recoToSim) tracks vs hit", nintHit, minHit, maxHit));
+  // histograms.h_TG_looperhit.push_back(ibook.book1D(
+      // "TG_num_duplicate_hit", "(TG) N of associated (recoToSim) duplicate tracks vs hit", nintHit, minHit, maxHit));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misidhit.push_back(ibook.book1D(
+        // "TG_num_chargemisid_hit", "(TG) N of associated (recoToSim) charge misIDed tracks vs hit", nintHit, minHit, maxHit));
+  // histograms.h_TG_pileuphit.push_back(
+      // ibook.book1D("TG_num_pileup_hit", "(TG) N of associated (recoToSim) pileup tracks vs hit", nintHit, minHit, maxHit));
+  //
+  // histograms.h_TG_assoc2layer.push_back(ibook.book1D(
+      // "TG_num_assoc(recoToSim)_layer", "(TG) N of associated (recoToSim) tracks vs layer", nintLayers, minLayers, maxLayers));
+  // histograms.h_TG_looperlayer.push_back(ibook.book1D(
+      // "TG_num_duplicate_layer", "(TG) N of associated (recoToSim) duplicate tracks vs layer", nintLayers, minLayers, maxLayers));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misidlayer.push_back(ibook.book1D("TG_num_chargemisid_layer",
+                                                  //  "(TG) N of associated (recoToSim) charge misIDed tracks vs layer",
+                                                  //  nintLayers,
+                                                  //  minLayers,
+                                                  //  maxLayers));
+  // histograms.h_TG_pileuplayer.push_back(ibook.book1D(
+      // "TG_num_pileup_layer", "(TG) N of associated (recoToSim) pileup tracks vs layer", nintLayers, minLayers, maxLayers));
+  //
+  // histograms.h_TG_assoc2pixellayer.push_back(ibook.book1D("TG_num_assoc(recoToSim)_pixellayer",
+                                                      //  "(TG) N of associated (recoToSim) tracks vs pixellayer",
+                                                      //  nintLayers,
+                                                      //  minLayers,
+                                                      //  maxLayers));
+  // histograms.h_TG_looperpixellayer.push_back(ibook.book1D("TG_num_duplicate_pixellayer",
+                                                      //  "(TG) N of associated (recoToSim) duplicate tracks vs pixellayer",
+                                                      //  nintLayers,
+                                                      //  minLayers,
+                                                      //  maxLayers));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misidpixellayer.push_back(
+        // ibook.book1D("TG_num_chargemisid_pixellayer",
+                    //  "(TG) N of associated (recoToSim) charge misIDed tracks vs pixellayer",
+                    //  nintLayers,
+                    //  minLayers,
+                    //  maxLayers));
+  // histograms.h_TG_pileuppixellayer.push_back(ibook.book1D("TG_num_pileup_pixellayer",
+                                                      //  "(TG) N of associated (recoToSim) pileup tracks vs pixellayer",
+                                                      //  nintLayers,
+                                                      //  minLayers,
+                                                      //  maxLayers));
+  //
+  // histograms.h_TG_reco3Dlayer.push_back(
+      // ibook.book1D("num_reco_3Dlayer", "N of reco track vs 3D layer", nintLayers, minLayers, maxLayers));
+  // histograms.h_TG_assoc23Dlayer.push_back(ibook.book1D("TG_num_assoc(recoToSim)_3Dlayer",
+                                                    // "(TG) N of associated (recoToSim) tracks vs 3D layer",
+                                                    // nintLayers,
+                                                    // minLayers,
+                                                    // maxLayers));
+  // histograms.h_TG_looper3Dlayer.push_back(ibook.book1D("TG_num_duplicate_3Dlayer",
+                                                    // "(TG) N of associated (recoToSim) duplicate tracks vs 3D layer",
+                                                    // nintLayers,
+                                                    // minLayers,
+                                                    // maxLayers));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misid3Dlayer.push_back(ibook.book1D("TG_num_chargemisid_3Dlayer",
+                                                    //  "(TG) N of associated (recoToSim) charge misIDed tracks vs 3D layer",
+                                                    //  nintLayers,
+                                                    //  minLayers,
+                                                    //  maxLayers));
+  // histograms.h_TG_pileup3Dlayer.push_back(ibook.book1D(
+      // "TG_num_pileup_3Dlayer", "(TG) N of associated (recoToSim) pileup tracks vs 3D layer", nintLayers, minLayers, maxLayers));
+  //
+  // histograms.h_TG_reco2pu.push_back(ibook.book1D("TG_num_reco2_pu", "(TG) N of selected reco track vs pu", nintPu, minPu, maxPu));
+  // histograms.h_TG_assoc2pu.push_back(
+      // ibook.book1D("TG_num_assoc(recoToSim)_pu", "(TG) N of associated (recoToSim) tracks vs pu", nintPu, minPu, maxPu));
+  // histograms.h_TG_looperpu.push_back(
+      // ibook.book1D("TG_num_duplicate_pu", "(TG) N of associated (recoToSim) duplicate tracks vs pu", nintPu, minPu, maxPu));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misidpu.push_back(ibook.book1D(
+        // "TG_num_chargemisid_pu", "(TG) N of associated (recoToSim) charge misIDed tracks vs pu", nintPu, minPu, maxPu));
+  // histograms.h_TG_pileuppu.push_back(
+      // ibook.book1D("TG_num_pileup_pu", "(TG) N of associated (recoToSim) pileup tracks vs pu", nintPu, minPu, maxPu));
+  //
+  // histograms.h_TG_assoc2phi.push_back(
+      // ibook.book1D("TG_num_assoc(recoToSim)_phi", "(TG) N of associated (recoToSim) tracks vs phi", nintPhi, minPhi, maxPhi));
+  // histograms.h_TG_looperphi.push_back(ibook.book1D(
+      // "TG_num_duplicate_phi", "(TG) N of associated (recoToSim) duplicate tracks vs phi", nintPhi, minPhi, maxPhi));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misidphi.push_back(ibook.book1D(
+        // "TG_num_chargemisid_phi", "(TG) N of associated (recoToSim) charge misIDed tracks vs phi", nintPhi, minPhi, maxPhi));
+  // histograms.h_TG_pileupphi.push_back(
+      // ibook.book1D("TG_num_pileup_phi", "(TG) N of associated (recoToSim) pileup tracks vs phi", nintPhi, minPhi, maxPhi));
+
+  // histograms.h_TG_assoc2dxy.push_back(
+      // ibook.book1D("TG_num_assoc(recoToSim)_dxy", "(TG) N of associated (recoToSim) tracks vs dxy", nintDxy, minDxy, maxDxy));
+  // histograms.h_TG_looperdxy.push_back(
+      // ibook.book1D("TG_num_duplicate_dxy", "(TG) N of associated (recoToSim) looper tracks vs dxy", nintDxy, minDxy, maxDxy));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misiddxy.push_back(ibook.book1D(
+        // "TG_num_chargemisid_dxy", "(TG) N of associated (recoToSim) charge misIDed tracks vs dxy", nintDxy, minDxy, maxDxy));
+  // histograms.h_TG_pileupdxy.push_back(
+      // ibook.book1D("TG_num_pileup_dxy", "(TG) N of associated (recoToSim) pileup tracks vs dxy", nintDxy, minDxy, maxDxy));
+
+  // histograms.h_TG_assoc2dz.push_back(
+      // ibook.book1D("TG_num_assoc(recoToSim)_dz", "(TG) N of associated (recoToSim) tracks vs dz", nintDz, minDz, maxDz));
+  // histograms.h_TG_looperdz.push_back(
+      // ibook.book1D("TG_num_duplicate_dz", "(TG) N of associated (recoToSim) looper tracks vs dz", nintDz, minDz, maxDz));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misiddz.push_back(ibook.book1D(
+        // "TG_num_chargemisid_versus_dz", "(TG) N of associated (recoToSim) charge misIDed tracks vs dz", nintDz, minDz, maxDz));
+  // histograms.h_TG_pileupdz.push_back(
+      // ibook.book1D("TG_num_pileup_dz", "(TG) N of associated (recoToSim) pileup tracks vs dz", nintDz, minDz, maxDz));
+
+  // histograms.h_TG_assoc2vertpos.push_back(
+      // make1DIfLogX(ibook,
+                  //  useLogVertpos,
+                  //  "TG_num_assoc(recoToSim)_vertpos",
+                  //  "(TG) N of associated (recoToSim) tracks vs transverse ref point position",
+                  //  nintVertpos,
+                  //  minVertpos,
+                  //  maxVertpos));
+  // histograms.h_TG_loopervertpos.push_back(
+      // make1DIfLogX(ibook,
+                  //  useLogVertpos,
+                  //  "TG_num_duplicate_vertpos",
+                  //  "(TG) N of associated (recoToSim) looper tracks vs transverse ref point position",
+                  //  nintVertpos,
+                  //  minVertpos,
+                  //  maxVertpos));
+  // histograms.h_TG_pileupvertpos.push_back(
+      // make1DIfLogX(ibook,
+                  //  useLogVertpos,
+                  //  "TG_num_pileup_vertpos",
+                  //  "(TG) N of associated (recoToSim) pileup tracks vs transverse ref point position",
+                  //  nintVertpos,
+                  //  minVertpos,
+                  //  maxVertpos));
+
+  // histograms.h_TG_assoc2zpos.push_back(ibook.book1D("TG_num_assoc(recoToSim)_zpos",
+                                                //  "(TG) N of associated (recoToSim) tracks vs transverse ref point position",
+                                                //  nintZpos,
+                                                //  minZpos,
+                                                //  maxZpos));
+  // histograms.h_TG_looperzpos.push_back(
+      // ibook.book1D("TG_num_duplicate_zpos",
+                  //  "(TG) N of associated (recoToSim) looper tracks vs transverse ref point position",
+                  //  nintZpos,
+                  //  minZpos,
+                  //  maxZpos));
+  // histograms.h_TG_pileupzpos.push_back(
+      // ibook.book1D("TG_num_pileup_zpos",
+                  //  "(TG) N of associated (recoToSim) pileup tracks vs transverse ref point position",
+                  //  nintZpos,
+                  //  minZpos,
+                  //  maxZpos));
+
+  // histograms.h_TG_assoc2dr.push_back(make1DIfLogX(ibook,
+                                              //  true,
+                                              //  "TG_num_assoc(recoToSim)_dr",
+                                              //  "(TG) N of associated tracks (recoToSim) vs dR",
+                                              //  nintdr,
+                                              //  log10(mindr),
+                                              //  log10(maxdr)));
+  // histograms.h_TG_looperdr.push_back(make1DIfLogX(ibook,
+                                              //  true,
+                                              //  "TG_num_duplicate_dr",
+                                              //  "(TG) N of associated (recoToSim) looper tracks vs dR",
+                                              //  nintdr,
+                                              //  log10(mindr),
+                                              //  log10(maxdr)));
+  // histograms.h_TG_pileupdr.push_back(make1DIfLogX(ibook,
+                                              //  true,
+                                              //  "TG_num_pileup_dr",
+                                              //  "(TG) N of associated (recoToSim) pileup tracks vs dR",
+                                              //  nintdr,
+                                              //  log10(mindr),
+                                              //  log10(maxdr)));
+
+  // histograms.h_TG_assoc2drj.push_back(make1DIfLogX(ibook,
+                                                // true,
+                                                // "TG_num_assoc(recoToSim)_drj",
+                                                // "(TG) N of associated tracks (recoToSim) vs dR(track,jet)",
+                                                // nintdrj,
+                                                // log10(mindrj),
+                                                // log10(maxdrj)));
+  // histograms.h_TG_looperdrj.push_back(make1DIfLogX(ibook,
+                                                // true,
+                                                // "TG_num_duplicate_drj",
+                                                // "(TG) N of associated (recoToSim) looper tracks vs dR(track,jet)",
+                                                // nintdrj,
+                                                // log10(mindrj),
+                                                // log10(maxdrj)));
+  // histograms.h_TG_pileupdrj.push_back(make1DIfLogX(ibook,
+                                                // true,
+                                                // "TG_num_pileup_drj",
+                                                // "(TG) N of associated (recoToSim) pileup tracks vs dR(track,jet)",
+                                                // nintdrj,
+                                                // log10(mindrj),
+                                                // log10(maxdrj)));
+
+  // histograms.h_TG_assoc2_simpvz.push_back(ibook.book1D(
+      // "TG_num_assoc(recoToSim)_simpvz", "(TG) N of associated tracks (recoToSim) vs. sim PV z", nintPVz, minPVz, maxPVz));
+  // histograms.h_TG_looper_simpvz.push_back(ibook.book1D(
+      // "TG_num_duplicate_simpvz", "(TG) N of associated (recoToSim) looper tracks vs. sim PV z", nintPVz, minPVz, maxPVz));
+  // histograms.h_TG_pileup_simpvz.push_back(ibook.book1D(
+      // "TG_num_pileup_simpvz", "(TG) N of associated (recoToSim) pileup tracks vs. sim PV z", nintPVz, minPVz, maxPVz));
+
+  // histograms.h_TG_assoc2chi2.push_back(ibook.book1D("TG_num_assoc(recoToSim)_chi2",
+                                                //  "(TG) N of associated (recoToSim) tracks vs normalized #chi^{2}",
+                                                //  nintChi2,
+                                                //  minChi2,
+                                                //  maxChi2));
+  // histograms.h_TG_looperchi2.push_back(ibook.book1D("TG_num_duplicate_chi2",
+                                                //  "(TG) N of associated (recoToSim) looper tracks vs normalized #chi^{2}",
+                                                //  nintChi2,
+                                                //  minChi2,
+                                                //  maxChi2));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misidchi2.push_back(
+        // ibook.book1D("TG_num_chargemisid_chi2",
+                    //  "(TG) N of associated (recoToSim) charge misIDed tracks vs normalized #chi^{2}",
+                    //  nintChi2,
+                    //  minChi2,
+                    //  maxChi2));
+  // histograms.h_TG_pileupchi2.push_back(ibook.book1D("TG_num_pileup_chi2",
+                                                //  "(TG) N of associated (recoToSim) pileup tracks vs normalized #chi^{2}",
+                                                //  nintChi2,
+                                                //  minChi2,
+                                                //  maxChi2));
+
+  // histograms.h_TG_assoc2chi2prob.push_back(ibook.book1D(
+      // "TG_num_assoc(recoToSim)_chi2prob", "(TG) N of associated (recoToSim) tracks vs normalized #chi^{2}", 100, 0., 1.));
+  // histograms.h_TG_looperchi2prob.push_back(ibook.book1D(
+      // "TG_num_duplicate_chi2prob", "(TG) N of associated (recoToSim) looper tracks vs normalized #chi^{2}", 100, 0., 1.));
+  // if (!doSeedPlots_)
+    // histograms.h_TG_misidchi2prob.push_back(
+        // ibook.book1D("TG_num_chargemisid_chi2prob",
+                    //  "(TG) N of associated (recoToSim) charge misIDed tracks vs normalized #chi^{2}",
+                    //  100,
+                    //  0.,
+                    //  1.));
+  // histograms.h_TG_pileupchi2prob.push_back(ibook.book1D(
+      // "TG_num_pileup_chi2prob", "(TG) N of associated (recoToSim) pileup tracks vs normalized #chi^{2}", 100, 0., 1.));
+
+  // if (!seedingLayerSetNames.empty()) {
+    // const auto size = seedingLayerSetNames.size();
+    // histograms.h_TG_assoc2_seedingLayerSet.push_back(
+        // ibook.book1D("TG_num_assoc(recoToSim)_seedingLayerSet",
+                    //  "(TG) N of associated track (recoToSim) tracks vs. seedingLayerSet",
+                    //  size,
+                    //  0,
+                    //  size));
+    // histograms.h_TG_looper_seedingLayerSet.push_back(ibook.book1D(
+        // "TG_num_duplicate_seedingLayerSet", "(TG) N of reco associated (recoToSim) looper vs. seedingLayerSet", size, 0, size));
+    // histograms.h_TG_pileup_seedingLayerSet.push_back(ibook.book1D(
+        // "TG_num_pileup_seedingLayerSet", "(TG) N of reco associated (recoToSim) pileup vs. seedingLayerSet", size, 0, size));
+
+    // setBinLabels(histograms.h_TG_reco_seedingLayerSet.back(), seedingLayerSetNames);
+    // setBinLabels(histograms.h_TG_assoc2_seedingLayerSet.back(), seedingLayerSetNames);
+    // setBinLabels(histograms.h_TG_looper_seedingLayerSet.back(), seedingLayerSetNames);
+    // setBinLabels(histograms.h_TG_pileup_seedingLayerSet.back(), seedingLayerSetNames);
+  // }
+
+  // histograms.h_TG_assocFraction.push_back(ibook.book1D("TG_assocFraction", "(TG) fraction of shared hits", 200, 0, 2));
+  // histograms.h_TG_assocSharedHit.push_back(ibook.book1D("TG_assocSharedHit", "(TG) number of shared hits", 41, -0.5, 40.5));
+  // ----------------------
+
+  // bookResolutionPlots2D(
+      // histograms.TG_nrec_vs_nsim,
+      // false,
+      // "TG_nrec_vs_nsim",
+      // "(TG) Number of selected reco tracks vs. number of selected sim tracks;TrackingParticles;Reco tracks",
+      // nintTracks,
+      // minTracks,
+      // maxTracks,
+      // nintTracks,
+      // minTracks,
+      // maxTracks);
+
+  // histograms.TG_assoc_chi2_vs_eta.push_back(
+      // ibook.bookProfile("TG_assoc_chi2mean", "(TG) mean #chi^{2} vs #eta", nintEta, minEta, maxEta, 200, 0., 20., " "));
+  // histograms.TG_assoc_chi2prob_vs_eta.push_back(ibook.bookProfile(
+      // "TG_assoc_chi2prob_vs_eta", "(TG) mean #chi^{2} probability vs #eta", nintEta, minEta, maxEta, 100, 0., 1., " "));
+  // histograms.TG_assoc_chi2_vs_pt.push_back(makeProfileIfLogX(
+      // ibook, useLogPt, "TG_assoc_chi2mean_vs_pt", "(TG) mean #chi^{2} vs p_{T}", nintPt, minPt, maxPt, 0., 20.));
+  // histograms.TG_assoc_chi2prob_vs_pt.push_back(makeProfileIfLogX(
+      // ibook, useLogPt, "TG_assoc_chi2prob_vs_pt", "(TG) mean #chi^{2} probability vs p_{T}", nintPt, minPt, maxPt, 0., 1.));
+  // histograms.TG_assoc_chi2_vs_drj.push_back(makeProfileIfLogX(ibook,
+                                                          //  true,
+                                                          //  "TG_assoc_chi2mean_vs_drj",
+                                                          //  "(TG) mean #chi^{2} vs dR(track,jet)",
+                                                          //  nintdrj,
+                                                          //  log10(mindrj),
+                                                          //  log10(maxdrj),
+                                                          //  0.,
+                                                          //  20));
+  // histograms.TG_assoc_chi2prob_vs_drj.push_back(makeProfileIfLogX(ibook,
+                                                              //  true,
+                                                              //  "TG_assoc_chi2prob_vs_drj",
+                                                              //  "(TG) mean #chi^{2} probability vs dR(track,jet)",
+                                                              //  nintdrj,
+                                                              //  log10(mindrj),
+                                                              //  log10(maxdrj),
+                                                              //  0.,
+                                                              //  1.));
+
+  // bookResolutionPlots2D(histograms.TG_nrecHit_vs_nsimHit_rec2sim,
+                        // false,
+                        // "TG_nrecHit_vs_nsimHit_rec2sim",
+                        // "(TG) nrecHit vs nsimHit (Rec2simAssoc)",
+                        // nintHit,
+                        // minHit,
+                        // maxHit,
+                        // nintHit,
+                        // minHit,
+                        // maxHit);
+  // }
 }
+
+void MTVHistoProducerAlgoForTracker::bookTruthGraphHistos(DQMStore::IBooker& ibook, Histograms& histograms) {
+
+    histograms.h_TGSimulatedEta = ibook.book1D("TGsimulated_eta", ";truth #eta;selected particles", nintEta, minEta, maxEta);
+    histograms.h_TGFoundEta = ibook.book1D("TGfound_eta", ";truth #eta;particles with a track", nintEta, minEta, maxEta);
+    histograms.h_TGDuplicatedEta = ibook.book1D("TGduplicated_eta", ";truth #eta;particles with two or more tracks", nintEta, minEta, maxEta);
+    histograms.h_TGReconstructedEta = ibook.book1D("TGreconstructed_eta", ";track #eta;tracks", nintEta, minEta, maxEta);
+    histograms.h_TGMatchedEta = ibook.book1D("TGmatched_eta", ";track #eta;tracks from one particle", nintEta, minEta, maxEta);
+
+    histograms.h_TGSimulatedPt = make1DIfLogX(ibook, useLogPt, "TGsimulated_pt", ";truth p_{T} [GeV];selected particles", nintPt, minPt, maxPt);
+    histograms.h_TGFoundPt = make1DIfLogX(ibook, useLogPt, "TGfound_pt", ";truth p_{T} [GeV];particles with a track", nintPt, minPt, maxPt);
+    histograms.h_TGDuplicatedPt = make1DIfLogX(ibook, useLogPt, "TGduplicated_pt", ";truth p_{T} [GeV];particles with two or more tracks", nintPt, minPt, maxPt);
+    histograms.h_TGReconstructedPt = make1DIfLogX(ibook, useLogPt, "TGreconstructed_pt", ";track p_{T} [GeV];tracks", nintPt, minPt, maxPt);
+    histograms.h_TGMatchedPt = make1DIfLogX(ibook, useLogPt, "TGmatched_pt", ";track p_{T} [GeV];tracks from one particle", nintPt, minPt, maxPt);
+
+    histograms.h_TGSimulatedPhi = ibook.book1D("TGsimulated_phi", ";truth #phi;selected particles", nintPhi, minPhi, maxPhi);
+    histograms.h_TGFoundPhi = ibook.book1D("TGfound_phi", ";truth #phi;particles with a track", nintPhi, minPhi, maxPhi);
+    histograms.h_TGDuplicatedPhi = ibook.book1D("TGduplicated_phi", ";truth #phi;particles with two or more tracks", nintPhi, minPhi, maxPhi);
+    histograms.h_TGReconstructedPhi = ibook.book1D("TGreconstructed_phi", ";track #phi;tracks", nintPhi, minPhi, maxPhi);
+    histograms.h_TGMatchedPhi = ibook.book1D("TGmatched_phi", ";track #phi;tracks from one particle", nintPhi, minPhi, maxPhi);
+  }
 
 void MTVHistoProducerAlgoForTracker::bookRecoPVAssociationHistos(DQMStore::IBooker& ibook, Histograms& histograms) {
   histograms.h_recodxypv.push_back(
@@ -1493,6 +2121,86 @@ void MTVHistoProducerAlgoForTracker::bookRecoPVAssociationHistos(DQMStore::IBook
     histograms.h_pileup_dzpvcut.push_back(ibook.book1D(
         "num_pileup_dzpvcut", "N of associated (recoToSim) pileup tracks vs dz(PV)", nintDzpvCum, 0, maxDzpvCum));
   }
+
+  // if (doTruthGraphPlots_) {
+  //   histograms.h_TG_assoc2dxypv.push_back(ibook.book1D(
+  //       "TG_num_assoc(recoToSim)_dxypv", "(TG) N of associated (recoToSim) tracks vs dxy(PV)", nintDxy, minDxy, maxDxy));
+  //   histograms.h_TG_looperdxypv.push_back(ibook.book1D(
+  //       "TG_num_duplicate_dxypv", "(TG) N of associated (recoToSim) looper tracks vs dxy(PV)", nintDxy, minDxy, maxDxy));
+  //   if (!doSeedPlots_)
+  //     histograms.h_TG_misiddxypv.push_back(ibook.book1D("TG_num_chargemisid_dxypv",
+  //                                                    "(TG) N of associated (recoToSim) charge misIDed tracks vs dxy(PV)",
+  //                                                    nintDxy,
+  //                                                    minDxy,
+  //                                                    maxDxy));
+  //   histograms.h_TG_pileupdxypv.push_back(ibook.book1D(
+  //       "TG_num_pileup_dxypv", "(TG) N of associated (recoToSim) pileup tracks vs dxy(PV)", nintDxy, minDxy, maxDxy));
+
+  //   histograms.h_TG_assoc2dzpv.push_back(
+  //       ibook.book1D("TG_num_assoc(recoToSim)_dzpv", "(TG) N of associated (recoToSim) tracks vs dz(PV)", nintDz, minDz, maxDz));
+  //   histograms.h_TG_looperdzpv.push_back(
+  //       ibook.book1D("TG_num_duplicate_dzpv", "(TG) N of associated (recoToSim) looper tracks vs dz(PV)", nintDz, minDz, maxDz));
+  //   if (!doSeedPlots_)
+  //     histograms.h_TG_misiddzpv.push_back(ibook.book1D("TG_num_chargemisid_versus_dzpv",
+  //                                                   "(TG) N of associated (recoToSim) charge misIDed tracks vs dz(PV)",
+  //                                                   nintDz,
+  //                                                   minDz,
+  //                                                   maxDz));
+  //   histograms.h_TG_pileupdzpv.push_back(
+  //       ibook.book1D("TG_num_pileup_dzpv", "(TG) N of associated (recoToSim) pileup tracks vs dz(PV)", nintDz, minDz, maxDz));
+
+  //   histograms.h_TG_assoc2dxypvzoomed.push_back(ibook.book1D("TG_num_assoc(recoToSim)_dxypv_zoomed",
+  //                                                         "(TG) N of associated (recoToSim) tracks vs dxy(PV)",
+  //                                                         nintDxy,
+  //                                                         minDxy / dxyDzZoom,
+  //                                                         maxDxy / dxyDzZoom));
+  //   histograms.h_TG_looperdxypvzoomed.push_back(ibook.book1D("TG_num_duplicate_dxypv_zoomed",
+  //                                                         "(TG) N of associated (recoToSim) looper tracks vs dxy(PV)",
+  //                                                         nintDxy,
+  //                                                         minDxy / dxyDzZoom,
+  //                                                         maxDxy / dxyDzZoom));
+  //   if (!doSeedPlots_)
+  //     histograms.h_TG_misiddxypvzoomed.push_back(ibook.book1D("TG_num_chargemisid_dxypv_zoomed",
+  //                                                          "(TG) N of associated (recoToSim) charge misIDed tracks vs dxy(PV)",
+  //                                                          nintDxy,
+  //                                                          minDxy / dxyDzZoom,
+  //                                                          maxDxy / dxyDzZoom));
+  //   histograms.h_TG_pileupdxypvzoomed.push_back(ibook.book1D("TG_num_pileup_dxypv_zoomed",
+  //                                                         "(TG) N of associated (recoToSim) pileup tracks vs dxy(PV)",
+  //                                                         nintDxy,
+  //                                                         minDxy / dxyDzZoom,
+  //                                                         maxDxy / dxyDzZoom));
+
+  //   histograms.h_TG_assoc2dzpvzoomed.push_back(ibook.book1D("TG_num_assoc(recoToSim)_dzpv_zoomed",
+  //                                                        "(TG) N of associated (recoToSim) tracks vs dz(PV)",
+  //                                                        nintDz,
+  //                                                        minDz / dxyDzZoom,
+  //                                                        maxDz / dxyDzZoom));
+  //   histograms.h_TG_looperdzpvzoomed.push_back(ibook.book1D("TG_num_duplicate_dzpv_zoomed",
+  //                                                        "(TG) N of associated (recoToSim) looper tracks vs dz(PV)",
+  //                                                        nintDz,
+  //                                                        minDz / dxyDzZoom,
+  //                                                        maxDz / dxyDzZoom));
+  //   if (!doSeedPlots_)
+  //     histograms.h_TG_misiddzpvzoomed.push_back(ibook.book1D("TG_num_chargemisid_versus_dzpv_zoomed",
+  //                                                         "(TG) N of associated (recoToSim) charge misIDed tracks vs dz(PV)",
+  //                                                         nintDz,
+  //                                                         minDz / dxyDzZoom,
+  //                                                         maxDz / dxyDzZoom));
+  //   histograms.h_TG_pileupdzpvzoomed.push_back(ibook.book1D("TG_num_pileup_dzpv_zoomed",
+  //                                                        "(TG) N of associated (recoToSim) pileup tracks vs dz(PV)",
+  //                                                        nintDz,
+  //                                                        minDz / dxyDzZoom,
+  //                                                        maxDz / dxyDzZoom));
+
+  //   if (doDzPVcutPlots_) {
+  //     histograms.h_TG_assoc2_dzpvcut.push_back(ibook.book1D(
+  //         "TG_num_assoc(recoToSim)_dzpvcut", "(TG) N of associated (recoToSim) tracks vs dz(PV)", nintDzpvCum, 0, maxDzpvCum));
+
+  //     histograms.h_TG_pileup_dzpvcut.push_back(ibook.book1D(
+  //         "TG_num_pileup_dzpvcut", "(TG) N of associated (recoToSim) pileup tracks vs dz(PV)", nintDzpvCum, 0, maxDzpvCum));
+  //   }
+  // }
 }
 
 void MTVHistoProducerAlgoForTracker::bookRecodEdxHistos(DQMStore::IBooker& ibook, Histograms& histograms) {
@@ -1711,6 +2419,187 @@ void MTVHistoProducerAlgoForTracker::bookMVAHistos(DQMStore::IBooker& ibook, His
                           minMVA,
                           maxMVA));
   }
+
+  // if (doTruthGraphPlots_) {
+  //   histograms.h_reco_mva.emplace_back();
+  //   histograms.h_assoc2_mva.emplace_back();
+
+  //   histograms.h_reco_mvacut.emplace_back();
+  //   histograms.h_assoc_mvacut.emplace_back();
+  //   histograms.h_assoc2_mvacut.emplace_back();
+  //   histograms.h_simul2_mvacut.emplace_back();
+
+  //   histograms.h_reco_mva_hp.emplace_back();
+  //   histograms.h_assoc2_mva_hp.emplace_back();
+
+  //   histograms.h_reco_mvacut_hp.emplace_back();
+  //   histograms.h_assoc_mvacut_hp.emplace_back();
+  //   histograms.h_assoc2_mvacut_hp.emplace_back();
+  //   histograms.h_simul2_mvacut_hp.emplace_back();
+
+  //   histograms.h_assoc2_mva_vs_pt.emplace_back();
+  //   histograms.h_fake_mva_vs_pt.emplace_back();
+  //   histograms.h_assoc2_mva_vs_pt_hp.emplace_back();
+  //   histograms.h_fake_mva_vs_pt_hp.emplace_back();
+  //   histograms.h_assoc2_mva_vs_eta.emplace_back();
+  //   histograms.h_fake_mva_vs_eta.emplace_back();
+  //   histograms.h_assoc2_mva_vs_eta_hp.emplace_back();
+  //   histograms.h_fake_mva_vs_eta_hp.emplace_back();
+
+  //   for (size_t i = 1; i <= nMVAs; ++i) {
+  //     auto istr = std::to_string(i);
+  //     std::string pfix;
+
+  //     if (i == 1) {
+  //       histograms.h_assoc2_mva_hp.back().emplace_back();
+
+  //       histograms.h_assoc_mvacut_hp.back().emplace_back();
+  //       histograms.h_assoc2_mvacut_hp.back().emplace_back();
+  //       histograms.h_simul2_mvacut_hp.back().emplace_back();
+
+  //       histograms.h_assoc2_mva_vs_pt_hp.back().emplace_back();
+  //       histograms.h_fake_mva_vs_pt_hp.back().emplace_back();
+  //       histograms.h_assoc2_mva_vs_eta_hp.back().emplace_back();
+  //       histograms.h_fake_mva_vs_eta_hp.back().emplace_back();
+  //     } else {
+  //       pfix = " (not loose-selected)";
+  //       std::string pfix2 = " (not HP-selected)";
+
+  //       histograms.h_assoc2_mva_hp.back().push_back(
+  //           ibook.book1D("num_assoc(recoToSim)_mva" + istr + "_hp",
+  //                        "N of associated tracks (recoToSim) vs MVA" + istr + pfix2,
+  //                        nintMVA,
+  //                        minMVA,
+  //                        maxMVA));
+
+  //       histograms.h_assoc_mvacut_hp.back().push_back(
+  //           ibook.book1D("num_assoc(simToReco)_mva" + istr + "cut_hp",
+  //                        "N of associated tracks (simToReco) vs cut on MVA" + istr + pfix2,
+  //                        nintMVA,
+  //                        minMVA,
+  //                        maxMVA));
+  //       histograms.h_assoc2_mvacut_hp.back().push_back(
+  //           ibook.book1D("num_assoc(recoToSim)_mva" + istr + "cut_hp",
+  //                        "N of associated tracks (recoToSim) vs cut on MVA" + istr + pfix2,
+  //                        nintMVA,
+  //                        minMVA,
+  //                        maxMVA));
+  //       histograms.h_simul2_mvacut_hp.back().push_back(
+  //           ibook.book1D("num_simul2_mva" + istr + "cut_hp",
+  //                        "N of simulated tracks (associated to any track) vs cut on MVA" + istr + pfix2,
+  //                        nintMVA,
+  //                        minMVA,
+  //                        maxMVA));
+
+  //       histograms.h_assoc2_mva_vs_pt_hp.back().push_back(
+  //           makeProfileIfLogX(ibook,
+  //                             useLogPt,
+  //                             ("mva_assoc(recoToSim)_mva" + istr + "_pT_hp").c_str(),
+  //                             ("MVA" + istr + " of associated tracks (recoToSim) vs. track p_{T}" + pfix2).c_str(),
+  //                             nintPt,
+  //                             minPt,
+  //                             maxPt,
+  //                             minMVA,
+  //                             maxMVA));
+  //       histograms.h_fake_mva_vs_pt_hp.back().push_back(
+  //           makeProfileIfLogX(ibook,
+  //                             useLogPt,
+  //                             ("mva_fake_mva" + istr + "pT_hp").c_str(),
+  //                             ("MVA" + istr + " of non-associated tracks (recoToSim) vs. track p_{T}" + pfix2).c_str(),
+  //                             nintPt,
+  //                             minPt,
+  //                             maxPt,
+  //                             minMVA,
+  //                             maxMVA));
+  //       histograms.h_assoc2_mva_vs_eta_hp.back().push_back(
+  //           ibook.bookProfile("mva_assoc(recoToSim)_mva" + istr + "_eta_hp",
+  //                             "MVA" + istr + " of associated tracks (recoToSim) vs. track #eta" + pfix2,
+  //                             nintEta,
+  //                             minEta,
+  //                             maxEta,
+  //                             nintMVA,
+  //                             minMVA,
+  //                             maxMVA));
+  //       histograms.h_fake_mva_vs_eta_hp.back().push_back(
+  //           ibook.bookProfile("mva_fake_mva" + istr + "eta_hp",
+  //                             "MVA" + istr + " of non-associated tracks (recoToSim) vs. track #eta" + pfix2,
+  //                             nintEta,
+  //                             minEta,
+  //                             maxEta,
+  //                             nintMVA,
+  //                             minMVA,
+  //                             maxMVA));
+  //     }
+
+  //     histograms.h_reco_mva.back().push_back(
+  //         ibook.book1D("num_reco_mva" + istr, "N of reco track vs MVA" + istr + pfix, nintMVA, minMVA, maxMVA));
+  //     histograms.h_assoc2_mva.back().push_back(ibook.book1D("num_assoc(recoToSim)_mva" + istr,
+  //                                                           "N of associated tracks (recoToSim) vs MVA" + istr + pfix,
+  //                                                           nintMVA,
+  //                                                           minMVA,
+  //                                                           maxMVA));
+
+  //     histograms.h_reco_mvacut.back().push_back(ibook.book1D(
+  //         "num_reco_mva" + istr + "cut", "N of reco track vs cut on MVA" + istr + pfix, nintMVA, minMVA, maxMVA));
+  //     histograms.h_assoc_mvacut.back().push_back(
+  //         ibook.book1D("num_assoc(simToReco)_mva" + istr + "cut",
+  //                      "N of associated tracks (simToReco) vs cut on MVA" + istr + pfix,
+  //                      nintMVA,
+  //                      minMVA,
+  //                      maxMVA));
+  //     histograms.h_assoc2_mvacut.back().push_back(
+  //         ibook.book1D("num_assoc(recoToSim)_mva" + istr + "cut",
+  //                      "N of associated tracks (recoToSim) vs cut on MVA" + istr + pfix,
+  //                      nintMVA,
+  //                      minMVA,
+  //                      maxMVA));
+  //     histograms.h_simul2_mvacut.back().push_back(
+  //         ibook.book1D("num_simul2_mva" + istr + "cut",
+  //                      "N of simulated tracks (associated to any track) vs cut on MVA" + istr + pfix,
+  //                      nintMVA,
+  //                      minMVA,
+  //                      maxMVA));
+
+  //     histograms.h_assoc2_mva_vs_pt.back().push_back(
+  //         makeProfileIfLogX(ibook,
+  //                           useLogPt,
+  //                           ("mva_assoc(recoToSim)_mva" + istr + "_pT").c_str(),
+  //                           ("MVA" + istr + " of associated tracks (recoToSim) vs. track p_{T}" + pfix).c_str(),
+  //                           nintPt,
+  //                           minPt,
+  //                           maxPt,
+  //                           minMVA,
+  //                           maxMVA));
+  //     histograms.h_fake_mva_vs_pt.back().push_back(
+  //         makeProfileIfLogX(ibook,
+  //                           useLogPt,
+  //                           ("mva_fake_mva" + istr + "_pT").c_str(),
+  //                           ("MVA" + istr + " of non-associated tracks (recoToSim) vs. track p_{T}" + pfix).c_str(),
+  //                           nintPt,
+  //                           minPt,
+  //                           maxPt,
+  //                           minMVA,
+  //                           maxMVA));
+  //     histograms.h_assoc2_mva_vs_eta.back().push_back(
+  //         ibook.bookProfile("mva_assoc(recoToSim)_mva" + istr + "_eta",
+  //                           "MVA" + istr + " of associated tracks (recoToSim) vs. track #eta" + pfix,
+  //                           nintEta,
+  //                           minEta,
+  //                           maxEta,
+  //                           nintMVA,
+  //                           minMVA,
+  //                           maxMVA));
+  //     histograms.h_fake_mva_vs_eta.back().push_back(
+  //         ibook.bookProfile("mva_fake_mva" + istr + "_eta",
+  //                           "MVA" + istr + " of non-associated tracks (recoToSim) vs. track #eta" + pfix,
+  //                           nintEta,
+  //                           minEta,
+  //                           maxEta,
+  //                           nintMVA,
+  //                           minMVA,
+  //                           maxMVA));
+  //   }
+  // }
 }
 
 void MTVHistoProducerAlgoForTracker::fill_generic_simTrack_histos(const Histograms& histograms,
@@ -1724,6 +2613,183 @@ void MTVHistoProducerAlgoForTracker::fill_generic_simTrack_histos(const Histogra
     histograms.h_vertposSIM->Fill(sqrt(vertexTP.perp2()));
   }
   histograms.h_bunchxSIM->Fill(bx);
+}
+
+void MTVHistoProducerAlgoForTracker::fill_truthToReco_simTrack_truthGraph_histos(
+    const Histograms& histograms,
+    int count,
+    const truth::Particle& particle,
+    const truth::LogicalGraphHitIndex& hitIndex,
+    const unsigned int pureTracks) const {
+    // double dxySim,
+    // double dzSim,
+    // double dxyPVSim,
+    // double dzPVSim,
+    // int nSimHits,
+    // int nSimLayers,
+    // int nSimPixelLayers,
+    // int nSimStripMonoAndStereoLayers,
+    // const reco::Track* track,
+    // int numVertices,
+    // double dR,
+    // double dRJet,
+    // const math::XYZPoint* pvPosition,
+    // const TrackingVertex::LorentzVector* simPVPosition,
+    // const math::XYZPoint& bsPosition,
+    // const std::vector<float>& mvas,
+    // unsigned int selectsLoose,
+    // unsigned int selectsHP) const {
+  // bool isMatched = track;
+  const auto eta = getEta(particle.momentum().eta());
+  const auto phi = particle.momentum().phi();
+  const auto pt = getPt(particle.momentum().pt());
+  // const auto phi = momentumTP.phi();
+  // const auto pt = getPt(sqrt(momentumTP.perp2()));
+  // const auto nSim3DLayers = nSimPixelLayers + nSimStripMonoAndStereoLayers;
+
+  // const auto vertexTPwrtBS = vertexTP - bsPosition;
+  // const auto vertxy = std::sqrt(vertexTPwrtBS.perp2());
+  // const auto vertz = vertexTPwrtBS.z();
+
+  //efficiency vs. cut on MVA
+  //
+  // Note that this includes also pileup TPs, as "signalOnly"
+  // selection is applied only in the TpSelector*. Have to think if
+  // this is really what we want.
+
+  // if (isMatched) {
+  //   for (size_t i = 0; i < mvas.size(); ++i) {
+  //     if (i <= selectsLoose) {
+  //       histograms.h_simul2_mvacut[count][i]->Fill(maxMVA);
+  //       histograms.h_assoc_mvacut[count][i]->Fill(mvas[i]);
+  //     }
+  //     if (i >= 1 && i <= selectsHP) {
+  //       histograms.h_simul2_mvacut_hp[count][i]->Fill(maxMVA);
+  //       histograms.h_assoc_mvacut_hp[count][i]->Fill(mvas[i]);
+  //     }
+  //   }
+  // }
+
+  
+
+  if ((*TGpSelectorForEfficiencyVsEta)(particle, hitIndex)) {
+    //effic vs eta
+    // histograms.h_simuleta[count]->Fill(eta);
+    histograms.h_TGSimulatedEta->Fill(eta);
+    if (pureTracks > 0){
+      histograms.h_TGFoundEta->Fill(eta);
+    }
+    if (pureTracks > 1){
+      histograms.h_TGDuplicatedEta->Fill(eta);
+    }
+    //   histograms.h_assoceta[count]->Fill(eta);
+  }
+
+  if ((*TGpSelectorForEfficiencyVsPhi)(particle, hitIndex)) {
+  //   histograms.h_simulphi[count]->Fill(phi);
+    histograms.h_TGSimulatedPhi->Fill(phi);
+    if (pureTracks > 0){
+      histograms.h_TGFoundPhi->Fill(phi);
+    }
+    if (pureTracks > 1){
+      histograms.h_TGDuplicatedPhi->Fill(phi);
+    }
+  //   if (isMatched)
+  //     histograms.h_assocphi[count]->Fill(phi);
+  //   //effic vs hits
+  //   histograms.h_simulhit[count]->Fill(nSimHits);
+  //   histograms.h_simullayer[count]->Fill(nSimLayers);
+  //   histograms.h_simulpixellayer[count]->Fill(nSimPixelLayers);
+  //   histograms.h_simul3Dlayer[count]->Fill(nSim3DLayers);
+  //   if (isMatched) {
+  //     histograms.h_assochit[count]->Fill(nSimHits);
+  //     histograms.h_assoclayer[count]->Fill(nSimLayers);
+  //     histograms.h_assocpixellayer[count]->Fill(nSimPixelLayers);
+  //     histograms.h_assoc3Dlayer[count]->Fill(nSim3DLayers);
+  //     if (histograms.nrecHit_vs_nsimHit_sim2rec[count])
+  //       histograms.nrecHit_vs_nsimHit_sim2rec[count]->Fill(track->numberOfValidHits(), nSimHits);
+  //   }
+  //   //effic vs pu
+  //   histograms.h_simulpu[count]->Fill(numVertices);
+  //   if (isMatched)
+  //     histograms.h_assocpu[count]->Fill(numVertices);
+  //   //efficiency vs dR
+  //   histograms.h_simuldr[count]->Fill(dR);
+  //   if (isMatched)
+  //     histograms.h_assocdr[count]->Fill(dR);
+  //   //efficiency vs dR jet
+  //   histograms.h_simuldrj[count]->Fill(dRJet);
+  //   if (isMatched)
+  //     histograms.h_assocdrj[count]->Fill(dRJet);
+  }
+
+  if ((*TGpSelectorForEfficiencyVsPt)(particle, hitIndex)) {
+    histograms.h_TGSimulatedPt->Fill(pt);
+    if (pureTracks > 0){
+      histograms.h_TGFoundPt->Fill(pt);
+    }
+    if (pureTracks > 1){
+      histograms.h_TGDuplicatedPt->Fill(pt);
+    }
+  //   histograms.h_simulpT[count]->Fill(pt);
+  //   if (isMatched)
+  //     histograms.h_assocpT[count]->Fill(pt);
+  }
+
+  // if ((*TpSelectorForEfficiencyVsVTXR)(tp)) {
+  //   histograms.h_simuldxy[count]->Fill(dxySim);
+  //   if (isMatched)
+  //     histograms.h_assocdxy[count]->Fill(dxySim);
+  //   if (pvPosition) {
+  //     histograms.h_simuldxypv[count]->Fill(dxyPVSim);
+  //     histograms.h_simuldxypvzoomed[count]->Fill(dxyPVSim);
+  //     if (isMatched) {
+  //       histograms.h_assocdxypv[count]->Fill(dxyPVSim);
+  //       histograms.h_assocdxypvzoomed[count]->Fill(dxyPVSim);
+  //     }
+  //   }
+
+  //   histograms.h_simulvertpos[count]->Fill(vertxy);
+  //   if (isMatched)
+  //     histograms.h_assocvertpos[count]->Fill(vertxy);
+  // }
+
+  // if ((*TpSelectorForEfficiencyVsVTXZ)(tp)) {
+  //   histograms.h_simuldz[count]->Fill(dzSim);
+  //   if (isMatched)
+  //     histograms.h_assocdz[count]->Fill(dzSim);
+
+  //   histograms.h_simulzpos[count]->Fill(vertz);
+  //   if (isMatched)
+  //     histograms.h_assoczpos[count]->Fill(vertz);
+
+  //   if (pvPosition) {
+  //     histograms.h_simuldzpv[count]->Fill(dzPVSim);
+  //     histograms.h_simuldzpvzoomed[count]->Fill(dzPVSim);
+
+  //     if (doDzPVcutPlots_)
+  //       histograms.h_simul_dzpvcut[count]->Fill(0);
+
+  //     if (isMatched) {
+  //       histograms.h_assocdzpv[count]->Fill(dzPVSim);
+  //       histograms.h_assocdzpvzoomed[count]->Fill(dzPVSim);
+
+  //       if (doDzPVcutPlots_) {
+  //         histograms.h_simul2_dzpvcut[count]->Fill(0);
+
+  //         const double dzpvcut = std::abs(track->dz(*pvPosition));
+  //         histograms.h_assoc_dzpvcut[count]->Fill(dzpvcut);
+  //       }
+  //     }
+  //   }
+  //   if (simPVPosition) {
+  //     const auto simpvz = simPVPosition->z();
+  //     histograms.h_simul_simpvz[count]->Fill(simpvz);
+  //     if (isMatched) {
+  //       histograms.h_assoc_simpvz[count]->Fill(simpvz);
+  //     }
+  //   }
+  // }
 }
 
 void MTVHistoProducerAlgoForTracker::fill_recoAssociated_simTrack_histos(
@@ -1902,6 +2968,305 @@ void MTVHistoProducerAlgoForTracker::fill_dedx_recoTrack_histos(
     histograms.h_dedx_nom[count][i]->Fill(dedx.numberOfMeasurements());
     histograms.h_dedx_sat[count][i]->Fill(dedx.numberOfSaturatedMeasurements());
   }
+}
+
+void MTVHistoProducerAlgoForTracker::fill_generic_truthGraph_recoTrack_histos(const Histograms& histograms,
+                                                                              int count,
+                                                                              const reco::Track& track,
+                                                                              const TrackerTopology& ttopo,
+                                                                              const math::XYZPoint& bsPosition,
+                                                                              const math::XYZPoint* pvPosition,
+                                                                              const TrackingVertex::LorentzVector* simPVPosition,
+                                                                              bool isMatched,
+                                                                              bool isSigMatched,
+                                                                              bool isChargeMatched,
+                                                                              int numAssocRecoTracks,
+                                                                              int numVertices,
+                                                                              int nSimHits,
+                                                                              double sharedFraction,
+                                                                              double dR,
+                                                                              double dRJet,
+                                                                              const std::vector<float>& mvas,
+                                                                              unsigned int selectsLoose,
+                                                                              unsigned int selectsHP) const {
+  //Fill track algo histogram
+  // histograms.h_algo[count]->Fill(track.algo());
+  // int sharedHits = sharedFraction * track.numberOfValidHits();
+
+  //Compute fake rate vs eta
+  const auto eta = getEta(track.momentum().eta());
+  const auto phi = track.momentum().phi();
+  const auto pt = getPt(sqrt(track.momentum().perp2()));
+  // const auto dxy = track.dxy(bsPosition);
+  // const auto dz = track.dz(bsPosition);
+  // const auto dxypv = pvPosition ? track.dxy(*pvPosition) : 0.0;
+  // const auto dzpv = pvPosition ? track.dz(*pvPosition) : 0.0;
+  // const auto nhits = track.found();
+  // const auto nlayers = track.hitPattern().trackerLayersWithMeasurement();
+  // const auto nPixelLayers = track.hitPattern().pixelLayersWithMeasurement();
+  // const auto n3DLayers = nPixelLayers + track.hitPattern().numberOfValidStripLayersWithMonoAndStereo();
+  // const auto refPointWrtBS = track.referencePoint() - bsPosition;
+  // const auto vertxy = std::sqrt(refPointWrtBS.perp2());
+  // const auto vertz = refPointWrtBS.z();
+  // const auto chi2 = track.normalizedChi2();
+  // const auto chi2prob = TMath::Prob(track.chi2(), (int)track.ndof());
+  // const bool fillSeedingLayerSets = !seedingLayerSetNames.empty();
+  // const unsigned int seedingLayerSetBin = fillSeedingLayerSets ? getSeedingLayerSetBin(track, ttopo) : 0;
+  // const auto simpvz = simPVPosition ? simPVPosition->z() : 0.0;
+
+  const bool paramsValid = !trackFromSeedFitFailed(track);
+
+  if (paramsValid) {
+    histograms.h_TGReconstructedEta->Fill(eta);
+    histograms.h_TGReconstructedPhi->Fill(phi);
+    histograms.h_TGReconstructedPt->Fill(pt);
+
+    if (isMatched) {
+      histograms.h_TGMatchedEta->Fill(eta);
+      histograms.h_TGMatchedPhi->Fill(phi);
+      histograms.h_TGMatchedPt->Fill(pt);
+    }
+
+    // histograms.h_recopTvseta[count]->Fill(eta, pt);
+    // histograms.h_recodxy[count]->Fill(dxy);
+    // histograms.h_recodz[count]->Fill(dz);
+    // histograms.h_recochi2[count]->Fill(chi2);
+    // histograms.h_recochi2prob[count]->Fill(chi2prob);
+    // histograms.h_recovertpos[count]->Fill(vertxy);
+    // histograms.h_recozpos[count]->Fill(vertz);
+    // histograms.h_recodr[count]->Fill(dR);
+    // histograms.h_recodrj[count]->Fill(dRJet);
+    // if (dRJet <= 99999)  //dRJet can be set to numeric_limits max^2, this is a protection
+    //   histograms.chi2_vs_drj[count]->Fill(dRJet, chi2);
+    // if (fillSeedingLayerSets)
+    //   histograms.h_reco_seedingLayerSet[count]->Fill(seedingLayerSetBin);
+    // if (pvPosition) {
+    //   histograms.h_recodxypv[count]->Fill(dxypv);
+    //   histograms.h_recodzpv[count]->Fill(dzpv);
+    //   histograms.h_recodxypvzoomed[count]->Fill(dxypv);
+    //   histograms.h_recodzpvzoomed[count]->Fill(dzpv);
+
+    //   if (doDzPVcutPlots_)
+    //     histograms.h_reco_dzpvcut[count]->Fill(std::abs(dzpv));
+    // }
+    // if (simPVPosition) {
+    //   histograms.h_reco_simpvz[count]->Fill(simpvz);
+    // }
+    // if ((*trackSelectorVsEta)(track, bsPosition)) {
+    //   histograms.h_reco2eta[count]->Fill(eta);
+    // }
+    // if ((*trackSelectorVsPt)(track, bsPosition)) {
+    //   histograms.h_reco2pT[count]->Fill(pt);
+    //   histograms.h_reco2pTvseta[count]->Fill(eta, pt);
+    // }
+  }
+  // histograms.h_recohit[count]->Fill(nhits);
+  // histograms.h_recolayer[count]->Fill(nlayers);
+  // histograms.h_recopixellayer[count]->Fill(nPixelLayers);
+  // histograms.h_reco3Dlayer[count]->Fill(n3DLayers);
+  // histograms.h_recopu[count]->Fill(numVertices);
+  // if ((*trackSelectorVsPhi)(track, bsPosition)) {
+  //   histograms.h_reco2pu[count]->Fill(numVertices);
+  // }
+
+  // if (!mvas.empty()) {
+  //   assert(histograms.h_reco_mva.size() > static_cast<size_t>(count));
+  //   assert(histograms.h_reco_mvacut.size() > static_cast<size_t>(count));
+  //   assert(histograms.h_reco_mva_hp.size() > static_cast<size_t>(count));
+  //   assert(histograms.h_reco_mvacut_hp.size() > static_cast<size_t>(count));
+
+  //   fillMVAHistos(histograms.h_reco_mva[count],
+  //                 histograms.h_reco_mvacut[count],
+  //                 histograms.h_reco_mva_hp[count],
+  //                 histograms.h_reco_mvacut_hp[count],
+  //                 mvas,
+  //                 selectsLoose,
+  //                 selectsHP);
+  // }
+
+  // if (isMatched) {
+  //   if (paramsValid) {
+  //     histograms.h_assoc2eta[count]->Fill(eta);
+  //     histograms.h_assoc2phi[count]->Fill(phi);
+  //     histograms.h_assoc2pT[count]->Fill(pt);
+  //     histograms.h_assoc2pTvseta[count]->Fill(eta, pt);
+  //     histograms.h_assoc2dxy[count]->Fill(dxy);
+  //     histograms.h_assoc2dz[count]->Fill(dz);
+  //     histograms.h_assoc2hit[count]->Fill(nhits);
+  //     histograms.h_assoc2chi2[count]->Fill(chi2);
+  //     histograms.h_assoc2chi2prob[count]->Fill(chi2prob);
+  //     histograms.assoc_chi2_vs_eta[count]->Fill(eta, chi2);
+  //     histograms.assoc_chi2prob_vs_eta[count]->Fill(eta, chi2prob);
+  //     histograms.assoc_chi2_vs_pt[count]->Fill(pt, chi2);
+  //     histograms.assoc_chi2prob_vs_pt[count]->Fill(pt, chi2prob);
+  //     if (dRJet <= 99999) {  //dRJet can be set to numeric_limits max^2, this is a protection
+  //       histograms.assoc_chi2_vs_drj[count]->Fill(dRJet, chi2);
+  //       histograms.assoc_chi2prob_vs_drj[count]->Fill(dRJet, chi2prob);
+  //     }
+  //     histograms.h_assoc2vertpos[count]->Fill(vertxy);
+  //     histograms.h_assoc2zpos[count]->Fill(vertz);
+  //     histograms.h_assoc2dr[count]->Fill(dR);
+  //     histograms.h_assoc2drj[count]->Fill(dRJet);
+  //     if (fillSeedingLayerSets)
+  //       histograms.h_assoc2_seedingLayerSet[count]->Fill(seedingLayerSetBin);
+  //     if (pvPosition) {
+  //       histograms.h_assoc2dxypv[count]->Fill(dxypv);
+  //       histograms.h_assoc2dzpv[count]->Fill(dzpv);
+  //       histograms.h_assoc2dxypvzoomed[count]->Fill(dxypv);
+  //       histograms.h_assoc2dzpvzoomed[count]->Fill(dzpv);
+
+  //       if (doDzPVcutPlots_)
+  //         histograms.h_assoc2_dzpvcut[count]->Fill(std::abs(dzpv));
+  //     }
+  //     if (simPVPosition) {
+  //       histograms.h_assoc2_simpvz[count]->Fill(simpvz);
+  //     }
+  //   }
+  //   histograms.h_assoc2layer[count]->Fill(nlayers);
+  //   histograms.h_assoc2pixellayer[count]->Fill(nPixelLayers);
+  //   histograms.h_assoc23Dlayer[count]->Fill(n3DLayers);
+  //   histograms.h_assoc2pu[count]->Fill(numVertices);
+
+  //   if (!mvas.empty()) {
+  //     assert(histograms.h_reco_mva.size() > static_cast<size_t>(count));
+  //     assert(histograms.h_reco_mvacut.size() > static_cast<size_t>(count));
+  //     assert(histograms.h_reco_mva_hp.size() > static_cast<size_t>(count));
+  //     assert(histograms.h_reco_mvacut_hp.size() > static_cast<size_t>(count));
+  //     fillMVAHistos(histograms.h_assoc2_mva[count],
+  //                   histograms.h_assoc2_mvacut[count],
+  //                   histograms.h_assoc2_mva_hp[count],
+  //                   histograms.h_assoc2_mvacut_hp[count],
+  //                   mvas,
+  //                   selectsLoose,
+  //                   selectsHP);
+  //     assert(histograms.h_assoc2_mva_vs_pt.size() > static_cast<size_t>(count));
+  //     assert(histograms.h_assoc2_mva_vs_pt_hp.size() > static_cast<size_t>(count));
+  //     fillMVAHistos(pt,
+  //                   histograms.h_assoc2_mva_vs_pt[count],
+  //                   histograms.h_assoc2_mva_vs_pt_hp[count],
+  //                   mvas,
+  //                   selectsLoose,
+  //                   selectsHP);
+  //     assert(histograms.h_assoc2_mva_vs_eta.size() > static_cast<size_t>(count));
+  //     assert(histograms.h_assoc2_mva_vs_eta_hp.size() > static_cast<size_t>(count));
+  //     fillMVAHistos(eta,
+  //                   histograms.h_assoc2_mva_vs_eta[count],
+  //                   histograms.h_assoc2_mva_vs_eta_hp[count],
+  //                   mvas,
+  //                   selectsLoose,
+  //                   selectsHP);
+  //   }
+
+  //   if (histograms.nrecHit_vs_nsimHit_rec2sim[count])
+  //     histograms.nrecHit_vs_nsimHit_rec2sim[count]->Fill(track.numberOfValidHits(), nSimHits);
+  //   histograms.h_assocFraction[count]->Fill(sharedFraction);
+  //   histograms.h_assocSharedHit[count]->Fill(sharedHits);
+
+  //   if (!doSeedPlots_ && !isChargeMatched) {
+  //     histograms.h_misideta[count]->Fill(eta);
+  //     histograms.h_misidphi[count]->Fill(phi);
+  //     histograms.h_misidpT[count]->Fill(pt);
+  //     histograms.h_misidpTvseta[count]->Fill(eta, pt);
+  //     histograms.h_misiddxy[count]->Fill(dxy);
+  //     histograms.h_misiddz[count]->Fill(dz);
+  //     histograms.h_misidhit[count]->Fill(nhits);
+  //     histograms.h_misidlayer[count]->Fill(nlayers);
+  //     histograms.h_misidpixellayer[count]->Fill(nPixelLayers);
+  //     histograms.h_misid3Dlayer[count]->Fill(n3DLayers);
+  //     histograms.h_misidpu[count]->Fill(numVertices);
+  //     histograms.h_misidchi2[count]->Fill(chi2);
+  //     histograms.h_misidchi2prob[count]->Fill(chi2prob);
+  //     if (pvPosition) {
+  //       histograms.h_misiddxypv[count]->Fill(dxypv);
+  //       histograms.h_misiddzpv[count]->Fill(dzpv);
+  //       histograms.h_misiddxypvzoomed[count]->Fill(dxypv);
+  //       histograms.h_misiddzpvzoomed[count]->Fill(dzpv);
+  //     }
+  //   }
+
+  //   if (numAssocRecoTracks > 1) {
+  //     if (paramsValid) {
+  //       histograms.h_loopereta[count]->Fill(eta);
+  //       histograms.h_looperphi[count]->Fill(phi);
+  //       histograms.h_looperpT[count]->Fill(pt);
+  //       histograms.h_looperpTvseta[count]->Fill(eta, pt);
+  //       histograms.h_looperdxy[count]->Fill(dxy);
+  //       histograms.h_looperdz[count]->Fill(dz);
+  //       histograms.h_looperchi2[count]->Fill(chi2);
+  //       histograms.h_looperchi2prob[count]->Fill(chi2prob);
+  //       histograms.h_loopervertpos[count]->Fill(vertxy);
+  //       histograms.h_looperzpos[count]->Fill(vertz);
+  //       histograms.h_looperdr[count]->Fill(dR);
+  //       histograms.h_looperdrj[count]->Fill(dRJet);
+  //       if (fillSeedingLayerSets)
+  //         histograms.h_looper_seedingLayerSet[count]->Fill(seedingLayerSetBin);
+  //       if (pvPosition) {
+  //         histograms.h_looperdxypv[count]->Fill(dxypv);
+  //         histograms.h_looperdzpv[count]->Fill(dzpv);
+  //         histograms.h_looperdxypvzoomed[count]->Fill(dxypv);
+  //         histograms.h_looperdzpvzoomed[count]->Fill(dzpv);
+  //       }
+  //       if (simPVPosition) {
+  //         histograms.h_looper_simpvz[count]->Fill(simpvz);
+  //       }
+  //     }
+  //     histograms.h_looperhit[count]->Fill(nhits);
+  //     histograms.h_looperlayer[count]->Fill(nlayers);
+  //     histograms.h_looperpixellayer[count]->Fill(nPixelLayers);
+  //     histograms.h_looper3Dlayer[count]->Fill(n3DLayers);
+  //     histograms.h_looperpu[count]->Fill(numVertices);
+  //   }
+  //   if (!isSigMatched) {
+  //     if (paramsValid) {
+  //       histograms.h_pileupeta[count]->Fill(eta);
+  //       histograms.h_pileupphi[count]->Fill(phi);
+  //       histograms.h_pileuppT[count]->Fill(pt);
+  //       histograms.h_pileuppTvseta[count]->Fill(eta, pt);
+  //       histograms.h_pileupdxy[count]->Fill(dxy);
+  //       histograms.h_pileupdz[count]->Fill(dz);
+  //       histograms.h_pileupchi2[count]->Fill(chi2);
+  //       histograms.h_pileupchi2prob[count]->Fill(chi2prob);
+  //       histograms.h_pileupvertpos[count]->Fill(vertxy);
+  //       histograms.h_pileupzpos[count]->Fill(vertz);
+  //       histograms.h_pileupdr[count]->Fill(dR);
+  //       histograms.h_pileupdrj[count]->Fill(dRJet);
+  //       if (fillSeedingLayerSets)
+  //         histograms.h_pileup_seedingLayerSet[count]->Fill(seedingLayerSetBin);
+  //       if (pvPosition) {
+  //         histograms.h_pileupdxypv[count]->Fill(dxypv);
+  //         histograms.h_pileupdzpv[count]->Fill(dzpv);
+  //         histograms.h_pileupdxypvzoomed[count]->Fill(dxypv);
+  //         histograms.h_pileupdzpvzoomed[count]->Fill(dzpv);
+
+  //         if (doDzPVcutPlots_)
+  //           histograms.h_pileup_dzpvcut[count]->Fill(std::abs(dzpv));
+  //       }
+  //       if (simPVPosition) {
+  //         histograms.h_pileup_simpvz[count]->Fill(simpvz);
+  //       }
+  //     }
+  //     histograms.h_pileuphit[count]->Fill(nhits);
+  //     histograms.h_pileuplayer[count]->Fill(nlayers);
+  //     histograms.h_pileuppixellayer[count]->Fill(nPixelLayers);
+  //     histograms.h_pileup3Dlayer[count]->Fill(n3DLayers);
+  //     histograms.h_pileuppu[count]->Fill(numVertices);
+  //   }
+  // } else {  // !isMatched
+  //   if (!mvas.empty()) {
+  //     assert(histograms.h_fake_mva_vs_pt.size() > static_cast<size_t>(count));
+  //     assert(histograms.h_fake_mva_vs_pt_hp.size() > static_cast<size_t>(count));
+  //     assert(histograms.h_fake_mva_vs_eta.size() > static_cast<size_t>(count));
+  //     assert(histograms.h_fake_mva_vs_eta_hp.size() > static_cast<size_t>(count));
+  //     fillMVAHistos(
+  //         pt, histograms.h_fake_mva_vs_pt[count], histograms.h_fake_mva_vs_pt_hp[count], mvas, selectsLoose, selectsHP);
+  //     fillMVAHistos(eta,
+  //                   histograms.h_fake_mva_vs_eta[count],
+  //                   histograms.h_fake_mva_vs_eta_hp[count],
+  //                   mvas,
+  //                   selectsLoose,
+  //                   selectsHP);
+  //   }
+  // }
 }
 
 void MTVHistoProducerAlgoForTracker::fill_generic_recoTrack_histos(const Histograms& histograms,

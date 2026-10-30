@@ -1,5 +1,6 @@
 <use name="DQMServices/Core"/>
 <use name="SimDataFormats/TrackingAnalysis"/>
+<use name="SimDataFormats/TruthInfo"/>
 <use name="DataFormats/TrackReco"/>
 <use name="root"/>
 <lib name="MathMore"/>

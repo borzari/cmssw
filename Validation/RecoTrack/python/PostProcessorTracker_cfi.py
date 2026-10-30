@@ -16,14 +16,16 @@ def _addNoFlow(module):
         if not tmp[ind-1] in _noflowSeen:
             module.noFlowDists.append(tmp[ind-1])
 
-_defaultSubdirs = ["Tracking/Track/*", "Tracking/TrackTPPtLess09/*", "Tracking/TrackFromPV/*", "Tracking/TrackFromPVAllTP/*", "Tracking/TrackAllTPEffic/*", "Tracking/TrackBuilding/*","Tracking/TrackConversion/*", "Tracking/TrackGsf/*"]
+_defaultSubdirs = ["Tracking/Track/*", "Tracking/TrackTruthGraph/*", "Tracking/TrackTPPtLess09/*", "Tracking/TrackFromPV/*", "Tracking/TrackFromPVAllTP/*", "Tracking/TrackAllTPEffic/*", "Tracking/TrackBuilding/*","Tracking/TrackConversion/*", "Tracking/TrackGsf/*"]
 _defaultSubdirsSummary = [e.replace("/*","") for e in _defaultSubdirs]
 
 postProcessorTrack = DQMEDHarvester("DQMGenericClient",
     subDirs = cms.untracked.vstring(_defaultSubdirs),
     efficiency = cms.vstring(
     "effic 'Efficiency vs #eta' num_assoc(simToReco)_eta num_simul_eta",
+    "effic_TG_eta 'Efficiency (TG) vs #eta' TGfound_eta TGsimulated_eta",
     "efficPt 'Efficiency vs p_{T}' num_assoc(simToReco)_pT num_simul_pT",
+    "effic_TG_pt 'Efficiency (TG) vs p_{T}' TGfound_pt TGsimulated_pt",
 #    "efficPtvseta 'Efficiency in p_{T}-#eta plane' num_assoc(simToReco)_pTvseta num_simul_pTvseta",
     "effic_vs_hit 'Efficiency vs hit' num_assoc(simToReco)_hit num_simul_hit",
     "effic_vs_layer 'Efficiency vs layer' num_assoc(simToReco)_layer num_simul_layer",
@@ -31,12 +33,16 @@ postProcessorTrack = DQMEDHarvester("DQMGenericClient",
     "effic_vs_3Dlayer 'Efficiency vs 3D layer' num_assoc(simToReco)_3Dlayer num_simul_3Dlayer",
     "effic_vs_pu 'Efficiency vs pu' num_assoc(simToReco)_pu num_simul_pu",
     "effic_vs_phi 'Efficiency vs #phi' num_assoc(simToReco)_phi num_simul_phi",
+    "effic_TG_phi 'Efficiency (TG) vs #phi' TGfound_phi TGsimulated_phi",
     "effic_vs_dxy 'Efficiency vs Dxy' num_assoc(simToReco)_dxy num_simul_dxy",
     "effic_vs_dz 'Efficiency vs Dz' num_assoc(simToReco)_dz num_simul_dz",
     "effic_vs_dxypv 'Efficiency vs Dxy(PV)' num_assoc(simToReco)_dxypv num_simul_dxypv",
     "effic_vs_dzpv 'Efficiency vs Dz(PV)' num_assoc(simToReco)_dzpv num_simul_dzpv",
     "effic_vs_dxypv_zoomed 'Efficiency vs Dxy(PV)' num_assoc(simToReco)_dxypv_zoomed num_simul_dxypv_zoomed",
     "effic_vs_dzpv_zoomed 'Efficiency vs Dz(PV)' num_assoc(simToReco)_dzpv_zoomed num_simul_dzpv_zoomed",
+    "duplicatesRate_TG_eta 'Duplicates Rate (TG) vs #eta' TGduplicated_eta TGsimulated_eta",
+    "duplicatesRate_TG_pt 'Duplicates Rate (TG) vs p_{T}' TGduplicated_pt TGsimulated_pt",
+    "duplicatesRate_TG_phi 'Duplicates Rate (TG) vs #phi' TGduplicated_phi TGsimulated_phi",
     "duplicatesRate 'Duplicates Rate vs #eta' num_duplicate_eta num_reco_eta",
     "duplicatesRate_Pt 'Duplicates Rate vs p_{T}' num_duplicate_pT num_reco_pT",
 #    "duplicatesRate_Ptvseta 'Duplicates Rate in (p_{T}-#eta) plane' num_duplicate_pTvseta num_reco_pTvseta",
@@ -107,6 +113,9 @@ postProcessorTrack = DQMEDHarvester("DQMGenericClient",
     "fakerate 'Fake rate vs #eta' num_assoc(recoToSim)_eta num_reco_eta fake",
     "fakeratePt 'Fake rate vs p_{T}' num_assoc(recoToSim)_pT num_reco_pT fake",
 #    "fakeratePtvseta 'Fake rate in (p_{T}-#eta) plane' num_assoc(recoToSim)_pTvseta num_reco_pTvseta fake",
+    "fakerate_TG_eta 'Fake rate (TG) vs #eta' TGmatched_eta TGreconstructed_eta fake",
+    "fakerate_TG_pt 'Fake rate (TG) vs p_{T}' TGmatched_pt TGreconstructed_pt fake",
+    "fakerate_TG_phi 'Fake rate (TG) vs #phi' TGmatched_phi TGreconstructed_phi fake",
     "fakerate_vs_hit 'Fake rate vs hit' num_assoc(recoToSim)_hit num_reco_hit fake",
     "fakerate_vs_layer 'Fake rate vs layer' num_assoc(recoToSim)_layer num_reco_layer fake",
     "fakerate_vs_pixellayer 'Fake rate vs layer' num_assoc(recoToSim)_pixellayer num_reco_pixellayer fake",

@@ -4,6 +4,7 @@
 <use name="SimDataFormats/TrackingAnalysis"/>
 <use name="SimDataFormats/TrackingHit"/>
 <use name="SimDataFormats/CrossingFrame"/>
+<use name="SimDataFormats/TruthInfo"/>
 <use name="CondFormats/SiPixelObjects"/>
 <use name="CondFormats/SiPixelTransient"/>
 <use name="gsl"/>

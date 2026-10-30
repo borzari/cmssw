@@ -394,6 +394,17 @@ trackValidator = Validation.RecoTrack.MultiTrackValidator_cfi.multiTrackValidato
 fastSim.toModify(trackValidator,
                       dodEdxPlots = False)
 
+from Validation.RecoTrack.MultiTrackValidatorTruthGraph_cfi import multiTrackValidatorTruthGraph
+
+trackValidatorTruthGraph = multiTrackValidatorTruthGraph.clone(
+    useLogPt = cms.untracked.bool(True),
+    dodEdxPlots = True,
+    doPVAssociationPlots = True
+    #,minpT = cms.double(-1)
+    #,maxpT = cms.double(3)
+    #,nintpT = cms.int32(40)
+)
+
 for _eraName, _postfix, _era in _relevantEras:
     _setForEra(trackValidator, _eraName, _era,
                label = ["generalTracks", locals()["_generalTracksHp"+_postfix]] +
@@ -777,6 +788,7 @@ fastSim.toReplaceWith(tracksPreValidation, tracksPreValidation.copyAndExclude([
 
 tracksValidation = cms.Sequence(
     trackValidator +
+    trackValidatorTruthGraph +
     trackValidatorTPPtLess09 +
     trackValidatorFromPV +
     trackValidatorFromPVAllTP +
@@ -867,11 +879,15 @@ _taskForEachEra(_addSelectorsBySrc, modDict = globals(),
 trackValidatorStandalone = trackValidator.clone(
     cores = "highPtJets"
 )
+trackValidatorStandaloneTruthGraph = trackValidatorTruthGraph.clone(
+    cores = "highPtJets"
+)
 trackValidatorTPPtLess09Standalone = trackValidatorTPPtLess09.clone(
     cores = "highPtJets"
 )
 for _eraName, _postfix, _era in _relevantEras:
     _setForEra(trackValidatorStandalone, _eraName, _era, label = trackValidator.label + locals()["_selectorsByAlgoMask"+_postfix] + locals()["_selectorsPt09Standalone"+_postfix])
+    _setForEra(trackValidatorStandaloneTruthGraph, _eraName, _era, label = trackValidatorTruthGraph.label + locals()["_selectorsByAlgoMask"+_postfix] + locals()["_selectorsPt09Standalone"+_postfix])
     _setForEra(trackValidatorTPPtLess09Standalone, _eraName, _era, label = trackValidatorTPPtLess09.label + locals()["_selectorsByAlgoMask"+_postfix] + locals()["_selectorsPt09Standalone"+_postfix])
 
 trackValidatorFromPVStandalone = trackValidatorFromPV.clone(
@@ -922,6 +938,7 @@ tracksValidationSelectorsStandalone = cms.Task(
 #  and later make modifications from it which change based on era
 _trackValidatorsBase = cms.Sequence(
     trackValidatorStandalone +
+    trackValidatorStandaloneTruthGraph +
     trackValidatorTPPtLess09Standalone +
     trackValidatorFromPVStandalone +
     trackValidatorFromPVAllTPStandalone +
@@ -963,6 +980,13 @@ trackValidatorTrackingOnly = trackValidatorStandalone.clone(
     doResolutionPlotsForLabels = trackValidatorStandalone.doResolutionPlotsForLabels + locals()["_selectorsByOriginalAlgo"+_postfix],
     cores = "highPtJetsForTrk"
  )
+
+trackValidatorTrackingOnlyTruthGraph = trackValidatorStandaloneTruthGraph.clone(
+   dirName = cms.string('Tracking/TrackTruthGraph/'),
+   doResolutionPlotsForLabels = cms.VInputTag("generalTracks"),
+   label = cms.VInputTag("generalTracks"),
+   cores = "highPtJetsForTrk"
+)
 
 trackValidatorSeedingTrackingOnly = _trackValidatorSeedingBuilding.clone(
     dirName = "Tracking/TrackSeeding/",
@@ -1029,6 +1053,7 @@ trackValidatorsTrackingOnly += trackValidatorSeedingTrackingOnly
 trackValidatorsTrackingOnly += trackValidatorSeedingPreSplittingTrackingOnly
 trackValidatorsTrackingOnly += trackValidatorBuilding
 trackValidatorsTrackingOnly += trackValidatorBuildingPreSplitting
+trackValidatorsTrackingOnly += trackValidatorTrackingOnlyTruthGraph
 trackValidatorsTrackingOnly.replace(trackValidatorConversionStandalone, trackValidatorConversionTrackingOnly)
 trackValidatorsTrackingOnly.remove(trackValidatorGsfTracksStandalone)
 trackValidatorsTrackingOnly.replace(trackValidatorBHadronStandalone, trackValidatorBHadronTrackingOnly)

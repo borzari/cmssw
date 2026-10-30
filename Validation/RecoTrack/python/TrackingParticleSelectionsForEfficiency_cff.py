@@ -43,6 +43,12 @@ TpSelectorForEfficiencyVsPtBlock = generalTpSelectorForEfficiencyBlock.clone(ptM
 TpSelectorForEfficiencyVsVTXRBlock = generalTpSelectorForEfficiencyBlock.clone(tip = 60.0)
 TpSelectorForEfficiencyVsVTXZBlock = generalTpSelectorForEfficiencyBlock.clone()
 
+TGpSelectorForEfficiencyVsEtaBlock = generalTpSelectorForEfficiencyBlock.clone()
+TGpSelectorForEfficiencyVsPhiBlock = generalTpSelectorForEfficiencyBlock.clone()
+TGpSelectorForEfficiencyVsPtBlock = generalTpSelectorForEfficiencyBlock.clone(ptMin = 0.050 )
+TGpSelectorForEfficiencyVsVTXRBlock = generalTpSelectorForEfficiencyBlock.clone(tip = 60.0)
+TGpSelectorForEfficiencyVsVTXZBlock = generalTpSelectorForEfficiencyBlock.clone()
+
 def _modifyForPhase1(pset):
     pset.minRapidity = -3
     pset.maxRapidity = 3
@@ -50,6 +56,7 @@ def _modifyForPhase1(pset):
 
 phase1Pixel.toModify(generalTpSelectorBlock, _modifyForPhase1) # for general TP selector, extend eta to full acceptance
 phase1Pixel.toModify(TpSelectorForEfficiencyVsEtaBlock, _modifyForPhase1) # for efficiency vs eta, also extend eta to full acceptance
+phase1Pixel.toModify(TGpSelectorForEfficiencyVsEtaBlock, _modifyForPhase1) # for efficiency vs eta, also extend eta to full acceptance
 
 def _modifyForPhase2(pset):
     pset.minRapidity = -4.5
@@ -58,3 +65,4 @@ def _modifyForPhase2(pset):
 
 phase2_tracker.toModify(generalTpSelectorBlock, _modifyForPhase2) # for general TP selector, extend eta to full acceptance
 phase2_tracker.toModify(TpSelectorForEfficiencyVsEtaBlock, _modifyForPhase2) # for efficiency vs eta, also extend eta to full acceptance
+phase2_tracker.toModify(TGpSelectorForEfficiencyVsEtaBlock, _modifyForPhase2) # for efficiency vs eta, also extend eta to full acceptance
