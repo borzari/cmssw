@@ -37,48 +37,48 @@ struct MTVHistoProducerAlgoForTrackerHistograms {
   METype h_TGSimulatedPhi, h_TGFoundPhi, h_TGDuplicatedPhi, h_TGReconstructedPhi, h_TGMatchedPhi;
   METype h_TGSimulatedPt, h_TGFoundPt, h_TGDuplicatedPt, h_TGReconstructedPt, h_TGMatchedPt;
 
-//   // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
-//   METype h_TG_ptSIM, h_TG_etaSIM, h_TG_phiSIM, h_TG_tracksSIM, h_TG_vertposSIM, h_TG_bunchxSIM;
+  // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
+  METype h_TG_ptSIM, h_TG_etaSIM, h_TG_phiSIM, h_TG_tracksSIM, h_TG_vertposSIM, h_TG_bunchxSIM;
 
-//   // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
-//   std::vector<METype> h_TG_assoceta, h_TG_simuleta, h_TG_assocpT, h_TG_simulpT, h_TG_assocpTvseta, h_TG_simulpu;
-//   std::vector<METype> h_TG_simulpTvseta, h_TG_assochit, h_TG_simulhit, h_TG_assoclayer, h_TG_simullayer;
-//   std::vector<METype> h_TG_assocpixellayer, h_TG_simulpixellayer, h_TG_assoc3Dlayer, h_TG_simul3Dlayer, h_TG_assocpu;
-//   std::vector<METype> h_TG_assocphi, h_TG_simulphi, h_TG_assocdxy, h_TG_simuldxy, h_TG_assocdz;
-//   std::vector<METype> h_TG_simuldz, h_TG_assocvertpos, h_TG_simulvertpos, h_TG_assoczpos, h_TG_simulzpos;
-//   std::vector<METype> h_TG_assocdr, h_TG_simuldr, h_TG_assocdrj, h_TG_simuldrj, h_TG_simul_simpvz;
-//   std::vector<METype> h_TG_assoc_simpvz, TG_nrecHit_vs_nsimHit_sim2rec, h_TG_duplicates_oriAlgo_vs_oriAlgo;
+  // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
+  std::vector<METype> h_TG_assoceta, h_TG_simuleta, h_TG_assocpT, h_TG_simulpT, h_TG_assocpTvseta, h_TG_simulpu;
+  std::vector<METype> h_TG_simulpTvseta, h_TG_assochit, h_TG_simulhit, h_TG_assoclayer, h_TG_simullayer;
+  std::vector<METype> h_TG_assocpixellayer, h_TG_simulpixellayer, h_TG_assoc3Dlayer, h_TG_simul3Dlayer, h_TG_assocpu;
+  std::vector<METype> h_TG_assocphi, h_TG_simulphi, h_TG_assocdxy, h_TG_simuldxy, h_TG_assocdz;
+  std::vector<METype> h_TG_simuldz, h_TG_assocvertpos, h_TG_simulvertpos, h_TG_assoczpos, h_TG_simulzpos;
+  std::vector<METype> h_TG_assocdr, h_TG_simuldr, h_TG_assocdrj, h_TG_simuldrj, h_TG_simul_simpvz;
+  std::vector<METype> h_TG_assoc_simpvz, TG_nrecHit_vs_nsimHit_sim2rec, h_TG_duplicates_oriAlgo_vs_oriAlgo;
 
-//   // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
-//   std::vector<METype> h_TG_assocdxypv, h_TG_simuldxypv, h_TG_assocdzpv, h_TG_simuldzpv, h_TG_assocdxypvzoomed;
-//   std::vector<METype> h_TG_simuldxypvzoomed, h_TG_assocdzpvzoomed, h_TG_simuldzpvzoomed, h_TG_assoc_dzpvcut, h_TG_simul_dzpvcut;
-//   std::vector<METype> h_TG_simul2_dzpvcut;
+  // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
+  std::vector<METype> h_TG_assocdxypv, h_TG_simuldxypv, h_TG_assocdzpv, h_TG_simuldzpv, h_TG_assocdxypvzoomed;
+  std::vector<METype> h_TG_simuldxypvzoomed, h_TG_assocdzpvzoomed, h_TG_simuldzpvzoomed, h_TG_assoc_dzpvcut, h_TG_simul_dzpvcut;
+  std::vector<METype> h_TG_simul2_dzpvcut;
 
-//   // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
-//   std::vector<METype> h_TG_fakes, h_TG_reco2eta, h_TG_assoc2eta, h_TG_loopereta, h_TG_misideta;
-//   std::vector<METype> h_TG_pileupeta, h_TG_reco2pT, h_TG_assoc2pT, h_TG_looperpT, h_TG_misidpT;
-//   std::vector<METype> h_TG_pileuppT, h_TG_reco2pTvseta, h_TG_assoc2pTvseta, h_TG_looperpTvseta, h_TG_misidpTvseta;
-//   std::vector<METype> h_TG_pileuppTvseta, h_TG_assoc2hit, h_TG_looperhit, h_TG_misidhit, h_TG_pileuphit;
-//   std::vector<METype> h_TG_assoc2layer, h_TG_looperlayer, h_TG_misidlayer, h_TG_pileuplayer, h_TG_assoc2pixellayer;
-//   std::vector<METype> h_TG_looperpixellayer, h_TG_misidpixellayer, h_TG_pileuppixellayer, h_TG_reco3Dlayer, h_TG_assoc23Dlayer;
-//   std::vector<METype> h_TG_looper3Dlayer, h_TG_misid3Dlayer, h_TG_pileup3Dlayer, h_TG_reco2pu, h_TG_assoc2pu;
-//   std::vector<METype> h_TG_looperpu, h_TG_misidpu, h_TG_pileuppu, h_TG_assoc2phi, h_TG_looperphi;
-//   std::vector<METype> h_TG_misidphi, h_TG_pileupphi, h_TG_assoc2dxy, h_TG_looperdxy, h_TG_misiddxy;
-//   std::vector<METype> h_TG_pileupdxy, h_TG_assoc2dz, h_TG_looperdz, h_TG_misiddz, h_TG_pileupdz;
-//   std::vector<METype> h_TG_assoc2vertpos, h_TG_loopervertpos, h_TG_pileupvertpos, h_TG_assoc2zpos, h_TG_looperzpos;
-//   std::vector<METype> h_TG_pileupzpos, h_TG_assoc2dr, h_TG_looperdr, h_TG_pileupdr, h_TG_assoc2drj;
-//   std::vector<METype> h_TG_looperdrj, h_TG_pileupdrj, h_TG_assoc2_simpvz, h_TG_looper_simpvz, h_TG_pileup_simpvz;
-//   std::vector<METype> h_TG_assoc2chi2, h_TG_looperchi2, h_TG_misidchi2, h_TG_pileupchi2, h_TG_assoc2chi2prob;
-//   std::vector<METype> h_TG_looperchi2prob, h_TG_misidchi2prob, h_TG_pileupchi2prob, h_TG_assoc2_seedingLayerSet, h_TG_looper_seedingLayerSet;
-//   std::vector<METype> h_TG_pileup_seedingLayerSet, h_TG_reco_seedingLayerSet;
-//   std::vector<METype> h_TG_assocFraction, h_TG_assocSharedHit, TG_nrec_vs_nsim, TG_assoc_chi2_vs_eta, TG_assoc_chi2prob_vs_eta;
-//   std::vector<METype> TG_assoc_chi2_vs_pt, TG_assoc_chi2prob_vs_pt, TG_assoc_chi2_vs_drj, TG_assoc_chi2prob_vs_drj, TG_nrecHit_vs_nsimHit_rec2sim;
+  // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
+  std::vector<METype> h_TG_fakes, h_TG_reco2eta, h_TG_assoc2eta, h_TG_loopereta, h_TG_misideta;
+  std::vector<METype> h_TG_pileupeta, h_TG_reco2pT, h_TG_assoc2pT, h_TG_looperpT, h_TG_misidpT;
+  std::vector<METype> h_TG_pileuppT, h_TG_reco2pTvseta, h_TG_assoc2pTvseta, h_TG_looperpTvseta, h_TG_misidpTvseta;
+  std::vector<METype> h_TG_pileuppTvseta, h_TG_assoc2hit, h_TG_looperhit, h_TG_misidhit, h_TG_pileuphit;
+  std::vector<METype> h_TG_assoc2layer, h_TG_looperlayer, h_TG_misidlayer, h_TG_pileuplayer, h_TG_assoc2pixellayer;
+  std::vector<METype> h_TG_looperpixellayer, h_TG_misidpixellayer, h_TG_pileuppixellayer, h_TG_reco3Dlayer, h_TG_assoc23Dlayer;
+  std::vector<METype> h_TG_looper3Dlayer, h_TG_misid3Dlayer, h_TG_pileup3Dlayer, h_TG_reco2pu, h_TG_assoc2pu;
+  std::vector<METype> h_TG_looperpu, h_TG_misidpu, h_TG_pileuppu, h_TG_assoc2phi, h_TG_looperphi;
+  std::vector<METype> h_TG_misidphi, h_TG_pileupphi, h_TG_assoc2dxy, h_TG_looperdxy, h_TG_misiddxy;
+  std::vector<METype> h_TG_pileupdxy, h_TG_assoc2dz, h_TG_looperdz, h_TG_misiddz, h_TG_pileupdz;
+  std::vector<METype> h_TG_assoc2vertpos, h_TG_loopervertpos, h_TG_pileupvertpos, h_TG_assoc2zpos, h_TG_looperzpos;
+  std::vector<METype> h_TG_pileupzpos, h_TG_assoc2dr, h_TG_looperdr, h_TG_pileupdr, h_TG_assoc2drj;
+  std::vector<METype> h_TG_looperdrj, h_TG_pileupdrj, h_TG_assoc2_simpvz, h_TG_looper_simpvz, h_TG_pileup_simpvz;
+  std::vector<METype> h_TG_assoc2chi2, h_TG_looperchi2, h_TG_misidchi2, h_TG_pileupchi2, h_TG_assoc2chi2prob;
+  std::vector<METype> h_TG_looperchi2prob, h_TG_misidchi2prob, h_TG_pileupchi2prob, h_TG_assoc2_seedingLayerSet, h_TG_looper_seedingLayerSet;
+  std::vector<METype> h_TG_pileup_seedingLayerSet, h_TG_reco_seedingLayerSet;
+  std::vector<METype> h_TG_assocFraction, h_TG_assocSharedHit, TG_nrec_vs_nsim, TG_assoc_chi2_vs_eta, TG_assoc_chi2prob_vs_eta;
+  std::vector<METype> TG_assoc_chi2_vs_pt, TG_assoc_chi2prob_vs_pt, TG_assoc_chi2_vs_drj, TG_assoc_chi2prob_vs_drj, TG_nrecHit_vs_nsimHit_rec2sim;
 
-//   // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
-//   std::vector<METype> h_TG_assoc2dxypv, h_TG_looperdxypv, h_TG_misiddxypv, h_TG_pileupdxypv, h_TG_assoc2dzpv;
-//   std::vector<METype> h_TG_looperdzpv, h_TG_misiddzpv, h_TG_pileupdzpv, h_TG_assoc2dxypvzoomed, h_TG_looperdxypvzoomed;
-//   std::vector<METype> h_TG_misiddxypvzoomed, h_TG_pileupdxypvzoomed, h_TG_assoc2dzpvzoomed, h_TG_looperdzpvzoomed, h_TG_misiddzpvzoomed;
-//   std::vector<METype> h_TG_pileupdzpvzoomed, h_TG_assoc2_dzpvcut, h_TG_pileup_dzpvcut;
+  // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
+  std::vector<METype> h_TG_assoc2dxypv, h_TG_looperdxypv, h_TG_misiddxypv, h_TG_pileupdxypv, h_TG_assoc2dzpv;
+  std::vector<METype> h_TG_looperdzpv, h_TG_misiddzpv, h_TG_pileupdzpv, h_TG_assoc2dxypvzoomed, h_TG_looperdxypvzoomed;
+  std::vector<METype> h_TG_misiddxypvzoomed, h_TG_pileupdxypvzoomed, h_TG_assoc2dzpvzoomed, h_TG_looperdzpvzoomed, h_TG_misiddzpvzoomed;
+  std::vector<METype> h_TG_pileupdzpvzoomed, h_TG_assoc2_dzpvcut, h_TG_pileup_dzpvcut;
 
 //   // TruthGraph: histograms are organized in the order they appear in MTVHistoProducerAlgoForTracker.cc
 //   std::vector<std::vector<METype>> h_reco_mva, h_assoc2_mva;
@@ -448,7 +448,7 @@ private:
   const bool doSeedPlots_;
   const bool doMTDPlots_;
   const bool doDzPVcutPlots_;
-//   const bool doTruthGraphPlots_;
+  const bool doTruthGraphPlots_;
 
   //
   double ptRes_rangeMin, ptRes_rangeMax;

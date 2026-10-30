@@ -148,8 +148,8 @@ MTVHistoProducerAlgoForTrackerBlock = cms.PSet(
     seedingLayerSets = cms.vstring(),
 
     doMTDPlots = cms.untracked.bool(False), # meant to be switch on in Phase2 workflows
-    doDzPVcutPlots = cms.untracked.bool(True)
-    # doTruthGraphPlots = cms.untracked.bool(False)
+    doDzPVcutPlots = cms.untracked.bool(True),
+    doTruthGraphPlots = cms.untracked.bool(False)
 )
 
 def _modifyForPhase1(pset):
@@ -167,11 +167,6 @@ def _modifyForPhase2(pset):
 from Configuration.Eras.Modifier_phase2_tracker_cff import phase2_tracker
 #phase2_tracker.toModify(MTVHistoProducerAlgoForTrackerBlock, dict(minEta = -4.5, maxEta = 4.5, nintEta = 90) )
 phase2_tracker.toModify(MTVHistoProducerAlgoForTrackerBlock, _modifyForPhase2)
-
-# def _modifyForTruthGraph(pset):
-#     pset.doTruthGraphPlots = True
-# from Configuration.ProcessModifiers.truthGraphTRKValidation_cff import truthGraphTRKValidation
-# truthGraphTRKValidation.toModify(MTVHistoProducerAlgoForTrackerBlock, _modifyForTruthGraph)
 
 def _modifyForPhase2wMTD(pset):
     pset.doMTDPlots = True

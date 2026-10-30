@@ -12,7 +12,9 @@ multiTrackValidatorTruthGraph = DQMEDAnalyzer(
     TrackingParticleSelectionForEfficiency,
 
     # HistoProducerAlgo. Defines the set of plots to be booked and filled
-    histoProducerAlgoBlock = MTVHistoProducerAlgoForTrackerBlock,
+    histoProducerAlgoBlock = MTVHistoProducerAlgoForTrackerBlock.clone(
+        doTruthGraphPlots = True
+    ),
 
     # set true if you do not want that MTV launch an exception
     # if the track collectio is missing (e.g. HLT):

@@ -399,7 +399,8 @@ from Validation.RecoTrack.MultiTrackValidatorTruthGraph_cfi import multiTrackVal
 trackValidatorTruthGraph = multiTrackValidatorTruthGraph.clone(
     useLogPt = cms.untracked.bool(True),
     dodEdxPlots = True,
-    doPVAssociationPlots = True
+    doPVAssociationPlots = True,
+    dirName = cms.string('Tracking/TrackTruthGraph/'),
     #,minpT = cms.double(-1)
     #,maxpT = cms.double(3)
     #,nintpT = cms.int32(40)
@@ -982,7 +983,7 @@ trackValidatorTrackingOnly = trackValidatorStandalone.clone(
  )
 
 trackValidatorTrackingOnlyTruthGraph = trackValidatorStandaloneTruthGraph.clone(
-   dirName = cms.string('Tracking/TrackTruthGraph/'),
+#    dirName = cms.string('Tracking/TrackTruthGraph/'),
    doResolutionPlotsForLabels = cms.VInputTag("generalTracks"),
    label = cms.VInputTag("generalTracks"),
    cores = "highPtJetsForTrk"
@@ -1053,7 +1054,7 @@ trackValidatorsTrackingOnly += trackValidatorSeedingTrackingOnly
 trackValidatorsTrackingOnly += trackValidatorSeedingPreSplittingTrackingOnly
 trackValidatorsTrackingOnly += trackValidatorBuilding
 trackValidatorsTrackingOnly += trackValidatorBuildingPreSplitting
-trackValidatorsTrackingOnly += trackValidatorTrackingOnlyTruthGraph
+trackValidatorsTrackingOnly.replace(trackValidatorStandaloneTruthGraph, trackValidatorTrackingOnlyTruthGraph)
 trackValidatorsTrackingOnly.replace(trackValidatorConversionStandalone, trackValidatorConversionTrackingOnly)
 trackValidatorsTrackingOnly.remove(trackValidatorGsfTracksStandalone)
 trackValidatorsTrackingOnly.replace(trackValidatorBHadronStandalone, trackValidatorBHadronTrackingOnly)
