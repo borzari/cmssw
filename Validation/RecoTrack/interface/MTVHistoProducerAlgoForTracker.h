@@ -220,7 +220,11 @@ public:
                                     const TrackingParticle::Vector&,
                                     const TrackingParticle::Point& vertex,
                                     int bx) const;
+  void fill_generic_truthGraph_simTrack_histos(const Histograms& histograms,
+                                    const truth::Particle& particle,
+                                    int bx) const;
   void fill_simTrackBased_histos(const Histograms& histograms, int numSimTracks) const;
+  void fill_truthGraph_simTrackBased_histos(const Histograms& histograms, int numSimTracks) const;
 
   void fill_truthToReco_simTrack_truthGraph_histos(const Histograms& histograms,
                                            int count,

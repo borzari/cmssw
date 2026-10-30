@@ -437,6 +437,7 @@ const reco::Vertex::Point* MultiTrackValidatorTruthGraph::getRecoPVPosition(
 void MultiTrackValidatorTruthGraph::tpParametersAndSelection(
     const Histograms& histograms,
     const TrackingParticleRefVector& tPCeff,
+    const truth::Graph& TGgraph,
     const edm::Event& event,
     const edm::EventSetup& setup,
     const reco::BeamSpot& bs,
@@ -445,6 +446,7 @@ void MultiTrackValidatorTruthGraph::tpParametersAndSelection(
   selected_tPCeff.reserve(tPCeff.size());
   momVert_tPCeff.reserve(tPCeff.size());
   int nIntimeTPs = 0;
+  int nIntimeTGPs = 0;
   if (parametersDefinerIsCosmic_) {
     for (size_t j = 0; j < tPCeff.size(); ++j) {
       const TrackingParticleRef& tpr = tPCeff[j];
@@ -489,6 +491,21 @@ void MultiTrackValidatorTruthGraph::tpParametersAndSelection(
   }
   if (doSimPlots_) {
     histoProducerAlgo_->fill_simTrackBased_histos(histograms.histoProducerAlgo, nIntimeTPs);
+  }
+  for (uint32_t id = 0; id < TGgraph.nParticles(); ++id) {
+    const truth::Particle particle(&TGgraph, id);
+    // No selection because here need to check EVERY particle
+    // if (!selected(particle))
+    //   continue;
+    if (particle.data().bunchCrossing() == 0)
+        ++nIntimeTGPs;
+    if (doSimPlots_) {
+      histoProducerAlgo_->fill_generic_truthGraph_simTrack_histos(
+        histograms.histoProducerAlgo, particle, particle.data().bunchCrossing());
+    }
+  }
+  if (doSimPlots_) {
+    histoProducerAlgo_->fill_truthGraph_simTrackBased_histos(histograms.histoProducerAlgo, nIntimeTGPs);
   }
 }
 
@@ -746,7 +763,10 @@ void MultiTrackValidatorTruthGraph::dqmAnalyze(const edm::Event& event,
   // for "efficiency" TPs.
   std::vector<size_t> selected_tPCeff;
   std::vector<std::tuple<TrackingParticle::Vector, TrackingParticle::Point>> momVert_tPCeff;
-  tpParametersAndSelection(histograms, tPCeff, event, setup, bs, momVert_tPCeff, selected_tPCeff);
+
+  auto const& TGgraph = event.get(TGgraphToken_);
+
+  tpParametersAndSelection(histograms, tPCeff, TGgraph, event, setup, bs, momVert_tPCeff, selected_tPCeff);
 
   //calculate dR for TPs
   declareDynArray(float, tPCeff.size(), dR_tPCeff);
@@ -786,7 +806,6 @@ void MultiTrackValidatorTruthGraph::dqmAnalyze(const edm::Event& event,
   std::vector<const QualityMaskCollection*> qualityMaskCollections;
   std::vector<float> mvaValues;
 
-  auto const& TGgraph = event.get(TGgraphToken_);
   auto const& TGtracks = event.get(TGtracksToken_);
   auto const& TGhitIndex = event.get(TGhitIndexToken_);
   auto const& TGtruthToReco = event.get(TGtruthToRecoToken_).getMap();

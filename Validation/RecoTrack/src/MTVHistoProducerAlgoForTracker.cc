@@ -2614,6 +2614,22 @@ void MTVHistoProducerAlgoForTracker::fill_generic_simTrack_histos(const Histogra
   histograms.h_bunchxSIM->Fill(bx);
 }
 
+void MTVHistoProducerAlgoForTracker::fill_generic_truthGraph_simTrack_histos(const Histograms& histograms,
+                                                                             const truth::Particle& particle,
+                                                                             int bx) const {
+  if (bx == 0) {
+    histograms.h_TG_ptSIM->Fill(particle.momentum().pt());
+    histograms.h_TG_etaSIM->Fill(particle.momentum().eta());
+    histograms.h_TG_phiSIM->Fill(particle.momentum().phi());
+    auto const production = particle.productionVertices();
+    if (!production.empty()){
+      auto const& v = production.front().position();
+      histograms.h_TG_vertposSIM->Fill(std::hypot(v.x(), v.y()));
+    }
+  }
+  histograms.h_TG_bunchxSIM->Fill(bx);
+}
+
 void MTVHistoProducerAlgoForTracker::fill_truthToReco_simTrack_truthGraph_histos(
     const Histograms& histograms,
     int count,
@@ -2952,6 +2968,10 @@ void MTVHistoProducerAlgoForTracker::fill_duplicate_histos(const Histograms& his
 
 void MTVHistoProducerAlgoForTracker::fill_simTrackBased_histos(const Histograms& histograms, int numSimTracks) const {
   histograms.h_tracksSIM->Fill(numSimTracks);
+}
+
+void MTVHistoProducerAlgoForTracker::fill_truthGraph_simTrackBased_histos(const Histograms& histograms, int numSimTracks) const {
+  histograms.h_TG_tracksSIM->Fill(numSimTracks);
 }
 
 // dE/dx

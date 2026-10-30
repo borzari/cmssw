@@ -118,6 +118,7 @@ private:
   void tpParametersAndSelection(
       const Histograms& histograms,
       const TrackingParticleRefVector& tPCeff,
+      const truth::Graph& TGgraph,
       const edm::Event& event,
       const edm::EventSetup& setup,
       const reco::BeamSpot& bs,
